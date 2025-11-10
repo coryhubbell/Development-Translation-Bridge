@@ -449,4 +449,6 @@ This project is licensed under **GPL v2 or later** - same as WordPress.
 
 *Empowering developers to build WordPress sites at the speed of thought with AI*
 
+![Documentation](https://img.shields.io/badge/docs-complete-success?style=for-the-badge)
+
 </div>
