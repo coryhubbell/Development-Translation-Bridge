@@ -69,7 +69,7 @@ class WPBC_Elementor_Converter implements WPBC_Converter_Interface {
 	 * @param WPBC_Component $component Component to convert.
 	 * @return array|null Elementor element array.
 	 */
-	private function convert_component( WPBC_Component $component ): ?array {
+	public function convert_component( WPBC_Component $component ): ?array {
 		$type = $component->type;
 
 		// Convert based on component type
@@ -539,5 +539,36 @@ class WPBC_Elementor_Converter implements WPBC_Converter_Interface {
 		}
 
 		return max( 0.0, min( 1.0, $confidence ) );
+	}
+
+	/**
+	 * Check if component type is supported
+	 *
+	 * @param string $type Component type.
+	 * @return bool True if supported, false otherwise.
+	 */
+	public function supports_type( string $type ): bool {
+		$supported = $this->get_supported_types();
+		return in_array( $type, $supported, true );
+	}
+
+	/**
+	 * Get fallback conversion for unsupported component types
+	 *
+	 * @param WPBC_Component $component Unsupported component.
+	 * @return array Fallback Elementor element.
+	 */
+	public function get_fallback( WPBC_Component $component ) {
+		// Create a basic text widget as fallback
+		$settings = [
+			'editor' => $component->content ? $component->content : 'Unsupported component type: ' . $component->type,
+		];
+
+		return [
+			'id'         => $this->generate_id(),
+			'elType'     => 'widget',
+			'widgetType' => 'text-editor',
+			'settings'   => $settings,
+		];
 	}
 }
