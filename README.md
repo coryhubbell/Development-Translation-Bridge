@@ -1,9 +1,10 @@
-# 🚀 WordPress Bootstrap Claude™ 3.0
+# 🚀 WordPress Bootstrap Claude™ 3.1
 ## **The World's First AI-Powered Multi-Framework WordPress Development System**
+### **Now with WPBakery/Visual Composer Support!**
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.3-purple.svg)
 ![DIVI Compatible](https://img.shields.io/badge/DIVI-Compatible-orange.svg)
@@ -26,20 +27,73 @@
 
 ---
 
-## 🔥 **BREAKING: Revolutionary Translation Bridge™ Released!**
+## 🔥 **BREAKING: WPBakery Support Added - 6th Framework!**
+
+> **🆕 NEW IN v3.1:** Escape WPBakery/Visual Composer vendor lock-in! Now supporting **30 translation pairs** across **6 major frameworks**. Convert your WPBakery sites to **any modern builder** or clean **Bootstrap HTML** for Claude AI development.
+
+```bash
+# Free yourself from WPBakery limitations in seconds
+wpbc translate wpbakery bootstrap my-wpbakery-site.xml
+wpbc translate vc elementor legacy-page.txt
+```
 
 ### **World's First Framework Translator**
 Translate between **ANY** of 6 major page builders:
-**Bootstrap** ↔ **DIVI** ↔ **Elementor** ↔ **Avada Fusion** ↔ **Bricks** ↔ **WPBakery**
+**Bootstrap** ↔ **DIVI** ↔ **Elementor** ↔ **Avada Fusion** ↔ **Bricks** ↔ **WPBakery/VC**
 
 **No more vendor lock-in. No more rebuilding. Just seamless translation.**
 
 ```bash
 # Convert any framework to any other framework in seconds
-wpbc translate bootstrap divi homepage.html
-wpbc translate elementor bootstrap page.json
-wpbc translate divi bootstrap section.txt
+wpbc translate wpbakery bootstrap homepage.txt    # Escape WPBakery!
+wpbc translate vc elementor page.txt              # Visual Composer → Elementor
+wpbc translate bootstrap divi homepage.html       # Bootstrap → DIVI
+wpbc translate elementor wpbakery page.json       # Elementor → WPBakery
 ```
+
+---
+
+## 💡 **Why WPBakery Users Love This**
+
+If you're stuck with **WPBakery (Visual Composer)** sites, this changes everything:
+
+| Problem | Solution |
+|---------|----------|
+| 🔒 **Vendor Lock-In** | Convert to **any framework** or pure Bootstrap HTML |
+| 🐌 **Performance Issues** | Migrate to Bricks (fastest) or clean Bootstrap |
+| 🛠️ **Limited Updates** | Move to actively developed Elementor/DIVI |
+| 💰 **High Costs** | Switch to free Bootstrap or Bricks |
+| 🤖 **No AI Integration** | Convert to Bootstrap → work with Claude AI → convert back |
+| 📱 **Mobile Problems** | Rebuild in modern frameworks with better responsive tools |
+
+**Framework Migration Comparison:**
+
+| Feature | WPBakery | → Bootstrap | → Elementor | → Bricks |
+|---------|----------|-------------|-------------|----------|
+| **Performance** | ⚠️ Moderate | ✅ Excellent | ✅ Good | ✅ Excellent |
+| **File Size** | 180+ KB | 45 KB | 150 KB | 60 KB |
+| **Updates** | ⚠️ Slow | ✅ Active | ✅ Active | ✅ Active |
+| **Claude AI** | ❌ No | ✅ Perfect | ⚠️ Limited | ⚠️ Limited |
+| **Cost** | 💰 $64 | ✅ Free | 💰 $59+ | 💰 $99+ |
+| **Vendor Lock-In** | 🔒 Yes | ✅ No | 🔒 Yes | 🔒 Yes |
+| **Mobile First** | ⚠️ Fair | ✅ Excellent | ✅ Excellent | ✅ Excellent |
+
+**Real-World WPBakery Workflows:**
+```bash
+# Modernize a legacy WPBakery site
+wpbc convert-site wpbakery elementor --source old-site.xml
+
+# Keep WPBakery but optimize with Claude AI
+wpbc translate wpbakery bootstrap page.txt
+# Edit Bootstrap HTML with Claude AI
+wpbc translate bootstrap wpbakery optimized.html
+
+# Test your WPBakery design in all frameworks
+wpbc translate-all wpbakery my-design.txt
+# Compare performance, choose the best
+```
+
+> **💡 Pro Tip:** Convert WPBakery → Bootstrap first. This gives you clean, AI-editable HTML. Then you can deploy as pure HTML (fastest) OR convert to any modern framework!
 
 ---
 
@@ -1015,15 +1069,16 @@ docker run -d -p 8080:80 wpbc/wordpress-bootstrap-claude
 - ✅ Bootstrap 5.3.3 support (Native HTML/CSS)
 - ✅ DIVI Builder compatibility (100+ modules)
 - ✅ Elementor compatibility (90+ widgets)
-- ✅ **Avada Fusion Builder** (150+ elements) 🆕
-- ✅ **Bricks Builder** (80+ elements) 🆕
+- ✅ Avada Fusion Builder (150+ elements)
+- ✅ Bricks Builder (80+ elements)
+- ✅ **WPBakery/Visual Composer (50+ elements) 🆕 v3.1**
 
 ### **Q2 2025 - In Development**
 - 🔄 Gutenberg block library
 - 🔄 Beaver Builder support
-- 🔄 WPBakery compatibility
 - 🔄 Oxygen Builder support
 - 🔄 API v2 with batch processing
+- 🔄 Advanced WPBakery features (custom elements, templates)
 
 ### **Q3 2025**
 - 📅 Brizy Builder integration
