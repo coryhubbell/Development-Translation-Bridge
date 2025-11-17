@@ -1,11 +1,12 @@
-# 🚀 WordPress Bootstrap Claude™ 3.1
-## **The World's First Real-Time AI Page Builder with 7-Framework Translation**
-### **Edit WordPress Pages with Natural Language • Convert to Any Framework**
+# 🚀 WordPress Bootstrap Claude™ 3.2
+## **The World's First Real-Time AI Page Builder with 10-Framework Translation & REST API**
+### **Edit WordPress Pages with Natural Language • Convert to Any Framework • Full API Access**
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-3.2.0-blue.svg)
 ![CLI](https://img.shields.io/badge/CLI-Production_Ready-success.svg)
+![API](https://img.shields.io/badge/REST_API_v2-Live-success.svg)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.3-purple.svg)
@@ -14,19 +15,78 @@
 ![Avada Compatible](https://img.shields.io/badge/Avada-Compatible-crimson.svg)
 ![Bricks Compatible](https://img.shields.io/badge/Bricks-Compatible-teal.svg)
 ![WPBakery Compatible](https://img.shields.io/badge/WPBakery-Compatible-blue.svg)
-![Claude AI](https://img.shields.io/badge/Claude_AI-7th_Framework-black.svg)
-![Frameworks](https://img.shields.io/badge/Frameworks-7-brightgreen.svg)
+![Beaver Builder Compatible](https://img.shields.io/badge/Beaver_Builder-Compatible-green.svg)
+![Gutenberg Compatible](https://img.shields.io/badge/Gutenberg-Compatible-navy.svg)
+![Oxygen Compatible](https://img.shields.io/badge/Oxygen-Compatible-cyan.svg)
+![Claude AI](https://img.shields.io/badge/Claude_AI-10th_Framework-black.svg)
+![Frameworks](https://img.shields.io/badge/Frameworks-10-brightgreen.svg)
 
-### **🤖 Edit Pages in Real-Time with Claude AI • 🌉 42 Translation Pairs Across 7 Frameworks • ⚡ Deploy Anywhere**
+### **🤖 Edit Pages in Real-Time with Claude AI • 🌉 90 Translation Pairs Across 10 Frameworks • 🔌 Full REST API • ⚡ Deploy Anywhere**
 
-**[🎥 Watch Demo](https://youtube.com/demo) • [📖 Documentation](docs/) • [💬 Discord](https://discord.gg/wpbc) • [🌟 Star This Repo](#)**
+**[🎥 Watch Demo](https://youtube.com/demo) • [📖 Documentation](docs/) • [🔌 API Docs](docs/api-v2.md) • [💬 Discord](https://discord.gg/wpbc) • [🌟 Star This Repo](#)**
 
 ---
 
 ### **📚 Quick Navigation**
-**[🤖 Real-Time AI Editing](#-real-time-ai-editing-with-claude)** • **[🚀 Quick Start](#-quick-start)** • **[🌉 7 Frameworks](#-all-7-frameworks-supported)** • **[🖥️ CLI Tool](#%EF%B8%8F-cli-tool---production-ready)** • **[📊 Translation Pairs](#supported-translations)** • **[🛠 Installation](#-installation)**
+**[🤖 Real-Time AI Editing](#-real-time-ai-editing-with-claude)** • **[🚀 Quick Start](#-quick-start)** • **[🌉 10 Frameworks](#-all-10-frameworks-supported)** • **[🔌 REST API v2](#-rest-api-v2)** • **[🖥️ CLI Tool](#%EF%B8%8F-cli-tool---production-ready)** • **[📊 Translation Pairs](#supported-translations)** • **[🛠 Installation](#-installation)**
 
 </div>
+
+---
+
+## 🆕 **What's New in v3.2**
+
+### **3 New Frameworks Added!**
+
+1. **Beaver Builder** 🟩
+   - Serialized PHP support
+   - 30+ module types
+   - Row → Column Group → Column hierarchy
+   - Full bidirectional translation
+
+2. **Gutenberg Block Editor** 🟦
+   - HTML comment block parsing
+   - 50+ core blocks
+   - Block patterns library
+   - Full Site Editing (FSE) support
+   - Template parts and reusable blocks
+
+3. **Oxygen Builder** 🔷
+   - JSON element structure
+   - 30+ element types
+   - Parent-child relationships
+   - Style object support
+
+### **REST API v2**
+
+- ✅ Full REST API with 9 endpoints
+- ✅ API key authentication
+- ✅ Rate limiting (4 tiers)
+- ✅ Webhook notifications
+- ✅ Batch processing with job queue
+- ✅ Async translation jobs
+- ✅ Real-time job status tracking
+
+### **WPBakery Enhancements**
+
+- ✅ Custom element registry (Ultimate Addons support)
+- ✅ Template extraction and library
+- ✅ Grid Builder support
+- ✅ Design Options CSS extraction
+- ✅ Animation support
+- ✅ Parallax handling
+- ✅ Template conversion between frameworks
+
+### **Gutenberg Advanced Features**
+
+- ✅ Block patterns (3 default patterns included)
+- ✅ Full Site Editing (FSE) templates
+- ✅ Template parts (header, footer, sidebar)
+- ✅ Reusable blocks management
+- ✅ Global styles (theme.json)
+- ✅ Block pattern search and categories
+
+**Total Framework Support:** 10 frameworks, 90 translation pairs
 
 ---
 
@@ -69,9 +129,9 @@ wpbc translate claude bootstrap clean-output.html
 
 ---
 
-## 🌉 **All 7 Frameworks Supported**
+## 🌉 **All 10 Frameworks Supported**
 
-**World's First 7-Framework Universal Translator:**
+**World's First 10-Framework Universal Translator:**
 
 | # | Framework | Type | Use Case | Real-Time AI Editing |
 |---|-----------|------|----------|---------------------|
@@ -81,13 +141,16 @@ wpbc translate claude bootstrap clean-output.html
 | 4️⃣ | **Avada Fusion** | HTML | Premium, advanced effects | ✅ Via Bootstrap |
 | 5️⃣ | **Bricks Builder** | JSON | Performance, clean output | ✅ Via Bootstrap |
 | 6️⃣ | **WPBakery/VC** | Shortcodes | Legacy support, migration | ✅ Via Bootstrap |
-| 7️⃣ | **Claude AI** 🤖 | HTML | **Real-time natural language editing** | ✅ **Native** |
+| 7️⃣ | **Beaver Builder** 🆕 | Serialized PHP | Flexible modules, stable | ✅ Via Bootstrap |
+| 8️⃣ | **Gutenberg** 🆕 | HTML Comments | Native WordPress, FSE support | ✅ Via Bootstrap |
+| 9️⃣ | **Oxygen Builder** 🆕 | JSON | Visual site builder, performance | ✅ Via Bootstrap |
+| 🔟 | **Claude AI** 🤖 | HTML | **Real-time natural language editing** | ✅ **Native** |
 
-**42 Translation Pairs** = 7 frameworks × 6 possible targets each
+**90 Translation Pairs** = 10 frameworks × 9 possible targets each
 
 ### **The Claude Framework Advantage**
 
-The **7th framework** (Claude AI-Optimized HTML) is the breakthrough:
+The **10th framework** (Claude AI-Optimized HTML) is the breakthrough:
 
 ```html
 <!-- Traditional framework output -->
@@ -110,47 +173,62 @@ The **7th framework** (Claude AI-Optimized HTML) is the breakthrough:
 
 ---
 
-## 💡 **Why WPBakery Users Love This**
+## 💡 **Why WordPress Framework Users Love This**
 
-If you're stuck with **WPBakery (Visual Composer)** sites, this changes everything:
+**No matter which framework you're using**, the Translation Bridge solves your biggest problems:
 
 | Problem | Solution |
 |---------|----------|
-| 🔒 **Vendor Lock-In** | Convert to **any framework** or pure Bootstrap HTML |
-| 🐌 **Performance Issues** | Migrate to Bricks (fastest) or clean Bootstrap |
-| 🛠️ **Limited Updates** | Move to actively developed Elementor/DIVI |
-| 💰 **High Costs** | Switch to free Bootstrap or Bricks |
+| 🔒 **Vendor Lock-In** | Convert to **any of 10 frameworks** or pure Bootstrap HTML |
+| 🐌 **Performance Issues** | Test in all frameworks, migrate to the fastest (Bricks/Bootstrap) |
+| 🛠️ **Limited Framework Features** | Access capabilities from ANY other framework instantly |
+| 💰 **Licensing Costs** | Switch to free alternatives (Bootstrap, Gutenberg) |
 | 🤖 **No AI Integration** | Convert to Bootstrap → work with Claude AI → convert back |
-| 📱 **Mobile Problems** | Rebuild in modern frameworks with better responsive tools |
+| 📱 **Mobile/Responsive Issues** | Rebuild with frameworks that have better responsive tools |
+| 🔄 **Client Framework Preferences** | Deliver in the client's preferred framework, regardless of how you built it |
+| 🚀 **Slow Development** | Build in your fastest framework, deploy to client's required framework |
 
-**Framework Migration Comparison:**
+**Complete Framework Comparison:**
 
-| Feature | WPBakery | → Bootstrap | → Elementor | → Bricks |
-|---------|----------|-------------|-------------|----------|
-| **Performance** | ⚠️ Moderate | ✅ Excellent | ✅ Good | ✅ Excellent |
-| **File Size** | 180+ KB | 45 KB | 150 KB | 60 KB |
-| **Updates** | ⚠️ Slow | ✅ Active | ✅ Active | ✅ Active |
-| **Claude AI** | ❌ No | ✅ Perfect | ⚠️ Limited | ⚠️ Limited |
-| **Cost** | 💰 $64 | ✅ Free | 💰 $59+ | 💰 $99+ |
-| **Vendor Lock-In** | 🔒 Yes | ✅ No | 🔒 Yes | 🔒 Yes |
-| **Mobile First** | ⚠️ Fair | ✅ Excellent | ✅ Excellent | ✅ Excellent |
+| Framework | Performance | File Size | Updates | Claude AI | Cost | Vendor Lock | Mobile | Best For |
+|-----------|------------|-----------|---------|-----------|------|-------------|--------|----------|
+| **Bootstrap** | ✅ Excellent | 45 KB | ✅ Active | ✅ Perfect | ✅ Free | ✅ No | ✅ Excellent | Clean code, AI editing |
+| **Gutenberg** | ✅ Excellent | 50 KB | ✅ Active | ✅ Via Bridge | ✅ Free | ✅ No | ✅ Excellent | Native WordPress, FSE |
+| **Bricks** | ✅ Excellent | 60 KB | ✅ Active | ⚠️ Via Bridge | 💰 $99 | 🔒 Yes | ✅ Excellent | Performance sites |
+| **Beaver Builder** | ✅ Good | 75 KB | ✅ Active | ⚠️ Via Bridge | 💰 $99+ | 🔒 Yes | ✅ Excellent | Stable, reliable |
+| **DIVI** | ✅ Good | 120 KB | ✅ Active | ⚠️ Via Bridge | 💰 $89+ | 🔒 Yes | ✅ Good | Visual design |
+| **Elementor** | ✅ Good | 150 KB | ✅ Active | ⚠️ Via Bridge | 💰 $59+ | 🔒 Yes | ✅ Excellent | Popular, ecosystem |
+| **Oxygen** | ✅ Excellent | 65 KB | ✅ Active | ⚠️ Via Bridge | 💰 $99 | 🔒 Yes | ✅ Excellent | Visual site builder |
+| **WPBakery** | ⚠️ Moderate | 180 KB | ⚠️ Slow | ❌ No | 💰 $64 | 🔒 Yes | ⚠️ Fair | Legacy support |
+| **Avada** | ✅ Good | 140 KB | ✅ Active | ⚠️ Via Bridge | 💰 $69 | 🔒 Yes | ✅ Good | Advanced effects |
 
-**Real-World WPBakery Workflows:**
+**Real-World Multi-Framework Workflows:**
 ```bash
-# Modernize a legacy WPBakery site
-wpbc convert-site wpbakery elementor --source old-site.xml
+# Scenario 1: Legacy WPBakery → Modern Framework
+wpbc translate wpbakery gutenberg legacy-site.txt
+wpbc translate wpbakery elementor legacy-site.txt
 
-# Keep WPBakery but optimize with Claude AI
-wpbc translate wpbakery bootstrap page.txt
-# Edit Bootstrap HTML with Claude AI
-wpbc translate bootstrap wpbakery optimized.html
+# Scenario 2: Elementor → Clean Bootstrap (for AI editing)
+wpbc translate elementor bootstrap my-design.json
+# Edit with Claude AI
+wpbc translate bootstrap elementor optimized.html
 
-# Test your WPBakery design in all frameworks
-wpbc translate-all wpbakery my-design.txt
-# Compare performance, choose the best
+# Scenario 3: Gutenberg → Any Framework (client requirement)
+wpbc translate gutenberg divi blog-layout.html
+wpbc translate gutenberg bricks blog-layout.html
+wpbc translate gutenberg beaver-builder blog-layout.html
+
+# Scenario 4: Test ANY design in ALL frameworks
+wpbc translate-all elementor my-landing-page.json
+# Get 9 versions in different frameworks - compare and choose!
+
+# Scenario 5: Build in Bootstrap, Deploy Anywhere
+wpbc translate bootstrap gutenberg clean-site.html
+wpbc translate bootstrap elementor clean-site.html
+wpbc translate bootstrap oxygen clean-site.html
 ```
 
-> **💡 Pro Tip:** Convert WPBakery → Bootstrap first. This gives you clean, AI-editable HTML. Then you can deploy as pure HTML (fastest) OR convert to any modern framework!
+> **💡 Pro Tip:** Build in **Bootstrap** (fastest, cleanest, AI-editable) → Test in **all frameworks** → Deploy in client's **required framework**. This gives you maximum flexibility and speed!
 
 ---
 
@@ -170,24 +248,28 @@ wpbc translate-all wpbakery my-design.txt
 - 💰 Save 40+ hours per site (worth $5,800)
 - 🔓 **True framework freedom** - never locked in
 
-### **3. Translation Bridge™ with 7 Frameworks**
-- 🌉 **42 translation pairs** across 7 frameworks
+### **3. Translation Bridge™ with 10 Frameworks**
+- 🌉 **90 translation pairs** across 10 frameworks
 - 🔄 Convert between **any two frameworks** instantly
 - ⚡ 30-second conversions (vs 40 hours manual)
-- 📊 Supports: Bootstrap, DIVI, Elementor, Avada, Bricks, WPBakery, **Claude**
+- 📊 Supports: Bootstrap, DIVI, Elementor, Avada, Bricks, WPBakery, Beaver Builder, Gutenberg, Oxygen, **Claude**
 - 🎯 Production-ready CLI tool
+- 🔌 Full REST API v2 with batch processing
 
 ### **4. Universal Framework Support**
 
-| Framework | Status | Elements | Claude AI Ready |
-|-----------|--------|----------|-----------------|
-| 🟦 **Bootstrap 5.3.3** | ✅ Native | Clean HTML/CSS | ✅ Perfect |
-| 🟧 **DIVI Builder** | ✅ Stable | 100+ modules | ✅ Via Bridge |
-| 🟥 **Elementor** | ✅ Stable | 90+ widgets | ✅ Via Bridge |
-| 🔴 **Avada Fusion** | ✅ Stable | 150+ elements | ✅ Via Bridge |
-| 🟢 **Bricks Builder** | ✅ Stable | 80+ elements | ✅ Via Bridge |
-| 🔵 **WPBakery/VC** | ✅ Stable | 50+ elements | ✅ Via Bridge |
-| 🤖 **Claude AI** | ✅ **NEW** | **Real-time editing** | ✅ **Native** |
+| Framework | Status | Elements | Claude AI Ready | v3.2 Features |
+|-----------|--------|----------|-----------------|---------------|
+| 🟦 **Bootstrap 5.3.3** | ✅ Native | Clean HTML/CSS | ✅ Perfect | Core Framework |
+| 🟧 **DIVI Builder** | ✅ Stable | 100+ modules | ✅ Via Bridge | Full Support |
+| 🟥 **Elementor** | ✅ Stable | 90+ widgets | ✅ Via Bridge | Full Support |
+| 🔴 **Avada Fusion** | ✅ Stable | 150+ elements | ✅ Via Bridge | Full Support |
+| 🟢 **Bricks Builder** | ✅ Stable | 80+ elements | ✅ Via Bridge | Full Support |
+| 🔵 **WPBakery/VC** | ✅ Stable | 50+ elements | ✅ Via Bridge | Templates, Custom Elements |
+| 🟩 **Beaver Builder** | ✅ **NEW** | 30+ modules | ✅ Via Bridge | Serialized PHP Support |
+| 🟦 **Gutenberg** | ✅ **NEW** | 50+ blocks | ✅ Via Bridge | FSE, Block Patterns |
+| 🔷 **Oxygen Builder** | ✅ **NEW** | 30+ elements | ✅ Via Bridge | JSON Elements |
+| 🤖 **Claude AI** | ✅ Stable | **Real-time editing** | ✅ **Native** | AI-Optimized HTML |
 
 **🎯 Key Advantage:** Work in ANY framework, edit with Claude AI, deploy to ANY framework!
 
@@ -227,7 +309,7 @@ chmod +x wpbc
 # Translate Bootstrap to DIVI
 ./wpbc translate bootstrap divi examples/hero-bootstrap.html
 
-# Translate to all 6 frameworks at once
+# Translate to all 9 frameworks at once
 ./wpbc translate-all bootstrap examples/hero-bootstrap.html
 
 # List all supported frameworks
@@ -552,7 +634,7 @@ wpbc translate bootstrap elementor optimized-site.html
 # Create in Bootstrap (Claude AI friendly)
 wpbc translate-all bootstrap pricing-table.html
 
-# Test in all 6 frameworks
+# Test in all 9 frameworks
 # Compare performance, choose the best
 ```
 
@@ -633,6 +715,139 @@ For complete CLI documentation, see:
 
 ---
 
+## 🔌 **REST API v2**
+
+**WordPress Bootstrap Claude v3.2** introduces a powerful REST API for programmatic access to translation features.
+
+### **✨ API Features**
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Single Translation** | Convert content between any two frameworks | ✅ Live |
+| **Batch Translation** | Translate to multiple frameworks at once | ✅ Live |
+| **Async Processing** | Background job queue for large batches | ✅ Live |
+| **Validation** | Validate content before translation | ✅ Live |
+| **Webhooks** | Get notified when jobs complete | ✅ Live |
+| **API Key Auth** | Secure access with API keys | ✅ Live |
+| **Rate Limiting** | Tiered limits (Free, Basic, Premium, Enterprise) | ✅ Live |
+| **Job Status** | Real-time job progress tracking | ✅ Live |
+
+### **🚀 Quick API Examples**
+
+**Get API Status:**
+```bash
+curl https://yoursite.com/wp-json/wpbc/v2/status
+```
+
+**List Supported Frameworks:**
+```bash
+curl https://yoursite.com/wp-json/wpbc/v2/frameworks
+```
+
+**Single Translation:**
+```bash
+curl -X POST https://yoursite.com/wp-json/wpbc/v2/translate \
+  -H "X-API-Key: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "bootstrap",
+    "target": "elementor",
+    "content": "<div class=\"container\">...</div>"
+  }'
+```
+
+**Batch Translation (Async):**
+```bash
+curl -X POST https://yoursite.com/wp-json/wpbc/v2/batch-translate \
+  -H "X-API-Key: your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "gutenberg",
+    "targets": ["elementor", "divi", "bricks"],
+    "content": "<!-- wp:paragraph -->...",
+    "async": true
+  }'
+```
+
+**Check Job Status:**
+```bash
+curl https://yoursite.com/wp-json/wpbc/v2/job/wpbc_abc123 \
+  -H "X-API-Key: your_api_key_here"
+```
+
+### **🔑 API Authentication**
+
+**Generate API Key:**
+```bash
+# Via WordPress admin or REST API
+curl -X POST https://yoursite.com/wp-json/wpbc/v2/api-keys \
+  -u admin:password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Integration",
+    "tier": "premium",
+    "permissions": ["read", "write"]
+  }'
+```
+
+**Rate Limits by Tier:**
+
+| Tier | Requests/Hour | Requests/Minute | Burst Limit |
+|------|---------------|-----------------|-------------|
+| **Free** | 100 | 20 | 5 |
+| **Basic** | 500 | 50 | 10 |
+| **Premium** | 2,000 | 100 | 20 |
+| **Enterprise** | 10,000 | 500 | 50 |
+
+### **🔔 Webhooks**
+
+**Set Webhook URL:**
+```bash
+# Configure in WordPress settings or via API
+update_option('wpbc_webhook_url', 'https://yoursite.com/webhook');
+```
+
+**Webhook Payload (Job Completed):**
+```json
+{
+  "event": "job.completed",
+  "job_id": "wpbc_abc123",
+  "status": "completed",
+  "source": "bootstrap",
+  "total": 3,
+  "successful": 3,
+  "failed": 0,
+  "elapsed_time": 2.45,
+  "completed_at": "2025-01-17 10:30:00",
+  "site_url": "https://yoursite.com",
+  "timestamp": "2025-01-17 10:30:00"
+}
+```
+
+**Features:**
+- ✅ HMAC-SHA256 signature verification
+- ✅ Automatic retry with exponential backoff (max 3 attempts)
+- ✅ Secure secret management
+- ✅ Event tracking and logging
+
+### **📡 API Endpoints**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/wpbc/v2/status` | API status and features |
+| `GET` | `/wpbc/v2/frameworks` | List all 10 frameworks |
+| `POST` | `/wpbc/v2/translate` | Single translation |
+| `POST` | `/wpbc/v2/batch-translate` | Batch translation |
+| `GET` | `/wpbc/v2/job/{id}` | Get job status |
+| `POST` | `/wpbc/v2/validate` | Validate content |
+| `GET` | `/wpbc/v2/api-keys` | List your API keys |
+| `POST` | `/wpbc/v2/api-keys` | Create new API key |
+| `DELETE` | `/wpbc/v2/api-keys/{key}` | Revoke API key |
+
+**Full API Documentation:** [docs/api-v2.md](docs/api-v2.md)
+
+---
+
 ## 💬 **Getting Started - Copy & Paste Prompts**
 
 ### **Never Used a Framework Translator Before? Start Here!**
@@ -674,7 +889,7 @@ wpbc convert-site avada bricks --source site-backup.xml
 
 **With Claude AI Integration:**
 ```
-"Convert this Bootstrap card component to work in all 6 frameworks"
+"Convert this Bootstrap card component to work in all 9 frameworks"
 
 "Take this Elementor pricing table and create Avada, DIVI, Bricks, and Bootstrap versions"
 
@@ -740,7 +955,7 @@ wpbc batch-translate elementor bootstrap pages/*.json --organize-by-framework
 
 **With Claude AI:**
 ```
-"Create a pricing table in Bootstrap, then show me how it looks in all 6 frameworks"
+"Create a pricing table in Bootstrap, then show me how it looks in all 9 frameworks"
 
 "Build a hero section in Elementor, convert to DIVI, and compare the code quality"
 
