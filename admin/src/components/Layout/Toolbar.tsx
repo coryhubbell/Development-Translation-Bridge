@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useEditorStore } from '@/store/editorStore';
 
-const Toolbar: React.FC = () => {
+function Toolbar() {
   const { editor, translateCode, isTranslating, reset, preferences, updatePreferences } =
     useEditorStore();
   const [showSettings, setShowSettings] = useState(false);
@@ -149,6 +149,6 @@ const Toolbar: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Toolbar;

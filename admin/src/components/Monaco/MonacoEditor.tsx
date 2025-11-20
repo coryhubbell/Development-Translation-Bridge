@@ -16,12 +16,12 @@ interface MonacoEditorProps {
   isReadOnly?: boolean;
 }
 
-const MonacoEditor: React.FC<MonacoEditorProps> = ({
+function MonacoEditor({
   value,
   framework,
   onChange,
   isReadOnly = false,
-}) => {
+}: MonacoEditorProps) {
   const { preferences, corrections } = useEditorStore();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -134,6 +134,6 @@ const MonacoEditor: React.FC<MonacoEditorProps> = ({
       />
     </div>
   );
-};
+}
 
 export default MonacoEditor;

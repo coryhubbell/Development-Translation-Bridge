@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useEditorStore } from '@/store/editorStore';
 import CorrectionItem from './CorrectionItem';
 
-const CorrectionPanel: React.FC = () => {
+function CorrectionPanel() {
   const { corrections, clearCorrections } = useEditorStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -70,6 +70,6 @@ const CorrectionPanel: React.FC = () => {
       )}
     </div>
   );
-};
+}
 
 export default CorrectionPanel;

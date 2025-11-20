@@ -13,7 +13,7 @@ import Toolbar from './Layout/Toolbar';
 import FrameworkSelector from './Layout/FrameworkSelector';
 import { useEditorStore } from '@/store/editorStore';
 
-const SideBySideEditor: React.FC = () => {
+function SideBySideEditor() {
   const { editor, translateCode, isTranslating } = useEditorStore();
 
   // Auto-translate on framework change or code change (debounced)
@@ -139,6 +139,6 @@ const SideBySideEditor: React.FC = () => {
       <CorrectionPanel />
     </div>
   );
-};
+}
 
 export default SideBySideEditor;

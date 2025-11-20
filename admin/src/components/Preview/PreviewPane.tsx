@@ -9,7 +9,7 @@ interface PreviewPaneProps {
   code: string;
 }
 
-const PreviewPane: React.FC<PreviewPaneProps> = ({ code }) => {
+function PreviewPane({ code }: PreviewPaneProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -138,6 +138,6 @@ const PreviewPane: React.FC<PreviewPaneProps> = ({ code }) => {
       </div>
     </div>
   );
-};
+}
 
 export default PreviewPane;

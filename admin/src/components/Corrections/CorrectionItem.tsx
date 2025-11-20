@@ -11,7 +11,7 @@ interface CorrectionItemProps {
   correction: CorrectionSuggestion;
 }
 
-const CorrectionItem: React.FC<CorrectionItemProps> = ({ correction }) => {
+function CorrectionItem({ correction }: CorrectionItemProps) {
   const { applyCorrection, removeCorrection } = useEditorStore();
 
   const getIcon = () => {
@@ -127,6 +127,6 @@ const CorrectionItem: React.FC<CorrectionItemProps> = ({ correction }) => {
       </div>
     </div>
   );
-};
+}
 
 export default CorrectionItem;

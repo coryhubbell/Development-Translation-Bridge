@@ -25,11 +25,11 @@ const frameworks: Array<{ id: Framework; name: string; icon: string }> = [
   { id: 'claude', name: 'Claude AI', icon: '🤖' },
 ];
 
-const FrameworkSelector: React.FC<FrameworkSelectorProps> = ({
+function FrameworkSelector({
   label,
   value,
   onChange,
-}) => {
+}: FrameworkSelectorProps) {
 
   return (
     <div className="flex flex-col gap-1">
@@ -67,6 +67,6 @@ const FrameworkSelector: React.FC<FrameworkSelectorProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default FrameworkSelector;
