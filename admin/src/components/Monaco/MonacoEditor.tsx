@@ -1,6 +1,7 @@
 /**
  * Monaco Editor Component
  * Wraps @monaco-editor/react with custom configuration
+ * @refresh reset
  */
 
 import React, { useRef, useEffect } from 'react';
