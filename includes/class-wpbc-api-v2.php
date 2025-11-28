@@ -153,6 +153,133 @@ class WPBC_API_V2 {
             'callback'            => [$this, 'revoke_api_key'],
             'permission_callback' => [$this, 'check_admin_permission'],
         ]);
+
+        // =====================================================
+        // Persistence Endpoints
+        // =====================================================
+
+        // Save translation
+        register_rest_route($this->namespace, '/save', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'save_translation'],
+            'permission_callback' => [$this, 'check_permission'],
+            'args'                => $this->get_save_translation_args(),
+        ]);
+
+        // Get single translation
+        register_rest_route($this->namespace, '/translations/(?P<id>\d+)', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'get_translation'],
+            'permission_callback' => [$this, 'check_permission'],
+        ]);
+
+        // Update translation
+        register_rest_route($this->namespace, '/translations/(?P<id>\d+)', [
+            'methods'             => 'PUT',
+            'callback'            => [$this, 'update_translation'],
+            'permission_callback' => [$this, 'check_permission'],
+            'args'                => $this->get_update_translation_args(),
+        ]);
+
+        // Delete translation
+        register_rest_route($this->namespace, '/translations/(?P<id>\d+)', [
+            'methods'             => 'DELETE',
+            'callback'            => [$this, 'delete_translation'],
+            'permission_callback' => [$this, 'check_permission'],
+        ]);
+
+        // Get translation history
+        register_rest_route($this->namespace, '/translations/history', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'get_translation_history'],
+            'permission_callback' => [$this, 'check_permission'],
+            'args'                => $this->get_history_args(),
+        ]);
+
+        // Get translation versions
+        register_rest_route($this->namespace, '/translations/(?P<id>\d+)/versions', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'get_translation_versions'],
+            'permission_callback' => [$this, 'check_permission'],
+        ]);
+
+        // Restore version
+        register_rest_route($this->namespace, '/translations/(?P<id>\d+)/restore', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'restore_translation_version'],
+            'permission_callback' => [$this, 'check_permission'],
+            'args'                => [
+                'version_id' => [
+                    'required' => true,
+                    'type'     => 'integer',
+                ],
+            ],
+        ]);
+
+        // User preferences
+        register_rest_route($this->namespace, '/preferences', [
+            'methods'             => 'GET',
+            'callback'            => [$this, 'get_preferences'],
+            'permission_callback' => [$this, 'check_permission'],
+        ]);
+
+        register_rest_route($this->namespace, '/preferences', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'save_preferences'],
+            'permission_callback' => [$this, 'check_permission'],
+            'args'                => [
+                'preferences' => [
+                    'required' => true,
+                    'type'     => 'object',
+                ],
+            ],
+        ]);
+
+        // =====================================================
+        // Correction Endpoints
+        // =====================================================
+
+        // Analyze code for corrections
+        register_rest_route($this->namespace, '/corrections/analyze', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'analyze_corrections'],
+            'permission_callback' => [$this, 'check_permission'],
+            'args'                => $this->get_corrections_args(),
+        ]);
+
+        // Apply correction
+        register_rest_route($this->namespace, '/corrections/apply', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'apply_correction'],
+            'permission_callback' => [$this, 'check_permission'],
+            'args'                => [
+                'correction_id' => [
+                    'required' => true,
+                    'type'     => 'string',
+                ],
+                'translation_id' => [
+                    'required' => false,
+                    'type'     => 'integer',
+                ],
+            ],
+        ]);
+
+        // Dismiss correction
+        register_rest_route($this->namespace, '/corrections/dismiss', [
+            'methods'             => 'POST',
+            'callback'            => [$this, 'dismiss_correction'],
+            'permission_callback' => [$this, 'check_permission'],
+            'args'                => [
+                'correction_id' => [
+                    'required' => true,
+                    'type'     => 'string',
+                ],
+                'feedback' => [
+                    'required' => false,
+                    'type'     => 'string',
+                ],
+            ],
+        ]);
     }
 
     /**
@@ -918,5 +1045,470 @@ class WPBC_API_V2 {
             'success' => true,
             'message' => 'API key revoked successfully',
         ], 200);
+    }
+
+    // =========================================================================
+    // Persistence Endpoint Callbacks
+    // =========================================================================
+
+    /**
+     * Save translation endpoint
+     *
+     * POST /wp-json/wpbc/v2/save
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object or error.
+     */
+    public function save_translation( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+
+        $data = [
+            'source_framework' => $request->get_param('source_framework'),
+            'target_framework' => $request->get_param('target_framework'),
+            'source_code'      => $request->get_param('source_code'),
+            'translated_code'  => $request->get_param('translated_code'),
+            'project_id'       => $request->get_param('project_id'),
+            'name'             => $request->get_param('name'),
+            'metadata'         => $request->get_param('metadata'),
+        ];
+
+        $result = $persistence->save_translation($data);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return new WP_REST_Response([
+            'success'        => true,
+            'translation_id' => $result,
+            'version'        => 1,
+            'saved_at'       => current_time('c'),
+        ], 201);
+    }
+
+    /**
+     * Get single translation
+     *
+     * GET /wp-json/wpbc/v2/translations/{id}
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object or error.
+     */
+    public function get_translation( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+        $id = (int) $request->get_param('id');
+
+        $result = $persistence->get_translation($id);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return new WP_REST_Response($result, 200);
+    }
+
+    /**
+     * Update translation
+     *
+     * PUT /wp-json/wpbc/v2/translations/{id}
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object or error.
+     */
+    public function update_translation( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+        $id = (int) $request->get_param('id');
+
+        $data = [
+            'source_code'     => $request->get_param('source_code'),
+            'translated_code' => $request->get_param('translated_code'),
+            'name'            => $request->get_param('name'),
+            'metadata'        => $request->get_param('metadata'),
+        ];
+
+        $create_version = (bool) $request->get_param('create_version');
+
+        $result = $persistence->update_translation($id, $data, $create_version);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        // Get the updated translation to return version info
+        $translation = $persistence->get_translation($result);
+        $version = is_wp_error($translation) ? 1 : (int) $translation['version'];
+
+        return new WP_REST_Response([
+            'success'        => true,
+            'translation_id' => $result,
+            'version'        => $version,
+            'saved_at'       => current_time('c'),
+        ], 200);
+    }
+
+    /**
+     * Delete translation
+     *
+     * DELETE /wp-json/wpbc/v2/translations/{id}
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object or error.
+     */
+    public function delete_translation( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+        $id = (int) $request->get_param('id');
+
+        $result = $persistence->delete_translation($id);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Translation deleted successfully',
+        ], 200);
+    }
+
+    /**
+     * Get translation history
+     *
+     * GET /wp-json/wpbc/v2/translations/history
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
+     */
+    public function get_translation_history( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+
+        $args = [
+            'page'             => $request->get_param('page') ?: 1,
+            'per_page'         => $request->get_param('per_page') ?: 20,
+            'status'           => $request->get_param('status'),
+            'source_framework' => $request->get_param('source_framework'),
+            'target_framework' => $request->get_param('target_framework'),
+        ];
+
+        $result = $persistence->get_user_translations($args);
+
+        return new WP_REST_Response([
+            'success'      => true,
+            'translations' => $result['translations'],
+            'total'        => $result['total'],
+            'page'         => $result['page'],
+            'per_page'     => $result['per_page'],
+        ], 200);
+    }
+
+    /**
+     * Get translation versions
+     *
+     * GET /wp-json/wpbc/v2/translations/{id}/versions
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
+     */
+    public function get_translation_versions( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+        $id = (int) $request->get_param('id');
+
+        $versions = $persistence->get_versions($id);
+
+        return new WP_REST_Response([
+            'success'  => true,
+            'versions' => $versions,
+        ], 200);
+    }
+
+    /**
+     * Restore translation version
+     *
+     * POST /wp-json/wpbc/v2/translations/{id}/restore
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response object or error.
+     */
+    public function restore_translation_version( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+        $id = (int) $request->get_param('id');
+        $version_id = (int) $request->get_param('version_id');
+
+        $result = $persistence->restore_version($id, $version_id);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return new WP_REST_Response([
+            'success'        => true,
+            'translation_id' => $result,
+            'message'        => 'Version restored successfully',
+        ], 200);
+    }
+
+    /**
+     * Get user preferences
+     *
+     * GET /wp-json/wpbc/v2/preferences
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
+     */
+    public function get_preferences( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+        $preferences = $persistence->get_preferences();
+
+        return new WP_REST_Response([
+            'success'     => true,
+            'preferences' => $preferences,
+        ], 200);
+    }
+
+    /**
+     * Save user preferences
+     *
+     * POST /wp-json/wpbc/v2/preferences
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
+     */
+    public function save_preferences( WP_REST_Request $request ) {
+        $persistence = new WPBC_Persistence();
+        $preferences = $request->get_param('preferences');
+
+        $result = $persistence->save_preferences($preferences);
+
+        return new WP_REST_Response([
+            'success' => $result,
+            'message' => $result ? 'Preferences saved' : 'Failed to save preferences',
+        ], $result ? 200 : 500);
+    }
+
+    // =========================================================================
+    // Correction Endpoint Callbacks
+    // =========================================================================
+
+    /**
+     * Analyze code for corrections
+     *
+     * POST /wp-json/wpbc/v2/corrections/analyze
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
+     */
+    public function analyze_corrections( WP_REST_Request $request ) {
+        $corrections_handler = new WPBC_Corrections();
+
+        $code = $request->get_param('code');
+        $framework = $request->get_param('framework');
+        $options = $request->get_param('options') ?: [];
+
+        $start_time = microtime(true);
+        $result = $corrections_handler->analyze($code, $framework, $options);
+        $processing_time = round(microtime(true) - $start_time, 3);
+
+        return new WP_REST_Response([
+            'success'         => true,
+            'corrections'     => $result['corrections'],
+            'summary'         => $result['summary'],
+            'processing_time' => $processing_time,
+        ], 200);
+    }
+
+    /**
+     * Apply a correction
+     *
+     * POST /wp-json/wpbc/v2/corrections/apply
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
+     */
+    public function apply_correction( WP_REST_Request $request ) {
+        $correction_id = $request->get_param('correction_id');
+        $translation_id = $request->get_param('translation_id');
+
+        // For now, just acknowledge the application
+        // In a full implementation, this would update the stored translation
+        $this->logger->info('Correction applied', [
+            'correction_id'  => $correction_id,
+            'translation_id' => $translation_id,
+        ]);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'applied' => true,
+        ], 200);
+    }
+
+    /**
+     * Dismiss a correction
+     *
+     * POST /wp-json/wpbc/v2/corrections/dismiss
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response object.
+     */
+    public function dismiss_correction( WP_REST_Request $request ) {
+        $correction_id = $request->get_param('correction_id');
+        $feedback = $request->get_param('feedback');
+
+        // Log the dismissal for potential ML training
+        $this->logger->info('Correction dismissed', [
+            'correction_id' => $correction_id,
+            'feedback'      => $feedback,
+        ]);
+
+        return new WP_REST_Response([
+            'success' => true,
+        ], 200);
+    }
+
+    // =========================================================================
+    // Argument Definitions for New Endpoints
+    // =========================================================================
+
+    /**
+     * Get save translation endpoint arguments
+     *
+     * @return array Argument definitions.
+     */
+    private function get_save_translation_args(): array {
+        return [
+            'source_framework' => [
+                'required'          => true,
+                'type'              => 'string',
+                'enum'              => $this->frameworks,
+                'sanitize_callback' => 'sanitize_key',
+            ],
+            'target_framework' => [
+                'required'          => true,
+                'type'              => 'string',
+                'enum'              => $this->frameworks,
+                'sanitize_callback' => 'sanitize_key',
+            ],
+            'source_code' => [
+                'required' => true,
+                'type'     => 'string',
+            ],
+            'translated_code' => [
+                'required' => true,
+                'type'     => 'string',
+            ],
+            'project_id' => [
+                'required'          => false,
+                'type'              => 'string',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'name' => [
+                'required'          => false,
+                'type'              => 'string',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'metadata' => [
+                'required' => false,
+                'type'     => 'object',
+            ],
+        ];
+    }
+
+    /**
+     * Get update translation endpoint arguments
+     *
+     * @return array Argument definitions.
+     */
+    private function get_update_translation_args(): array {
+        return [
+            'source_code' => [
+                'required' => false,
+                'type'     => 'string',
+            ],
+            'translated_code' => [
+                'required' => false,
+                'type'     => 'string',
+            ],
+            'name' => [
+                'required'          => false,
+                'type'              => 'string',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'metadata' => [
+                'required' => false,
+                'type'     => 'object',
+            ],
+            'create_version' => [
+                'required' => false,
+                'type'     => 'boolean',
+                'default'  => false,
+            ],
+        ];
+    }
+
+    /**
+     * Get history endpoint arguments
+     *
+     * @return array Argument definitions.
+     */
+    private function get_history_args(): array {
+        return [
+            'page' => [
+                'required' => false,
+                'type'     => 'integer',
+                'default'  => 1,
+            ],
+            'per_page' => [
+                'required' => false,
+                'type'     => 'integer',
+                'default'  => 20,
+                'maximum'  => 100,
+            ],
+            'status' => [
+                'required' => false,
+                'type'     => 'string',
+                'enum'     => ['draft', 'saved', 'archived'],
+            ],
+            'source_framework' => [
+                'required'          => false,
+                'type'              => 'string',
+                'enum'              => $this->frameworks,
+                'sanitize_callback' => 'sanitize_key',
+            ],
+            'target_framework' => [
+                'required'          => false,
+                'type'              => 'string',
+                'enum'              => $this->frameworks,
+                'sanitize_callback' => 'sanitize_key',
+            ],
+        ];
+    }
+
+    /**
+     * Get corrections endpoint arguments
+     *
+     * @return array Argument definitions.
+     */
+    private function get_corrections_args(): array {
+        return [
+            'code' => [
+                'required' => true,
+                'type'     => 'string',
+            ],
+            'framework' => [
+                'required'          => true,
+                'type'              => 'string',
+                'enum'              => $this->frameworks,
+                'sanitize_callback' => 'sanitize_key',
+            ],
+            'context' => [
+                'required' => false,
+                'type'     => 'string',
+                'enum'     => ['source', 'translated'],
+                'default'  => 'translated',
+            ],
+            'options' => [
+                'required' => false,
+                'type'     => 'object',
+                'default'  => [],
+            ],
+        ];
     }
 }

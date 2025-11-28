@@ -7,11 +7,24 @@ import { useState } from 'react';
 import { useEditorStore } from '@/store/editorStore';
 
 function Toolbar() {
-  const { editor, translateCode, isTranslating, reset } = useEditorStore();
-  const [showSettings, setShowSettings] = useState(false);
+  const {
+    editor,
+    translateCode,
+    isTranslating,
+    reset,
+    saveToBackend,
+    saveStatus,
+    loadHistory,
+    historyLoading,
+    fetchCorrections,
+    isFetchingCorrections,
+  } = useEditorStore();
 
-  const handleSave = () => {
-    // Save current state to localStorage
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const handleSaveLocal = () => {
+    // Save current state to localStorage as backup
     try {
       localStorage.setItem('wpbc_editor_state', JSON.stringify({
         sourceCode: editor.sourceCode,
@@ -20,16 +33,15 @@ function Toolbar() {
         targetFramework: editor.targetFramework,
         savedAt: new Date().toISOString(),
       }));
-      // Show brief success feedback
-      const btn = document.querySelector('[data-save-btn]') as HTMLButtonElement;
-      if (btn) {
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>';
-        setTimeout(() => { btn.innerHTML = originalText; }, 1500);
-      }
     } catch (e) {
-      console.error('Failed to save:', e);
+      console.error('Failed to save locally:', e);
     }
+  };
+
+  const handleSave = async () => {
+    // Save to both localStorage and backend
+    handleSaveLocal();
+    await saveToBackend();
   };
 
   const handleExport = () => {
@@ -41,6 +53,49 @@ function Toolbar() {
     a.download = `translated_${editor.targetFramework}_${Date.now()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleCheckIssues = () => {
+    fetchCorrections(false);
+  };
+
+  const handleAICheck = () => {
+    fetchCorrections(true);
+  };
+
+  const getSaveButtonContent = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return (
+          <>
+            <div className="spinner border-current w-4 h-4" />
+            <span className="sr-only">Saving...</span>
+          </>
+        );
+      case 'saved':
+        return (
+          <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'error':
+        return (
+          <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+            />
+          </svg>
+        );
+    }
   };
 
   return (
@@ -61,8 +116,15 @@ function Toolbar() {
         </div>
 
         <span className="text-xs px-2 py-1 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 rounded-full font-medium">
-          v{(window as any).wpbcData?.version || '3.1.0'}
+          v{(window as any).wpbcData?.version || '3.3.0'}
         </span>
+
+        {/* Dirty indicator */}
+        {editor.isDirty && (
+          <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300 rounded-full font-medium">
+            Unsaved
+          </span>
+        )}
       </div>
 
       {/* Right Side - Actions */}
@@ -93,22 +155,80 @@ function Toolbar() {
           )}
         </button>
 
-        {/* Save Button */}
+        {/* Check Issues Button */}
         <button
-          onClick={handleSave}
-          disabled={!editor.isDirty}
-          data-save-btn
-          className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Save to browser"
+          onClick={handleCheckIssues}
+          disabled={isFetchingCorrections || !editor.translatedCode}
+          className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          title="Check for issues"
+        >
+          {isFetchingCorrections ? (
+            <div className="spinner border-current w-4 h-4" />
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          )}
+          <span className="hidden sm:inline">Check</span>
+        </button>
+
+        {/* AI Analysis Button */}
+        <button
+          onClick={handleAICheck}
+          disabled={isFetchingCorrections || !editor.translatedCode}
+          className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          title="AI-powered analysis"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
             />
           </svg>
+          <span className="hidden sm:inline">AI</span>
+        </button>
+
+        <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
+
+        {/* Save Button */}
+        <button
+          onClick={handleSave}
+          disabled={saveStatus === 'saving' || (!editor.isDirty && saveStatus !== 'error')}
+          className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          title={saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Save failed - click to retry' : 'Save to server'}
+        >
+          {getSaveButtonContent()}
+        </button>
+
+        {/* History Button */}
+        <button
+          onClick={() => {
+            loadHistory();
+            setShowHistory(!showHistory);
+          }}
+          disabled={historyLoading}
+          className="btn btn-secondary disabled:opacity-50"
+          title="View history"
+        >
+          {historyLoading ? (
+            <div className="spinner border-current w-4 h-4" />
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          )}
         </button>
 
         {/* Export Button */}
@@ -116,6 +236,7 @@ function Toolbar() {
           onClick={handleExport}
           disabled={!editor.translatedCode}
           className="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Export translated code"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -126,6 +247,8 @@ function Toolbar() {
             />
           </svg>
         </button>
+
+        <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
 
         {/* Settings */}
         <button

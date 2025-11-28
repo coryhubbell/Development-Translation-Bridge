@@ -12,14 +12,38 @@ import type {
   TooltipData,
   UserPreferences,
 } from '@/types';
+import {
+  translationService,
+  persistenceService,
+  correctionService,
+  ApiError,
+  RateLimitError,
+} from '@/services';
+import type { TranslationSummary } from '@/services';
+
+// Notification types
+export interface Notification {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+  duration?: number;
+}
 
 interface EditorStoreState {
   // Editor State
   editor: EditorState;
 
+  // Persistence State
+  currentTranslationId: number | null;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  lastSavedAt: Date | null;
+  translationHistory: TranslationSummary[];
+  historyLoading: boolean;
+
   // Corrections
   corrections: CorrectionSuggestion[];
-  activeCorrections: string[]; // IDs of corrections being displayed
+  activeCorrections: string[];
+  correctionsSource: 'none' | 'rules' | 'ai' | 'both';
 
   // Tooltips
   tooltips: TooltipData[];
@@ -27,6 +51,9 @@ interface EditorStoreState {
 
   // User Preferences
   preferences: UserPreferences;
+
+  // Notifications
+  notifications: Notification[];
 
   // Loading States
   isLoading: boolean;
@@ -45,6 +72,8 @@ interface EditorStoreState {
   removeCorrection: (id: string) => void;
   clearCorrections: () => void;
   applyCorrection: (id: string) => void;
+  fetchCorrections: (aiEnabled?: boolean) => Promise<void>;
+  dismissCorrection: (id: string) => Promise<void>;
 
   // Tooltip Actions
   showTooltip: (tooltip: TooltipData) => void;
@@ -53,6 +82,15 @@ interface EditorStoreState {
 
   // Translation Actions
   translateCode: () => Promise<void>;
+
+  // Persistence Actions
+  saveToBackend: (name?: string) => Promise<void>;
+  loadFromBackend: (id: number) => Promise<void>;
+  loadHistory: () => Promise<void>;
+
+  // Notification Actions
+  showNotification: (type: Notification['type'], message: string, duration?: number) => void;
+  dismissNotification: (id: string) => void;
 
   // Preferences Actions
   updatePreferences: (preferences: Partial<UserPreferences>) => void;
@@ -86,17 +124,27 @@ const defaultPreferences: UserPreferences = {
   },
 };
 
+// Generate unique notification ID
+const generateNotificationId = () => `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
 export const useEditorStore = create<EditorStoreState>()(
   devtools(
     persist(
       (set, get) => ({
         // Initial State
         editor: defaultEditorState,
+        currentTranslationId: null,
+        saveStatus: 'idle',
+        lastSavedAt: null,
+        translationHistory: [],
+        historyLoading: false,
         corrections: [],
         activeCorrections: [],
+        correctionsSource: 'none',
         tooltips: [],
         activeTooltip: null,
         preferences: defaultPreferences,
+        notifications: [],
         isLoading: false,
         isTranslating: false,
         isFetchingCorrections: false,
@@ -143,6 +191,7 @@ export const useEditorStore = create<EditorStoreState>()(
           set({
             corrections: [],
             activeCorrections: [],
+            correctionsSource: 'none',
           }),
 
         applyCorrection: (id) => {
@@ -168,6 +217,53 @@ export const useEditorStore = create<EditorStoreState>()(
 
           // Remove the applied correction
           get().removeCorrection(id);
+          get().showNotification('success', 'Correction applied');
+        },
+
+        fetchCorrections: async (aiEnabled = false) => {
+          const { translatedCode, targetFramework } = get().editor;
+
+          if (!translatedCode.trim()) {
+            get().showNotification('warning', 'No code to analyze');
+            return;
+          }
+
+          set({ isFetchingCorrections: true });
+
+          try {
+            const result = aiEnabled
+              ? await correctionService.aiAnalyze(translatedCode, targetFramework)
+              : await correctionService.quickCheck(translatedCode, targetFramework);
+
+            set({
+              corrections: result.corrections,
+              correctionsSource: aiEnabled ? 'both' : 'rules',
+              isFetchingCorrections: false,
+            });
+
+            const { total, errors, warnings } = result.summary;
+            if (total > 0) {
+              get().showNotification(
+                errors > 0 ? 'warning' : 'info',
+                `Found ${total} issue${total !== 1 ? 's' : ''}: ${errors} error${errors !== 1 ? 's' : ''}, ${warnings} warning${warnings !== 1 ? 's' : ''}`
+              );
+            } else {
+              get().showNotification('success', 'No issues found');
+            }
+          } catch (error) {
+            set({ isFetchingCorrections: false });
+            console.error('Correction fetch failed:', error);
+            get().showNotification('error', 'Failed to analyze code');
+          }
+        },
+
+        dismissCorrection: async (id) => {
+          try {
+            await correctionService.dismissCorrection({ correction_id: id });
+            get().removeCorrection(id);
+          } catch (error) {
+            console.error('Dismiss correction failed:', error);
+          }
         },
 
         // Tooltip Actions
@@ -194,65 +290,155 @@ export const useEditorStore = create<EditorStoreState>()(
           const { sourceCode, sourceFramework, targetFramework } = get().editor;
 
           if (!sourceCode.trim()) {
-            alert('Please enter some code to translate');
+            get().showNotification('warning', 'Please enter some code to translate');
             return;
           }
 
           set({ isTranslating: true });
 
           try {
-            // Call WordPress REST API
-            const restUrl = (window as any).wpbcData?.restUrl || '/wp-json/wpbc/v2/';
-            const response = await fetch(`${restUrl}translate`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-WP-Nonce': (window as any).wpbcData?.nonce || '',
-              },
-              body: JSON.stringify({
-                source: sourceFramework,
-                target: targetFramework,
-                content: sourceCode,
-              }),
+            const response = await translationService.translate({
+              source: sourceFramework,
+              target: targetFramework,
+              content: sourceCode,
             });
-
-            // Get response text first
-            const responseText = await response.text();
-
-            // Check if response is JSON
-            let data;
-            try {
-              data = JSON.parse(responseText);
-            } catch (e) {
-              throw new Error(`Invalid JSON response from server. Got: ${responseText.substring(0, 200)}`);
-            }
-
-            if (!response.ok) {
-              throw new Error(data.message || data.error || `HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            if (!data.result && !data.translated_code) {
-              throw new Error('Translation succeeded but no result was returned');
-            }
 
             set((state) => ({
               editor: {
                 ...state.editor,
-                translatedCode: data.result || data.translated_code || '',
+                translatedCode: response.result,
                 lastSaved: new Date(),
+                isDirty: true,
               },
               isTranslating: false,
             }));
 
-            alert('Translation successful!');
+            get().showNotification('success', 'Translation successful!');
+
+            // Optionally trigger auto-analysis after translation
+            if (get().preferences.enableRealTimeCorrections) {
+              get().fetchCorrections(false);
+            }
           } catch (error) {
             console.error('Translation error:', error);
             set({ isTranslating: false });
 
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            alert(`Translation failed:\n\n${errorMessage}\n\nCheck browser console (F12) for details.`);
+            if (error instanceof RateLimitError) {
+              get().showNotification(
+                'warning',
+                `Rate limit exceeded. Please wait ${error.retryAfter} seconds.`
+              );
+            } else if (error instanceof ApiError) {
+              get().showNotification('error', `Translation failed: ${error.message}`);
+            } else {
+              get().showNotification(
+                'error',
+                `Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+              );
+            }
           }
         },
+
+        // Persistence Actions
+        saveToBackend: async (name) => {
+          const { editor } = get();
+
+          if (!editor.sourceCode.trim() && !editor.translatedCode.trim()) {
+            get().showNotification('warning', 'Nothing to save');
+            return;
+          }
+
+          set({ saveStatus: 'saving' });
+
+          try {
+            const result = await persistenceService.saveTranslation({
+              source_framework: editor.sourceFramework,
+              target_framework: editor.targetFramework,
+              source_code: editor.sourceCode,
+              translated_code: editor.translatedCode,
+              name: name || `Translation ${new Date().toLocaleDateString()}`,
+            });
+
+            set({
+              saveStatus: 'saved',
+              lastSavedAt: new Date(),
+              currentTranslationId: result.translation_id,
+              editor: { ...editor, isDirty: false },
+            });
+
+            get().showNotification('success', 'Saved successfully');
+          } catch (error) {
+            console.error('Save failed:', error);
+            set({ saveStatus: 'error' });
+            get().showNotification('error', 'Failed to save');
+          }
+        },
+
+        loadFromBackend: async (id) => {
+          set({ isLoading: true });
+
+          try {
+            const translation = await persistenceService.loadTranslation(id);
+
+            set((state) => ({
+              editor: {
+                ...state.editor,
+                sourceFramework: translation.source_framework,
+                targetFramework: translation.target_framework,
+                sourceCode: translation.source_code,
+                translatedCode: translation.translated_code,
+                isDirty: false,
+              },
+              currentTranslationId: translation.id,
+              isLoading: false,
+            }));
+
+            get().showNotification('success', 'Translation loaded');
+          } catch (error) {
+            console.error('Load failed:', error);
+            set({ isLoading: false });
+            get().showNotification('error', 'Failed to load translation');
+          }
+        },
+
+        loadHistory: async () => {
+          set({ historyLoading: true });
+
+          try {
+            const result = await persistenceService.getHistory({ per_page: 50 });
+
+            set({
+              translationHistory: result.translations,
+              historyLoading: false,
+            });
+          } catch (error) {
+            console.error('Load history failed:', error);
+            set({ historyLoading: false });
+            get().showNotification('error', 'Failed to load history');
+          }
+        },
+
+        // Notification Actions
+        showNotification: (type, message, duration = 5000) => {
+          const id = generateNotificationId();
+          const notification: Notification = { id, type, message, duration };
+
+          set((state) => ({
+            notifications: [...state.notifications, notification],
+          }));
+
+          // Auto-dismiss after duration
+          if (duration > 0) {
+            setTimeout(() => {
+              get().dismissNotification(id);
+            }, duration);
+          }
+        },
+
+        dismissNotification: (id) =>
+          set((state) => ({
+            notifications: state.notifications.filter((n) => n.id !== id),
+          })),
 
         // Preferences Actions
         updatePreferences: (preferences) =>
@@ -264,10 +450,15 @@ export const useEditorStore = create<EditorStoreState>()(
         reset: () =>
           set({
             editor: defaultEditorState,
+            currentTranslationId: null,
+            saveStatus: 'idle',
+            lastSavedAt: null,
             corrections: [],
             activeCorrections: [],
+            correctionsSource: 'none',
             tooltips: [],
             activeTooltip: null,
+            notifications: [],
             isLoading: false,
             isTranslating: false,
             isFetchingCorrections: false,

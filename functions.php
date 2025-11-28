@@ -6,7 +6,7 @@
  * admin interface integration.
  *
  * @package    WordPress_Bootstrap_Claude
- * @version    3.1.0
+ * @version    3.3.0
  * @license    GPL-2.0+
  */
 
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('WPBC_THEME_VERSION', '3.1.0');
+define('WPBC_THEME_VERSION', '3.3.0');
 define('WPBC_ROOT', get_template_directory());
 define('WPBC_THEME_DIR', get_template_directory());
 define('WPBC_THEME_URL', get_template_directory_uri());
@@ -151,6 +151,26 @@ function wpbc_init_translation_bridge() {
         require_once WPBC_INCLUDES_DIR . '/class-wpbc-claude-api.php';
         require_once WPBC_INCLUDES_DIR . '/class-wpbc-auth.php';
         require_once WPBC_INCLUDES_DIR . '/class-wpbc-rate-limiter.php';
+    }
+
+    // Load config class
+    if (file_exists(WPBC_INCLUDES_DIR . '/class-wpbc-config.php')) {
+        require_once WPBC_INCLUDES_DIR . '/class-wpbc-config.php';
+    }
+
+    // Load encryption class
+    if (file_exists(WPBC_INCLUDES_DIR . '/class-wpbc-encryption.php')) {
+        require_once WPBC_INCLUDES_DIR . '/class-wpbc-encryption.php';
+    }
+
+    // Load persistence class
+    if (file_exists(WPBC_INCLUDES_DIR . '/class-wpbc-persistence.php')) {
+        require_once WPBC_INCLUDES_DIR . '/class-wpbc-persistence.php';
+    }
+
+    // Load corrections class
+    if (file_exists(WPBC_INCLUDES_DIR . '/class-wpbc-corrections.php')) {
+        require_once WPBC_INCLUDES_DIR . '/class-wpbc-corrections.php';
     }
 
     // Load API v2
@@ -581,3 +601,59 @@ function wpbc_allowed_html($tags, $context) {
     return $tags;
 }
 add_filter('wp_kses_allowed_html', 'wpbc_allowed_html', 10, 2);
+
+/**
+ * Theme Activation - Install database tables
+ *
+ * Creates necessary database tables for translation persistence
+ * and correction tracking when theme is activated.
+ */
+function wpbc_theme_activation() {
+    // Load required classes if not already loaded
+    if (!class_exists('WPBC_Persistence')) {
+        require_once get_template_directory() . '/includes/class-wpbc-config.php';
+        require_once get_template_directory() . '/includes/class-wpbc-logger.php';
+        require_once get_template_directory() . '/includes/class-wpbc-persistence.php';
+    }
+
+    // Install database tables
+    WPBC_Persistence::install();
+
+    // Log activation
+    $logger = new WPBC_Logger();
+    $logger->info('WPBC theme activated', ['version' => WPBC_THEME_VERSION]);
+}
+add_action('after_switch_theme', 'wpbc_theme_activation');
+
+/**
+ * Check and install tables if needed
+ *
+ * This runs on admin_init to ensure tables exist even if
+ * the theme was activated before this version.
+ */
+function wpbc_maybe_install_tables() {
+    // Only run on admin
+    if (!is_admin()) {
+        return;
+    }
+
+    // Check if we need to install
+    $installed_version = get_option('wpbc_db_version', '0');
+    $current_version = '1.0.0';
+
+    if (version_compare($installed_version, $current_version, '<')) {
+        // Load required classes
+        if (!class_exists('WPBC_Persistence')) {
+            if (file_exists(WPBC_INCLUDES_DIR . '/class-wpbc-persistence.php')) {
+                require_once WPBC_INCLUDES_DIR . '/class-wpbc-config.php';
+                require_once WPBC_INCLUDES_DIR . '/class-wpbc-logger.php';
+                require_once WPBC_INCLUDES_DIR . '/class-wpbc-persistence.php';
+            }
+        }
+
+        if (class_exists('WPBC_Persistence')) {
+            WPBC_Persistence::install();
+        }
+    }
+}
+add_action('admin_init', 'wpbc_maybe_install_tables');
