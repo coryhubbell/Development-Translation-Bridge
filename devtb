@@ -8,7 +8,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    3.1.0
+ * @version    3.3.0
  * @author     DevelopmentTranslation Bridge
  * @license    GPL-2.0+
  */
@@ -19,7 +19,7 @@ if (php_sapi_name() !== 'cli') {
 }
 
 // Define constants
-define('DEVTB_VERSION', '3.1.0');
+define('DEVTB_VERSION', '3.3.0');
 define('DEVTB_ROOT', __DIR__);
 define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes');
 define('DEVTB_TRANSLATION_BRIDGE', DEVTB_ROOT . '/translation-bridge');

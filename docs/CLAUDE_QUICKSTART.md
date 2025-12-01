@@ -381,7 +381,7 @@ DEVTB_Bootstrap::button('primary', 'lg');
 
 ## 🔗 Quick Links
 
-- **Framework Repo:** https://github.com/coryhubbell/wordpress-boostrap-claude
+- **Framework Repo:** https://github.com/coryhubbell/development-translation-bridge
 - **Claude AI:** https://claude.ai
 - **Bootstrap Docs:** https://getbootstrap.com/docs/5.3/
 - **WordPress Codex:** https://developer.wordpress.org/

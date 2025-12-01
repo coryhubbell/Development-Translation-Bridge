@@ -16,7 +16,7 @@ define('DEVTB_ROOT', dirname(__DIR__));
 define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes');
 define('DEVTB_TRANSLATION_BRIDGE', DEVTB_ROOT . '/translation-bridge');
 define('DEVTB_TRANSLATION_BRIDGE_DIR', DEVTB_TRANSLATION_BRIDGE);
-define('DEVTB_VERSION', '3.2.0');
+define('DEVTB_VERSION', '3.3.0');
 
 // Load Composer autoloader
 $autoloader = DEVTB_ROOT . '/vendor/autoload.php';

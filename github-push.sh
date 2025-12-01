@@ -43,7 +43,7 @@ GEAR="⚙️"
 SPARKLES="✨"
 
 # Configuration
-REPO_URL="https://github.com/coryhubbell/wordpress-boostrap-claude.git"
+REPO_URL="https://github.com/coryhubbell/development-translation-bridge.git"
 DEFAULT_BRANCH="main"
 COMMIT_MESSAGE="🚀 Release: DevelopmentTranslation Bridge 3.0 - Translation Bridge™
 
@@ -405,7 +405,7 @@ main() {
         echo "Next steps:"
         echo ""
         echo "  1. Visit your repository:"
-        echo "     ${CYAN}https://github.com/coryhubbell/wordpress-boostrap-claude${NC}"
+        echo "     ${CYAN}https://github.com/coryhubbell/development-translation-bridge${NC}"
         echo ""
         echo "  2. Create a release:"
         echo "     - Go to Releases → New Release"
@@ -430,7 +430,7 @@ main() {
         echo ""
         echo "  2. Create repository on GitHub first:"
         echo "     - Go to https://github.com/new"
-        echo "     - Name: wordpress-boostrap-claude"
+        echo "     - Name: development-translation-bridge"
         echo "     - Don't initialize with README"
         echo ""
         echo "  3. Try manual push:"

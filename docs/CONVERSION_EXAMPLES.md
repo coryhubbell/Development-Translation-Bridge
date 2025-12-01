@@ -534,8 +534,8 @@ Real examples of converting components between the 5 supported frameworks.
 
 ```bash
 # Clone these examples
-git clone https://github.com/coryhubbell/devtb-examples
-cd devtb-examples
+git clone https://github.com/coryhubbell/development-translation-bridge-examples
+cd development-translation-bridge-examples
 
 # Try conversion
 devtb translate bootstrap divi examples/hero.html

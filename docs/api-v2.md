@@ -801,8 +801,8 @@ curl -X POST https://yoursite.com/wp-json/devtb/v2/validate \
 ## Support
 
 For API support and questions:
-- **GitHub Issues:** https://github.com/coryhubbell/wordpress-boostrap-claude/issues
-- **Documentation:** https://github.com/coryhubbell/wordpress-boostrap-claude
+- **GitHub Issues:** https://github.com/coryhubbell/development-translation-bridge/issues
+- **Documentation:** https://github.com/coryhubbell/development-translation-bridge
 
 ---
 

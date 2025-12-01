@@ -526,7 +526,7 @@ For each new framework:
 - **Documentation:** `/docs` directory
 - **CLI Guide:** `CLI_GUIDE.md`
 - **Installation:** `INSTALLATION.md`
-- **GitHub:** https://github.com/coryhubbell/wordpress-boostrap-claude
+- **GitHub:** https://github.com/coryhubbell/development-translation-bridge
 
 ---
 

@@ -49,14 +49,14 @@ cd development-translation-bridge
 
 1. **Download the framework:**
    ```bash
-   wget https://github.com/coryhubbell/wordpress-boostrap-claude/archive/main.zip
+   wget https://github.com/coryhubbell/development-translation-bridge/archive/main.zip
    ```
 
 2. **Extract to themes directory:**
    ```bash
    cd /path/to/wordpress/wp-content/themes/
    unzip main.zip
-   mv wordpress-boostrap-claude-main wordpress-boostrap-claude
+   mv development-translation-bridge-main development-translation-bridge
    ```
 
 3. **Activate the theme:**
@@ -71,10 +71,10 @@ cd development-translation-bridge
 cd /path/to/wordpress/wp-content/themes/
 
 # Clone the repository
-git clone https://github.com/coryhubbell/wordpress-boostrap-claude.git
+git clone https://github.com/coryhubbell/development-translation-bridge.git
 
 # Enter directory
-cd wordpress-boostrap-claude
+cd development-translation-bridge
 
 # Install dependencies (optional)
 npm install
@@ -198,7 +198,7 @@ new DEVTB_Team_Members();
 ### File Structure
 
 ```
-wordpress-boostrap-claude/
+development-translation-bridge/
 ├── 📁 ai-patterns/      # Your Claude-generated patterns
 ├── 📁 core/            # Framework core (don't modify)
 ├── 📁 templates/       # Template files
@@ -229,7 +229,7 @@ wordpress-boostrap-claude/
 ### Getting Help
 
 - 📖 Read the other guides in `/docs`
-- 🐛 [Report issues on GitHub](https://github.com/coryhubbell/wordpress-boostrap-claude/issues)
+- 🐛 [Report issues on GitHub](https://github.com/coryhubbell/development-translation-bridge/issues)
 - 💬 Ask Claude for clarification
 
 ---

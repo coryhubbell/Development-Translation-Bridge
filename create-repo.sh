@@ -187,7 +187,7 @@ Features:
 
 Built for developers embracing AI-powered development."
 
-git remote add origin https://github.com/coryhubbell/wordpress-boostrap-claude.git
+git remote add origin https://github.com/coryhubbell/development-translation-bridge.git
 git branch -M main
 
 echo ""
