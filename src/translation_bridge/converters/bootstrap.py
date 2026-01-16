@@ -2,6 +2,7 @@
 Translation Bridge v4 - Bootstrap HTML Converter.
 
 Converts Elementor JSON (and other page builder formats) to clean Bootstrap 5 HTML.
+Preserves styling, typography, flexbox layouts, and responsive settings.
 """
 
 from typing import Any, Dict, List, Optional
@@ -89,11 +90,13 @@ class BootstrapConverter:
             '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
             "  <title>Converted Page</title>",
             '  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">',
-            '  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">',
+            '  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">',
             "  <style>",
-            "    .elementor-section { padding: 60px 0; }",
-            "    .elementor-icon-box { text-align: center; padding: 20px; }",
-            "    .elementor-icon-box i { font-size: 3rem; margin-bottom: 1rem; }",
+            "    * { box-sizing: border-box; }",
+            "    body { margin: 0; font-family: Arial, sans-serif; }",
+            "    .btn-grow:hover { transform: scale(1.05); }",
+            "    .icon-box-horizontal { display: flex; align-items: center; gap: 10px; }",
+            "    .icon-box-horizontal .icon-wrapper { flex-shrink: 0; }",
             "  </style>",
             "</head>",
             "<body>",
@@ -167,67 +170,114 @@ class BootstrapConverter:
         settings = element.get("settings", {})
         children = element.get("elements", [])
         element_id = element.get("id", "")
+        is_inner = element.get("isInner", False)
         indent = self.indent_str * depth
-
-        # Determine section classes
-        classes = ["elementor-section"]
-        container_class = "container"
-
-        # Check content width
-        content_width = settings.get("content_width", "boxed")
-        if content_width == "full":
-            container_class = "container-fluid"
-            classes.append("w-100")
-
-        # Background handling
-        bg_class = self._get_background_class(settings)
-        if bg_class:
-            classes.append(bg_class)
-
-        # Text color
-        text_color = self._get_text_color_class(settings)
-        if text_color:
-            classes.append(text_color)
 
         # Build style attribute
         style_parts = []
-        bg_color = settings.get("background_color", "")
-        if bg_color and not bg_color.startswith("globals"):
-            style_parts.append(f"background-color: {bg_color}")
+
+        # Background handling - gradient or solid
+        bg_type = settings.get("background_background", "")
+        if bg_type == "gradient":
+            color_a = settings.get("background_color", "#000000")
+            color_b = settings.get("background_color_b", "#16213e")
+            angle = settings.get("background_gradient_angle", {})
+            angle_val = angle.get("size", 135) if isinstance(angle, dict) else 135
+            style_parts.append(f"background: linear-gradient({angle_val}deg, {color_a} 0%, {color_b} 100%)")
+        elif settings.get("background_color"):
+            bg_color = settings.get("background_color", "")
+            if bg_color and not bg_color.startswith("globals"):
+                style_parts.append(f"background-color: {bg_color}")
+
+        # Min-height
+        min_height = settings.get("min_height", {})
+        if isinstance(min_height, dict) and min_height.get("size"):
+            unit = min_height.get("unit", "px")
+            style_parts.append(f"min-height: {min_height['size']}{unit}")
+
+        # Flexbox settings
+        flex_dir = settings.get("flex_direction", "")
+        flex_justify = settings.get("flex_justify_content", "")
+        flex_align = settings.get("flex_align_items", "")
+        flex_gap = settings.get("flex_gap", {})
+
+        if flex_dir or flex_justify or flex_align:
+            style_parts.append("display: flex")
+            if flex_dir:
+                style_parts.append(f"flex-direction: {flex_dir}")
+            if flex_justify:
+                style_parts.append(f"justify-content: {flex_justify}")
+            if flex_align:
+                style_parts.append(f"align-items: {flex_align}")
+            if isinstance(flex_gap, dict) and flex_gap.get("size"):
+                style_parts.append(f"gap: {flex_gap['size']}{flex_gap.get('unit', 'px')}")
+            if settings.get("flex_wrap"):
+                style_parts.append(f"flex-wrap: {settings['flex_wrap']}")
 
         # Padding
         padding = settings.get("padding", {})
         if isinstance(padding, dict):
+            p_parts = []
             if padding.get("top"):
-                style_parts.append(f"padding-top: {padding['top']}{padding.get('unit', 'px')}")
+                p_parts.append(f"{padding['top']}{padding.get('unit', 'px')}")
+            else:
+                p_parts.append("0")
+            if padding.get("right"):
+                p_parts.append(f"{padding['right']}{padding.get('unit', 'px')}")
+            else:
+                p_parts.append("0")
             if padding.get("bottom"):
-                style_parts.append(f"padding-bottom: {padding['bottom']}{padding.get('unit', 'px')}")
+                p_parts.append(f"{padding['bottom']}{padding.get('unit', 'px')}")
+            else:
+                p_parts.append("0")
+            if padding.get("left"):
+                p_parts.append(f"{padding['left']}{padding.get('unit', 'px')}")
+            else:
+                p_parts.append("0")
+            if any(p != "0" for p in p_parts):
+                style_parts.append(f"padding: {' '.join(p_parts)}")
+
+        # Margin
+        margin = settings.get("_margin", {})
+        if isinstance(margin, dict):
+            m_parts = []
+            if margin.get("top"):
+                m_parts.append(f"{margin['top']}{margin.get('unit', 'px')}")
+            else:
+                m_parts.append("0")
+            if margin.get("right"):
+                m_parts.append(f"{margin['right']}{margin.get('unit', 'px')}")
+            else:
+                m_parts.append("0")
+            if margin.get("bottom"):
+                m_parts.append(f"{margin['bottom']}{margin.get('unit', 'px')}")
+            else:
+                m_parts.append("0")
+            if margin.get("left"):
+                m_parts.append(f"{margin['left']}{margin.get('unit', 'px')}")
+            else:
+                m_parts.append("0")
+            if any(m != "0" for m in m_parts):
+                style_parts.append(f"margin: {' '.join(m_parts)}")
+
+        # Boxed width
+        boxed_width = settings.get("boxed_width", {})
+        if isinstance(boxed_width, dict) and boxed_width.get("size"):
+            style_parts.append(f"max-width: {boxed_width['size']}{boxed_width.get('unit', 'px')}")
+            style_parts.append("width: 100%")
 
         style_attr = f' style="{"; ".join(style_parts)}"' if style_parts else ""
-        class_attr = f' class="{" ".join(classes)}"'
         id_attr = f' id="{element_id}"' if element_id and self.include_metadata else ""
-        data_attr = f' data-elementor-id="{element_id}"' if element_id and self.include_metadata else ""
 
         # Convert children
-        child_html = ""
-        if children:
-            # Check if children are columns - if so, wrap in row
-            has_columns = any(c.get("elType") == "column" for c in children)
-            if has_columns:
-                col_html = "\n".join(
-                    self._convert_element(child, depth + 2) for child in children
-                )
-                child_html = f"{indent}    <div class=\"row\">\n{col_html}\n{indent}    </div>"
-            else:
-                child_html = "\n".join(
-                    self._convert_element(child, depth + 2) for child in children
-                )
+        child_html = "\n".join(
+            self._convert_element(child, depth + 1) for child in children
+        )
 
-        return f"""{indent}<section{id_attr}{class_attr}{style_attr}{data_attr}>
-{indent}  <div class="{container_class}">
+        tag = "div" if is_inner else "section"
+        return f"""{indent}<{tag}{id_attr}{style_attr}>
 {child_html}
-{indent}  </div>
-{indent}</section>"""
+{indent}</{tag}>"""
 
     def _convert_column(self, element: Dict[str, Any], depth: int = 0) -> str:
         """Convert a column to Bootstrap HTML."""
@@ -265,7 +315,7 @@ class BootstrapConverter:
         return self._convert_generic_widget(element, depth)
 
     def _convert_heading(self, element: Dict[str, Any], depth: int = 0) -> str:
-        """Convert heading widget."""
+        """Convert heading widget with full typography support."""
         settings = element.get("settings", {})
         indent = self.indent_str * depth
 
@@ -273,17 +323,48 @@ class BootstrapConverter:
         tag = settings.get("header_size", "h2")
         align = settings.get("align", "")
 
-        classes = []
+        style_parts = []
+
+        # Alignment
         if align:
-            classes.append(f"text-{align}")
+            style_parts.append(f"text-align: {align}")
 
         # Color
         color = settings.get("title_color", "")
-        style = f' style="color: {color}"' if color and not color.startswith("globals") else ""
+        if color and not color.startswith("globals"):
+            style_parts.append(f"color: {color}")
 
-        class_attr = f' class="{" ".join(classes)}"' if classes else ""
+        # Typography
+        font_family = settings.get("typography_font_family", "")
+        if font_family:
+            style_parts.append(f"font-family: {font_family}, sans-serif")
 
-        return f"{indent}<{tag}{class_attr}{style}>{escape(title)}</{tag}>"
+        font_size = settings.get("typography_font_size", {})
+        if isinstance(font_size, dict) and font_size.get("size"):
+            style_parts.append(f"font-size: {font_size['size']}{font_size.get('unit', 'px')}")
+
+        font_weight = settings.get("typography_font_weight", "")
+        if font_weight:
+            style_parts.append(f"font-weight: {font_weight}")
+
+        line_height = settings.get("typography_line_height", {})
+        if isinstance(line_height, dict) and line_height.get("size"):
+            style_parts.append(f"line-height: {line_height['size']}{line_height.get('unit', 'em')}")
+
+        # Margin
+        margin = settings.get("_margin", {})
+        if isinstance(margin, dict):
+            m_parts = []
+            m_parts.append(f"{margin.get('top', '0')}{margin.get('unit', 'px')}")
+            m_parts.append(f"{margin.get('right', '0')}{margin.get('unit', 'px')}")
+            m_parts.append(f"{margin.get('bottom', '0')}{margin.get('unit', 'px')}")
+            m_parts.append(f"{margin.get('left', '0')}{margin.get('unit', 'px')}")
+            if any(m != "0px" for m in m_parts):
+                style_parts.append(f"margin: {' '.join(m_parts)}")
+
+        style_attr = f' style="{"; ".join(style_parts)}"' if style_parts else ""
+
+        return f"{indent}<{tag}{style_attr}>{escape(title)}</{tag}>"
 
     def _convert_text_editor(self, element: Dict[str, Any], depth: int = 0) -> str:
         """Convert text-editor widget (preserves HTML content)."""
@@ -293,43 +374,100 @@ class BootstrapConverter:
         content = settings.get("editor", "")
         align = settings.get("align", "")
 
-        classes = []
+        style_parts = []
         if align:
-            classes.append(f"text-{align}")
+            style_parts.append(f"text-align: {align}")
 
-        class_attr = f' class="{" ".join(classes)}"' if classes else ""
+        # Margin
+        margin = settings.get("_margin", {})
+        if isinstance(margin, dict):
+            m_parts = []
+            m_parts.append(f"{margin.get('top', '0')}{margin.get('unit', 'px')}")
+            m_parts.append(f"{margin.get('right', '0')}{margin.get('unit', 'px')}")
+            m_parts.append(f"{margin.get('bottom', '0')}{margin.get('unit', 'px')}")
+            m_parts.append(f"{margin.get('left', '0')}{margin.get('unit', 'px')}")
+            if any(m != "0px" for m in m_parts):
+                style_parts.append(f"margin: {' '.join(m_parts)}")
+
+        style_attr = f' style="{"; ".join(style_parts)}"' if style_parts else ""
 
         # Content is already HTML, don't escape
-        return f"{indent}<div{class_attr}>{content}</div>"
+        return f"{indent}<div{style_attr}>{content}</div>"
 
     def _convert_button(self, element: Dict[str, Any], depth: int = 0) -> str:
-        """Convert button widget."""
+        """Convert button widget with full styling support."""
         settings = element.get("settings", {})
         indent = self.indent_str * depth
 
         text = settings.get("text", "Click Here")
         link = settings.get("link", {})
         url = link.get("url", "#") if isinstance(link, dict) else "#"
-        size = settings.get("size", "md")
-        align = settings.get("align", "")
-        button_type = settings.get("button_type", "primary")
 
-        # Map size to Bootstrap
-        size_map = {"xs": "sm", "sm": "sm", "md": "", "lg": "lg", "xl": "lg"}
-        btn_size = size_map.get(size, "")
+        style_parts = []
 
-        classes = ["btn", f"btn-{button_type}"]
-        if btn_size:
-            classes.append(f"btn-{btn_size}")
+        # Background color
+        bg_color = settings.get("background_color", "")
+        if bg_color and bg_color != "transparent":
+            style_parts.append(f"background-color: {bg_color}")
+        elif bg_color == "transparent":
+            style_parts.append("background-color: transparent")
 
-        wrapper_class = f' class="text-{align}"' if align else ""
-        btn_class = " ".join(classes)
+        # Text color
+        text_color = settings.get("button_text_color", "#ffffff")
+        if text_color:
+            style_parts.append(f"color: {text_color}")
 
-        button_html = f'<a href="{escape(url)}" class="{btn_class}">{escape(text)}</a>'
+        # Border
+        border_type = settings.get("border_border", "")
+        if border_type == "solid":
+            border_width = settings.get("border_width", {})
+            border_color = settings.get("border_color", "")
+            if isinstance(border_width, dict):
+                bw = border_width.get("top", "1")
+                style_parts.append(f"border: {bw}px solid {border_color}")
+            else:
+                style_parts.append(f"border: 2px solid {border_color}")
 
-        if align:
-            return f"{indent}<div{wrapper_class}>{button_html}</div>"
-        return f"{indent}{button_html}"
+        # Border radius
+        border_radius = settings.get("border_radius", {})
+        if isinstance(border_radius, dict) and border_radius.get("top"):
+            br = border_radius.get("top", "0")
+            unit = border_radius.get("unit", "px")
+            style_parts.append(f"border-radius: {br}{unit}")
+
+        # Padding
+        btn_padding = settings.get("button_padding", {})
+        if isinstance(btn_padding, dict):
+            p_parts = []
+            p_parts.append(f"{btn_padding.get('top', '12')}{btn_padding.get('unit', 'px')}")
+            p_parts.append(f"{btn_padding.get('right', '24')}{btn_padding.get('unit', 'px')}")
+            p_parts.append(f"{btn_padding.get('bottom', '12')}{btn_padding.get('unit', 'px')}")
+            p_parts.append(f"{btn_padding.get('left', '24')}{btn_padding.get('unit', 'px')}")
+            style_parts.append(f"padding: {' '.join(p_parts)}")
+
+        # Typography
+        font_weight = settings.get("typography_font_weight", "")
+        if font_weight:
+            style_parts.append(f"font-weight: {font_weight}")
+
+        font_size = settings.get("typography_font_size", {})
+        if isinstance(font_size, dict) and font_size.get("size"):
+            style_parts.append(f"font-size: {font_size['size']}{font_size.get('unit', 'px')}")
+
+        # Common button styles
+        style_parts.append("text-decoration: none")
+        style_parts.append("display: inline-block")
+        style_parts.append("cursor: pointer")
+        style_parts.append("transition: all 0.3s ease")
+
+        # Hover animation class
+        hover_class = ""
+        if settings.get("hover_animation") == "grow":
+            hover_class = " btn-grow"
+
+        style_attr = f' style="{"; ".join(style_parts)}"'
+
+        return f'{indent}<a href="{escape(url)}" class="btn{hover_class}"{style_attr}>{escape(text)}</a>'
 
     def _convert_image(self, element: Dict[str, Any], depth: int = 0) -> str:
         """Convert image widget."""
@@ -350,25 +488,63 @@ class BootstrapConverter:
         return f'{indent}<img src="{escape(url)}" alt="{escape(alt)}" class="{class_attr}">'
 
     def _convert_icon_box(self, element: Dict[str, Any], depth: int = 0) -> str:
-        """Convert icon-box widget."""
+        """Convert icon-box widget with position and styling support."""
         settings = element.get("settings", {})
         indent = self.indent_str * depth
 
         title = settings.get("title_text", "")
         description = settings.get("description_text", "")
+        position = settings.get("position", "top")  # top, left, right
+
+        # Icon settings
         icon = settings.get("selected_icon", {})
-        icon_value = icon.get("value", "bi-star") if isinstance(icon, dict) else "bi-star"
+        icon_value = icon.get("value", "fas fa-star") if isinstance(icon, dict) else "fas fa-star"
 
-        # Convert FontAwesome to Bootstrap Icons if needed
-        if icon_value.startswith("fa"):
-            icon_value = "bi-star"  # Fallback
-        elif not icon_value.startswith("bi-"):
-            icon_value = f"bi-{icon_value}"
+        # Icon color
+        icon_color = settings.get("primary_color", "#e94560")
 
-        return f"""{indent}<div class="elementor-icon-box text-center p-4">
-{indent}  <i class="{icon_value} text-primary" style="font-size: 3rem;"></i>
-{indent}  <h4 class="mt-3">{escape(title)}</h4>
-{indent}  <p class="text-muted">{escape(description)}</p>
+        # Icon size
+        icon_size = settings.get("icon_size", {})
+        icon_size_val = icon_size.get("size", 20) if isinstance(icon_size, dict) else 20
+
+        # Title color and typography
+        title_color = settings.get("title_color", "#ffffff")
+        title_font_size = settings.get("title_typography_font_size", {})
+        title_size_val = title_font_size.get("size", 14) if isinstance(title_font_size, dict) else 14
+        title_font_weight = settings.get("title_typography_font_weight", "500")
+
+        # Build icon style
+        icon_style = f"color: {icon_color}; font-size: {icon_size_val}px"
+
+        # Build title style
+        title_style = f"color: {title_color}; font-size: {title_size_val}px; font-weight: {title_font_weight}; margin: 0"
+
+        if position == "left":
+            # Horizontal layout with icon on left
+            return f"""{indent}<div class="icon-box-horizontal">
+{indent}  <div class="icon-wrapper">
+{indent}    <i class="{icon_value}" style="{icon_style}"></i>
+{indent}  </div>
+{indent}  <div class="icon-box-content">
+{indent}    <h6 style="{title_style}">{escape(title)}</h6>
+{indent}  </div>
+{indent}</div>"""
+        elif position == "right":
+            # Horizontal layout with icon on right
+            return f"""{indent}<div class="icon-box-horizontal">
+{indent}  <div class="icon-box-content">
+{indent}    <h6 style="{title_style}">{escape(title)}</h6>
+{indent}  </div>
+{indent}  <div class="icon-wrapper">
+{indent}    <i class="{icon_value}" style="{icon_style}"></i>
+{indent}  </div>
+{indent}</div>"""
+        else:
+            # Vertical layout (top - default)
+            desc_html = f'\n{indent}  <p class="text-muted">{escape(description)}</p>' if description else ""
+            return f"""{indent}<div class="icon-box-vertical text-center">
+{indent}  <i class="{icon_value}" style="{icon_style}; margin-bottom: 10px;"></i>
+{indent}  <h6 style="{title_style}">{escape(title)}</h6>{desc_html}
 {indent}</div>"""
 
     def _convert_image_box(self, element: Dict[str, Any], depth: int = 0) -> str:
