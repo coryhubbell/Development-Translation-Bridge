@@ -4,13 +4,15 @@ Translation Bridge v4 CLI - JSON-native transform commands.
 
 Commands:
     transform       Transform a single file between frameworks
-    transform-site  Transform all files in a directory
+    transform-site  Transform all files in a directory or site export
     analyze         Analyze page builder content
+    analyze-site    Analyze a complete site export
 
 Usage:
     devtb transform <source> <target> <file> [options]
     devtb transform-site <source> <target> <directory> [options]
     devtb analyze <framework> <file> [options]
+    devtb analyze-site <framework> <path> [options]
 """
 
 import argparse
@@ -23,6 +25,7 @@ from . import __version__
 from .transforms.core import TransformEngine, ZoneType
 from .transforms.registry import TransformRegistry, ParserRegistry
 from .parsers.elementor import ElementorParser
+from .parsers.elementor_site import ElementorSiteParser, ElementorSite
 
 
 # ANSI color codes
@@ -178,20 +181,192 @@ def cmd_transform_site(args: argparse.Namespace) -> int:
     """Handle the transform-site command."""
     source = args.source.lower()
     target = args.target.lower()
-    input_dir = Path(args.directory)
+    input_path = Path(args.directory)
 
-    if not input_dir.exists():
-        print_error(f"Directory not found: {input_dir}")
-        return 1
-
-    if not input_dir.is_dir():
-        print_error(f"Not a directory: {input_dir}")
+    if not input_path.exists():
+        print_error(f"Path not found: {input_path}")
         return 1
 
     print_header(f"Translation Bridge v{__version__} - Transform Site")
     print_info(f"Source: {source}")
     print_info(f"Target: {target}")
-    print_info(f"Directory: {input_dir}")
+    print_info(f"Input: {input_path}")
+
+    # Detect export type
+    is_zip = input_path.suffix.lower() == ".zip"
+    is_export_kit = _is_export_kit(input_path) if input_path.is_dir() else False
+
+    # Create output directory
+    output_dir = Path(args.output_dir) if args.output_dir else input_path.parent / f"converted-{target}"
+
+    if is_zip or is_export_kit:
+        # Handle full site export
+        return _transform_site_export(
+            source, target, input_path, output_dir,
+            dry_run=args.dry_run, debug=args.debug
+        )
+    else:
+        # Handle simple directory with JSON files (legacy mode)
+        return _transform_site_directory(
+            source, target, input_path, output_dir,
+            dry_run=args.dry_run, debug=args.debug
+        )
+
+
+def _is_export_kit(dir_path: Path) -> bool:
+    """Check if directory is an Elementor Export Kit structure."""
+    # Look for characteristic files
+    markers = [
+        "content.json",
+        "site-settings.json",
+        "settings.json",
+        "manifest.json",
+    ]
+    for marker in markers:
+        if (dir_path / marker).exists():
+            return True
+
+    # Check for templates directory
+    if (dir_path / "templates").exists():
+        return True
+
+    return False
+
+
+def _transform_site_export(
+    source: str,
+    target: str,
+    input_path: Path,
+    output_dir: Path,
+    dry_run: bool = False,
+    debug: bool = False
+) -> int:
+    """Transform a complete site export (zip or directory)."""
+    print_info("Detected site export format")
+
+    # Parse the site export
+    site_parser = ElementorSiteParser()
+
+    try:
+        if input_path.suffix.lower() == ".zip":
+            print_info("Extracting zip archive...")
+            site = site_parser.parse_zip(str(input_path))
+        else:
+            site = site_parser.parse_directory(str(input_path))
+
+        # Analyze the site
+        stats = site_parser.analyze(site)
+        print_info(f"Pages: {stats['total_pages']}")
+        print_info(f"Templates: {stats['total_templates']}")
+        print_info(f"Global colors: {stats['global_colors']}")
+        print_info(f"Global fonts: {stats['global_fonts']}")
+
+        if dry_run:
+            print_warning("Dry run - no files will be written")
+            _preview_site_conversion(site, target)
+            return 0
+
+        # Create output structure
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "_includes").mkdir(exist_ok=True)
+        (output_dir / "assets").mkdir(exist_ok=True)
+
+        # Generate global styles
+        styles_css = _generate_global_styles(site)
+        styles_file = output_dir / "assets" / "styles.css"
+        with open(styles_file, "w", encoding="utf-8") as f:
+            f.write(styles_css)
+        print_success(f"Generated: assets/styles.css")
+
+        # Get the converter
+        transform_fn = TransformRegistry.get_transform(source, target)
+        if not transform_fn:
+            print_error(f"No transform available for {source} → {target}")
+            return 1
+
+        # Convert templates (header/footer)
+        header = site.get_header()
+        if header:
+            header_html = transform_fn(header.document.to_dict())
+            if isinstance(header_html, str):
+                header_file = output_dir / "_includes" / "header.html"
+                with open(header_file, "w", encoding="utf-8") as f:
+                    f.write(_extract_body_content(header_html))
+                print_success(f"Generated: _includes/header.html")
+
+        footer = site.get_footer()
+        if footer:
+            footer_html = transform_fn(footer.document.to_dict())
+            if isinstance(footer_html, str):
+                footer_file = output_dir / "_includes" / "footer.html"
+                with open(footer_file, "w", encoding="utf-8") as f:
+                    f.write(_extract_body_content(footer_html))
+                print_success(f"Generated: _includes/footer.html")
+
+        # Convert pages
+        success_count = 0
+        error_count = 0
+        link_map = _build_link_map(site)
+
+        for page in site.pages:
+            if page.status != "publish":
+                continue
+
+            try:
+                page_html = transform_fn(page.document.to_dict())
+                if isinstance(page_html, str):
+                    # Rewrite internal links
+                    page_html = _rewrite_links(page_html, link_map)
+
+                    # Wrap with template includes
+                    page_html = _wrap_with_template(page_html, page.title, site)
+
+                    # Determine output filename
+                    if page.slug in ["home", "index", "front-page"]:
+                        filename = "index.html"
+                    else:
+                        filename = f"{page.slug}.html"
+
+                    page_file = output_dir / filename
+                    with open(page_file, "w", encoding="utf-8") as f:
+                        f.write(page_html)
+                    print_success(f"Generated: {filename}")
+                    success_count += 1
+            except Exception as e:
+                print_error(f"Failed to convert page '{page.title}': {e}")
+                if debug:
+                    import traceback
+                    traceback.print_exc()
+                error_count += 1
+
+        print_header("Site Conversion Complete")
+        print_success(f"Pages converted: {success_count}")
+        if error_count > 0:
+            print_error(f"Pages failed: {error_count}")
+        print_info(f"Output directory: {output_dir}")
+
+        return 0 if error_count == 0 else 1
+
+    except Exception as e:
+        print_error(f"Site conversion failed: {e}")
+        if debug:
+            import traceback
+            traceback.print_exc()
+        return 1
+    finally:
+        site_parser.cleanup()
+
+
+def _transform_site_directory(
+    source: str,
+    target: str,
+    input_dir: Path,
+    output_dir: Path,
+    dry_run: bool = False,
+    debug: bool = False
+) -> int:
+    """Transform a directory of JSON files (legacy mode)."""
+    print_info("Processing directory of JSON files")
 
     # Find all JSON files
     json_files = list(input_dir.glob("**/*.json"))
@@ -202,9 +377,7 @@ def cmd_transform_site(args: argparse.Namespace) -> int:
 
     print_info(f"Found {len(json_files)} JSON files")
 
-    # Create output directory
-    output_dir = Path(args.output_dir) if args.output_dir else input_dir / f"transformed-{target}"
-    if not args.dry_run:
+    if not dry_run:
         output_dir.mkdir(parents=True, exist_ok=True)
 
     success_count = 0
@@ -223,10 +396,10 @@ def cmd_transform_site(args: argparse.Namespace) -> int:
         file_args.target = target
         file_args.file = str(json_file)
         file_args.output = str(output_dir / relative_path.with_suffix(get_extension_for_framework(target)))
-        file_args.dry_run = args.dry_run
-        file_args.debug = args.debug
+        file_args.dry_run = dry_run
+        file_args.debug = debug
 
-        if not args.dry_run:
+        if not dry_run:
             (output_dir / relative_path.parent).mkdir(parents=True, exist_ok=True)
 
         result = cmd_transform(file_args)
@@ -241,6 +414,120 @@ def cmd_transform_site(args: argparse.Namespace) -> int:
         print_error(f"Failed: {error_count}")
 
     return 0 if error_count == 0 else 1
+
+
+def _generate_global_styles(site: ElementorSite) -> str:
+    """Generate global CSS from site settings."""
+    lines = []
+
+    # Add Google Fonts import
+    fonts_import = site.settings.fonts.get_google_fonts_import()
+    if fonts_import:
+        lines.append(fonts_import)
+        lines.append("")
+
+    # Add CSS custom properties
+    lines.append(site.settings.colors.to_css_variables())
+    lines.append("")
+    lines.append(site.settings.fonts.to_css_variables())
+    lines.append("")
+
+    # Add custom CSS from site settings
+    if site.settings.custom_css:
+        lines.append("/* Custom CSS from Elementor */")
+        lines.append(site.settings.custom_css)
+
+    return "\n".join(lines)
+
+
+def _extract_body_content(html: str) -> str:
+    """Extract content between <body> and </body> tags."""
+    import re
+    match = re.search(r"<body[^>]*>(.*?)</body>", html, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return html
+
+
+def _build_link_map(site: ElementorSite) -> Dict[str, str]:
+    """Build a mapping of internal links to converted filenames."""
+    link_map = {}
+
+    for page in site.pages:
+        # Map various URL patterns to the new filename
+        old_patterns = [
+            f"/{page.slug}/",
+            f"/{page.slug}",
+            f"?p={page.id}",
+            f"/{page.post_type}/{page.slug}/",
+        ]
+
+        if page.slug in ["home", "index", "front-page"]:
+            new_url = "index.html"
+        else:
+            new_url = f"{page.slug}.html"
+
+        for pattern in old_patterns:
+            link_map[pattern] = new_url
+
+    return link_map
+
+
+def _rewrite_links(html: str, link_map: Dict[str, str]) -> str:
+    """Rewrite internal links to use new filenames."""
+    for old_url, new_url in link_map.items():
+        html = html.replace(f'href="{old_url}"', f'href="{new_url}"')
+        html = html.replace(f"href='{old_url}'", f"href='{new_url}'")
+    return html
+
+
+def _wrap_with_template(body_html: str, title: str, site: ElementorSite) -> str:
+    """Wrap page content with full HTML template."""
+    # Extract just the body content if it's a full HTML document
+    body_content = _extract_body_content(body_html) if "<body" in body_html else body_html
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} - {site.settings.site_name}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <!-- Include header -->
+  <!-- #include file="_includes/header.html" -->
+
+  <main>
+{body_content}
+  </main>
+
+  <!-- Include footer -->
+  <!-- #include file="_includes/footer.html" -->
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>"""
+
+
+def _preview_site_conversion(site: ElementorSite, target: str) -> None:
+    """Preview what would be generated in a site conversion."""
+    print_info("\nSite conversion preview:")
+    print_info(f"  Output structure for {target}:")
+    print(f"    output/")
+    print(f"    ├── index.html")
+    for page in site.pages:
+        if page.status == "publish" and page.slug not in ["home", "index", "front-page"]:
+            print(f"    ├── {page.slug}.html")
+    print(f"    ├── _includes/")
+    if site.get_header():
+        print(f"    │   ├── header.html")
+    if site.get_footer():
+        print(f"    │   └── footer.html")
+    print(f"    └── assets/")
+    print(f"        └── styles.css")
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
@@ -338,6 +625,91 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_analyze_site(args: argparse.Namespace) -> int:
+    """Handle the analyze-site command."""
+    framework = args.framework.lower()
+    input_path = Path(args.path)
+
+    if not input_path.exists():
+        print_error(f"Path not found: {input_path}")
+        return 1
+
+    print_header(f"Translation Bridge v{__version__} - Analyze Site")
+    print_info(f"Framework: {framework}")
+    print_info(f"Input: {input_path}")
+
+    try:
+        site_parser = ElementorSiteParser()
+
+        # Parse the site export
+        if input_path.suffix.lower() == ".zip":
+            print_info("Extracting zip archive...")
+            site = site_parser.parse_zip(str(input_path))
+        else:
+            site = site_parser.parse_directory(str(input_path))
+
+        # Get full analysis
+        stats = site_parser.analyze(site)
+
+        # Print analysis results
+        print_header("Site Analysis Results")
+
+        print(f"\n{Colors.BOLD}Site Overview:{Colors.ENDC}")
+        print(f"  Site name: {site.settings.site_name or 'N/A'}")
+        print(f"  Total pages: {stats['total_pages']}")
+        print(f"  Total templates: {stats['total_templates']}")
+        print(f"  Total assets: {stats['total_assets']}")
+
+        print(f"\n{Colors.BOLD}Global Design Tokens:{Colors.ENDC}")
+        print(f"  Global colors: {stats['global_colors']}")
+        print(f"  Global fonts: {stats['global_fonts']}")
+        if site.settings.colors.colors:
+            print(f"\n  {Colors.CYAN}Colors:{Colors.ENDC}")
+            for key, color_data in list(site.settings.colors.colors.items())[:5]:
+                title = color_data.get("title", key)
+                color = color_data.get("color", "N/A")
+                print(f"    {title}: {color}")
+
+        if stats['menus']:
+            print(f"\n{Colors.BOLD}Navigation Menus:{Colors.ENDC}")
+            for menu_name in stats['menus']:
+                print(f"  - {menu_name}")
+
+        print(f"\n{Colors.BOLD}Pages:{Colors.ENDC}")
+        for page_info in stats['pages'][:10]:  # Show first 10
+            print(f"  [{page_info['type']}] {page_info['title']} (/{page_info['slug']})")
+            print(f"      Elements: {page_info['elements']}, Widgets: {page_info['widgets']}")
+
+        if len(stats['pages']) > 10:
+            print(f"  ... and {len(stats['pages']) - 10} more pages")
+
+        print(f"\n{Colors.BOLD}Templates:{Colors.ENDC}")
+        for template_info in stats['templates']:
+            print(f"  [{template_info['type']}] {template_info['title']}")
+            print(f"      Elements: {template_info['elements']}")
+
+        print_success("Site analysis complete!")
+
+        # Output to file if requested
+        if args.output:
+            output_file = Path(args.output)
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump({
+                    "stats": stats,
+                    "settings": site.settings.to_dict(),
+                }, f, indent=2, default=str)
+            print_success(f"Analysis written to: {output_file}")
+
+        return 0
+
+    except Exception as e:
+        print_error(f"Site analysis failed: {e}")
+        if args.debug:
+            import traceback
+            traceback.print_exc()
+        return 1
+
+
 def get_extension_for_framework(framework: str) -> str:
     """Get the appropriate file extension for a framework."""
     extensions = {
@@ -417,6 +789,17 @@ For more information, visit: https://github.com/coryhubbell/development-translat
         "-d", "--debug", action="store_true", help="Show debug information"
     )
 
+    # analyze-site command
+    analyze_site_parser = subparsers.add_parser(
+        "analyze-site", help="Analyze a complete site export"
+    )
+    analyze_site_parser.add_argument("framework", help="Framework (e.g., elementor)")
+    analyze_site_parser.add_argument("path", help="Site export path (zip file or directory)")
+    analyze_site_parser.add_argument("-o", "--output", help="Output analysis to file")
+    analyze_site_parser.add_argument(
+        "-d", "--debug", action="store_true", help="Show debug information"
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -429,6 +812,8 @@ For more information, visit: https://github.com/coryhubbell/development-translat
         return cmd_transform_site(args)
     elif args.command == "analyze":
         return cmd_analyze(args)
+    elif args.command == "analyze-site":
+        return cmd_analyze_site(args)
     else:
         parser.print_help()
         return 1

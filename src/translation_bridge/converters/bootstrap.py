@@ -43,6 +43,35 @@ class BootstrapConverter:
         "nav-menu": "_convert_nav_menu",
         "mega-menu": "_convert_nav_menu",
         "theme-site-logo": "_convert_site_logo",
+        # New widget converters (Phase 1)
+        "call-to-action": "_convert_call_to_action",
+        "inner-section": "_convert_inner_section",
+        "text-path": "_convert_text_path",
+        "animated-headline": "_convert_animated_headline",
+        "gallery": "_convert_gallery",
+        "image-gallery": "_convert_gallery",
+        "basic-gallery": "_convert_gallery",
+        "carousel": "_convert_carousel",
+        "image-carousel": "_convert_carousel",
+        "media-carousel": "_convert_carousel",
+        "star-rating": "_convert_star_rating",
+        "rating": "_convert_star_rating",
+    }
+
+    # Animation class mapping from Elementor to CSS animations
+    ANIMATION_MAP = {
+        "fadeIn": "fade-in",
+        "fadeInDown": "fade-in-down",
+        "fadeInUp": "fade-in-up",
+        "fadeInLeft": "fade-in-left",
+        "fadeInRight": "fade-in-right",
+        "zoomIn": "zoom-in",
+        "bounceIn": "bounce-in",
+        "slideInUp": "slide-in-up",
+        "slideInDown": "slide-in-down",
+        "slideInLeft": "slide-in-left",
+        "slideInRight": "slide-in-right",
+        "grow": "grow",
     }
 
     # Color mapping from Elementor globals to Bootstrap
@@ -97,6 +126,49 @@ class BootstrapConverter:
             "    .btn-grow:hover { transform: scale(1.05); }",
             "    .icon-box-horizontal { display: flex; align-items: center; gap: 10px; }",
             "    .icon-box-horizontal .icon-wrapper { flex-shrink: 0; }",
+            "    /* Container layouts */",
+            "    .section-boxed { max-width: 1140px; margin: 0 auto; }",
+            "    .section-full-width { width: 100%; max-width: none; }",
+            "    /* Animations */",
+            "    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }",
+            "    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }",
+            "    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }",
+            "    @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }",
+            "    @keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }",
+            "    @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }",
+            "    @keyframes bounceIn { 0% { opacity: 0; transform: scale(0.3); } 50% { transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }",
+            "    @keyframes slideInUp { from { transform: translateY(100%); } to { transform: translateY(0); } }",
+            "    @keyframes slideInDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }",
+            "    @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }",
+            "    @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }",
+            "    .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }",
+            "    .animate-fade-in-down { animation: fadeInDown 0.5s ease-out forwards; }",
+            "    .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }",
+            "    .animate-fade-in-left { animation: fadeInLeft 0.5s ease-out forwards; }",
+            "    .animate-fade-in-right { animation: fadeInRight 0.5s ease-out forwards; }",
+            "    .animate-zoom-in { animation: zoomIn 0.5s ease-out forwards; }",
+            "    .animate-bounce-in { animation: bounceIn 0.6s ease-out forwards; }",
+            "    .animate-slide-in-up { animation: slideInUp 0.5s ease-out forwards; }",
+            "    .animate-slide-in-down { animation: slideInDown 0.5s ease-out forwards; }",
+            "    .animate-slide-in-left { animation: slideInLeft 0.5s ease-out forwards; }",
+            "    .animate-slide-in-right { animation: slideInRight 0.5s ease-out forwards; }",
+            "    /* CTA Component */",
+            "    .cta-wrapper { display: flex; flex-wrap: wrap; align-items: center; }",
+            "    .cta-content { flex: 1; min-width: 280px; }",
+            "    .cta-button-wrapper { flex-shrink: 0; }",
+            "    /* Gallery */",
+            "    .gallery-grid { display: grid; gap: 10px; }",
+            "    .gallery-item img { width: 100%; height: 100%; object-fit: cover; }",
+            "    /* Star Rating */",
+            "    .star-rating .star { color: #ddd; }",
+            "    .star-rating .star.filled { color: #ffc107; }",
+            "    /* Text Path */",
+            "    .text-path-svg { width: 100%; height: auto; }",
+            "    /* Animated Headline */",
+            "    .animated-headline .rotating-text { display: inline-block; }",
+            "    @keyframes rotateWords { 0%, 20% { opacity: 1; } 25%, 100% { opacity: 0; } }",
+            "    /* Carousel */",
+            "    .carousel-control-prev-icon, .carousel-control-next-icon { background-color: rgba(0,0,0,0.5); border-radius: 50%; padding: 20px; }",
             "  </style>",
             "</head>",
             "<body>",
@@ -175,8 +247,17 @@ class BootstrapConverter:
 
         # Build style attribute
         style_parts = []
+        class_parts = []
 
-        # Background handling - gradient or solid
+        # Container layout handling (boxed vs full_width)
+        content_width = settings.get("content_width", "boxed")
+        stretch_section = settings.get("stretch_section", "")
+        if content_width == "boxed":
+            class_parts.append("section-boxed")
+        elif content_width == "full" or stretch_section:
+            class_parts.append("section-full-width")
+
+        # Background handling - gradient, image, video, or solid
         bg_type = settings.get("background_background", "")
         if bg_type == "gradient":
             color_a = settings.get("background_color", "#000000")
@@ -184,12 +265,37 @@ class BootstrapConverter:
             angle = settings.get("background_gradient_angle", {})
             angle_val = angle.get("size", 135) if isinstance(angle, dict) else 135
             style_parts.append(f"background: linear-gradient({angle_val}deg, {color_a} 0%, {color_b} 100%)")
+        elif bg_type == "classic":
+            bg_color = settings.get("background_color", "")
+            if bg_color and not bg_color.startswith("globals"):
+                style_parts.append(f"background-color: {bg_color}")
+            # Background image
+            bg_image = settings.get("background_image", {})
+            if isinstance(bg_image, dict) and bg_image.get("url"):
+                style_parts.append(f"background-image: url('{bg_image['url']}')")
+                bg_position = settings.get("background_position", "center center")
+                bg_size = settings.get("background_size", "cover")
+                bg_repeat = settings.get("background_repeat", "no-repeat")
+                style_parts.append(f"background-position: {bg_position}")
+                style_parts.append(f"background-size: {bg_size}")
+                style_parts.append(f"background-repeat: {bg_repeat}")
         elif settings.get("background_color"):
             bg_color = settings.get("background_color", "")
             if bg_color and not bg_color.startswith("globals"):
                 style_parts.append(f"background-color: {bg_color}")
 
-        # Min-height
+        # Background overlay
+        bg_overlay = settings.get("background_overlay_background", "")
+        if bg_overlay:
+            overlay_color = settings.get("background_overlay_color", "rgba(0,0,0,0.5)")
+            overlay_opacity = settings.get("background_overlay_opacity", {})
+            if isinstance(overlay_opacity, dict):
+                opacity = overlay_opacity.get("size", 0.5)
+            else:
+                opacity = overlay_opacity or 0.5
+            # We'll handle overlay with pseudo-element via class
+
+        # Min-height (with responsive)
         min_height = settings.get("min_height", {})
         if isinstance(min_height, dict) and min_height.get("size"):
             unit = min_height.get("unit", "px")
@@ -214,60 +320,53 @@ class BootstrapConverter:
             if settings.get("flex_wrap"):
                 style_parts.append(f"flex-wrap: {settings['flex_wrap']}")
 
-        # Padding
-        padding = settings.get("padding", {})
-        if isinstance(padding, dict):
-            p_parts = []
-            if padding.get("top"):
-                p_parts.append(f"{padding['top']}{padding.get('unit', 'px')}")
-            else:
-                p_parts.append("0")
-            if padding.get("right"):
-                p_parts.append(f"{padding['right']}{padding.get('unit', 'px')}")
-            else:
-                p_parts.append("0")
-            if padding.get("bottom"):
-                p_parts.append(f"{padding['bottom']}{padding.get('unit', 'px')}")
-            else:
-                p_parts.append("0")
-            if padding.get("left"):
-                p_parts.append(f"{padding['left']}{padding.get('unit', 'px')}")
-            else:
-                p_parts.append("0")
-            if any(p != "0" for p in p_parts):
-                style_parts.append(f"padding: {' '.join(p_parts)}")
+        # Padding (with responsive support)
+        padding = self._get_spacing_value(settings, "padding")
+        if padding:
+            style_parts.append(f"padding: {padding}")
 
         # Margin
-        margin = settings.get("_margin", {})
-        if isinstance(margin, dict):
-            m_parts = []
-            if margin.get("top"):
-                m_parts.append(f"{margin['top']}{margin.get('unit', 'px')}")
-            else:
-                m_parts.append("0")
-            if margin.get("right"):
-                m_parts.append(f"{margin['right']}{margin.get('unit', 'px')}")
-            else:
-                m_parts.append("0")
-            if margin.get("bottom"):
-                m_parts.append(f"{margin['bottom']}{margin.get('unit', 'px')}")
-            else:
-                m_parts.append("0")
-            if margin.get("left"):
-                m_parts.append(f"{margin['left']}{margin.get('unit', 'px')}")
-            else:
-                m_parts.append("0")
-            if any(m != "0" for m in m_parts):
-                style_parts.append(f"margin: {' '.join(m_parts)}")
+        margin = self._get_spacing_value(settings, "_margin")
+        if margin:
+            style_parts.append(f"margin: {margin}")
 
         # Boxed width
         boxed_width = settings.get("boxed_width", {})
         if isinstance(boxed_width, dict) and boxed_width.get("size"):
             style_parts.append(f"max-width: {boxed_width['size']}{boxed_width.get('unit', 'px')}")
             style_parts.append("width: 100%")
+            style_parts.append("margin-left: auto")
+            style_parts.append("margin-right: auto")
 
+        # Z-index support
+        z_index = settings.get("z_index", "")
+        if z_index:
+            style_parts.append(f"z-index: {z_index}")
+
+        # Position for overlays
+        if z_index or bg_overlay:
+            style_parts.append("position: relative")
+
+        # Animation support
+        entrance_animation = settings.get("_animation", "") or settings.get("animation", "")
+        if entrance_animation and entrance_animation in self.ANIMATION_MAP:
+            class_parts.append(f"animate-{self.ANIMATION_MAP[entrance_animation]}")
+
+        # Custom CSS passthrough
+        custom_css = settings.get("custom_css", "")
+        css_classes = settings.get("_css_classes", "")
+        if css_classes:
+            class_parts.append(css_classes)
+
+        # Build attributes
         style_attr = f' style="{"; ".join(style_parts)}"' if style_parts else ""
+        class_attr = f' class="{" ".join(class_parts)}"' if class_parts else ""
         id_attr = f' id="{element_id}"' if element_id and self.include_metadata else ""
+
+        # Custom CSS as data attribute for reference
+        custom_css_attr = ""
+        if custom_css and self.include_metadata:
+            custom_css_attr = f' data-custom-css="{escape(custom_css[:200])}"'
 
         # Convert children
         child_html = "\n".join(
@@ -275,7 +374,7 @@ class BootstrapConverter:
         )
 
         tag = "div" if is_inner else "section"
-        return f"""{indent}<{tag}{id_attr}{style_attr}>
+        return f"""{indent}<{tag}{id_attr}{class_attr}{style_attr}{custom_css_attr}>
 {child_html}
 {indent}</{tag}>"""
 
@@ -883,6 +982,416 @@ class BootstrapConverter:
             return f'{indent}<div class="widget-{widget_type}">{content}</div>'
 
         return f'{indent}<!-- Widget: {widget_type} -->'
+
+    # ========================================================================
+    # New Widget Converters (Phase 1)
+    # ========================================================================
+
+    def _convert_call_to_action(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert call-to-action widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        title = settings.get("title", "")
+        description = settings.get("description", "")
+        button_text = settings.get("button", "Click Here")
+        link = settings.get("link", {})
+        url = link.get("url", "#") if isinstance(link, dict) else "#"
+
+        # Skin (classic, cover, etc.)
+        skin = settings.get("skin", "classic")
+
+        # Position (image left, right, or above)
+        position = settings.get("position", "")
+
+        # Ribbon
+        ribbon_title = settings.get("ribbon_title", "")
+
+        # Background
+        style_parts = []
+        bg_color = settings.get("background_color", "")
+        if bg_color:
+            style_parts.append(f"background-color: {bg_color}")
+
+        # Padding
+        padding = settings.get("box_padding", {})
+        if isinstance(padding, dict) and padding.get("top"):
+            p = f"{padding.get('top', 20)}{padding.get('unit', 'px')}"
+            style_parts.append(f"padding: {p}")
+
+        style_attr = f' style="{"; ".join(style_parts)}"' if style_parts else ""
+
+        # Title styling
+        title_color = settings.get("title_color", "")
+        title_style = f' style="color: {title_color}"' if title_color else ""
+
+        # Button styling
+        button_color = settings.get("button_color", "#ffffff")
+        button_bg = settings.get("button_background_color", "#0d6efd")
+        button_style = f'background-color: {button_bg}; color: {button_color}; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block'
+
+        ribbon_html = ""
+        if ribbon_title:
+            ribbon_html = f'\n{indent}  <span class="badge bg-primary position-absolute top-0 end-0 m-2">{escape(ribbon_title)}</span>'
+
+        return f"""{indent}<div class="cta-wrapper card p-4 position-relative"{style_attr}>{ribbon_html}
+{indent}  <div class="cta-content">
+{indent}    <h3{title_style}>{escape(title)}</h3>
+{indent}    <p>{description}</p>
+{indent}  </div>
+{indent}  <div class="cta-button-wrapper">
+{indent}    <a href="{escape(url)}" style="{button_style}">{escape(button_text)}</a>
+{indent}  </div>
+{indent}</div>"""
+
+    def _convert_inner_section(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert inner-section widget (nested section)."""
+        # Inner sections are essentially sections, use section converter
+        element["isInner"] = True
+        return self._convert_section(element, depth)
+
+    def _convert_text_path(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert text-path widget (SVG text along path)."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        text = settings.get("text", "Curved Text")
+        path = settings.get("path", "wave")  # wave, arc, circle, line, oval, spiral
+
+        # Text styling
+        font_size = settings.get("font_size", {})
+        font_size_val = font_size.get("size", 24) if isinstance(font_size, dict) else 24
+        text_color = settings.get("text_color", "#000000")
+
+        # SVG paths for different shapes
+        svg_paths = {
+            "wave": "M 0 50 Q 25 25, 50 50 T 100 50 T 150 50 T 200 50",
+            "arc": "M 10 80 Q 100 10 190 80",
+            "circle": "M 100,10 A 90,90 0 1,1 100,190 A 90,90 0 1,1 100,10",
+            "line": "M 0 50 L 200 50",
+            "oval": "M 100,10 A 90,50 0 1,1 100,110 A 90,50 0 1,1 100,10",
+            "spiral": "M 100,100 Q 120,80 100,60 Q 80,40 100,20 Q 130,0 160,30",
+        }
+
+        svg_path = svg_paths.get(path, svg_paths["wave"])
+
+        return f"""{indent}<svg class="text-path-svg" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+{indent}  <defs>
+{indent}    <path id="textPath-{element.get('id', 'path')}" d="{svg_path}" fill="transparent"/>
+{indent}  </defs>
+{indent}  <text font-size="{font_size_val}" fill="{text_color}">
+{indent}    <textPath href="#textPath-{element.get('id', 'path')}">{escape(text)}</textPath>
+{indent}  </text>
+{indent}</svg>"""
+
+    def _convert_animated_headline(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert animated-headline widget (typewriter/rotating text)."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        headline_style = settings.get("headline_style", "highlight")  # highlight, rotate, typing, etc.
+        before_text = settings.get("before_text", "")
+        highlighted_text = settings.get("highlighted_text", "Amazing")
+        after_text = settings.get("after_text", "")
+        rotating_text = settings.get("rotating_text", "Amazing\nBeautiful\nCreative")
+
+        # Split rotating text into array
+        rotating_words = [w.strip() for w in rotating_text.split("\n") if w.strip()]
+
+        # Header tag
+        tag = settings.get("tag", "h3")
+
+        # Style
+        style_parts = []
+        color = settings.get("title_color", "")
+        if color:
+            style_parts.append(f"color: {color}")
+        style_attr = f' style="{"; ".join(style_parts)}"' if style_parts else ""
+
+        if headline_style in ["rotate", "typing", "clip", "flip", "zoom"]:
+            # Rotating words animation
+            words_html = ", ".join([f'"{escape(w)}"' for w in rotating_words])
+            rotating_span = f'<span class="rotating-text" data-words="[{words_html}]">{escape(rotating_words[0]) if rotating_words else ""}</span>'
+            return f"""{indent}<{tag} class="animated-headline"{style_attr}>
+{indent}  {escape(before_text)} {rotating_span} {escape(after_text)}
+{indent}</{tag}>
+{indent}<script>
+{indent}  // Simple rotating text animation
+{indent}  (function() {{
+{indent}    const el = document.querySelector('.rotating-text');
+{indent}    if (el) {{
+{indent}      const words = {words_html.replace('"', "'") if rotating_words else "['']"};
+{indent}      let i = 0;
+{indent}      setInterval(() => {{ i = (i + 1) % words.length; el.textContent = words[i]; }}, 2000);
+{indent}    }}
+{indent}  }})();
+{indent}</script>"""
+        else:
+            # Highlighted style
+            highlight_html = f'<mark class="bg-warning">{escape(highlighted_text)}</mark>'
+            return f"""{indent}<{tag} class="animated-headline"{style_attr}>
+{indent}  {escape(before_text)} {highlight_html} {escape(after_text)}
+{indent}</{tag}>"""
+
+    def _convert_gallery(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert gallery widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        # Gallery can be wp_gallery or gallery
+        gallery = settings.get("gallery", []) or settings.get("wp_gallery", [])
+
+        # Layout settings
+        columns = settings.get("columns", 3)
+        gap = settings.get("gap", {})
+        gap_val = gap.get("size", 10) if isinstance(gap, dict) else 10
+
+        # Image settings
+        thumbnail_size = settings.get("thumbnail_size", "medium")
+        link_to = settings.get("link_to", "file")  # file, custom, none
+
+        # Build gallery items
+        items_html = []
+        for i, img in enumerate(gallery):
+            if isinstance(img, dict):
+                url = img.get("url", "")
+                img_id = img.get("id", i)
+                alt = img.get("alt", f"Gallery image {i + 1}")
+
+                if link_to == "file":
+                    items_html.append(f'{indent}    <a href="{escape(url)}" class="gallery-item" data-bs-toggle="lightbox"><img src="{escape(url)}" alt="{escape(alt)}" class="img-fluid"></a>')
+                else:
+                    items_html.append(f'{indent}    <div class="gallery-item"><img src="{escape(url)}" alt="{escape(alt)}" class="img-fluid"></div>')
+
+        items = "\n".join(items_html)
+
+        return f"""{indent}<div class="gallery-grid" style="grid-template-columns: repeat({columns}, 1fr); gap: {gap_val}px">
+{items}
+{indent}</div>"""
+
+    def _convert_carousel(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert carousel/slider widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+        element_id = element.get("id", "carousel") or "carousel"
+
+        # Get slides/images
+        slides = settings.get("slides", []) or settings.get("carousel", []) or settings.get("wp_gallery", [])
+
+        # Settings
+        autoplay = settings.get("autoplay", "yes")
+        infinite_loop = settings.get("infinite", "yes")
+        pause_on_hover = settings.get("pause_on_hover", "yes")
+        navigation = settings.get("navigation", "arrows")  # arrows, dots, both, none
+        autoplay_speed = settings.get("autoplay_speed", 5000)
+
+        # Bootstrap carousel attributes
+        data_attrs = 'data-bs-ride="carousel"' if autoplay == "yes" else ""
+        if pause_on_hover == "yes":
+            data_attrs += ' data-bs-pause="hover"'
+        data_attrs += f' data-bs-interval="{autoplay_speed}"'
+
+        # Build indicators
+        indicators_html = ""
+        if navigation in ["dots", "both"]:
+            indicators = []
+            for i in range(len(slides)):
+                active = "active" if i == 0 else ""
+                indicators.append(f'{indent}    <button type="button" data-bs-target="#{element_id}" data-bs-slide-to="{i}" class="{active}"></button>')
+            indicators_html = f'\n{indent}  <div class="carousel-indicators">\n' + "\n".join(indicators) + f'\n{indent}  </div>'
+
+        # Build slides
+        slides_html = []
+        for i, slide in enumerate(slides):
+            if isinstance(slide, dict):
+                url = slide.get("url", slide.get("image", {}).get("url", ""))
+                title = slide.get("title", "")
+                description = slide.get("description", "")
+                active = "active" if i == 0 else ""
+
+                caption_html = ""
+                if title or description:
+                    caption_html = f'''
+{indent}        <div class="carousel-caption d-none d-md-block">
+{indent}          <h5>{escape(title)}</h5>
+{indent}          <p>{escape(description)}</p>
+{indent}        </div>'''
+
+                slides_html.append(f'''{indent}      <div class="carousel-item {active}">
+{indent}        <img src="{escape(url)}" class="d-block w-100" alt="{escape(title)}">{caption_html}
+{indent}      </div>''')
+
+        slides_content = "\n".join(slides_html)
+
+        # Build controls
+        controls_html = ""
+        if navigation in ["arrows", "both"]:
+            controls_html = f'''
+{indent}  <button class="carousel-control-prev" type="button" data-bs-target="#{element_id}" data-bs-slide="prev">
+{indent}    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+{indent}    <span class="visually-hidden">Previous</span>
+{indent}  </button>
+{indent}  <button class="carousel-control-next" type="button" data-bs-target="#{element_id}" data-bs-slide="next">
+{indent}    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+{indent}    <span class="visually-hidden">Next</span>
+{indent}  </button>'''
+
+        return f"""{indent}<div id="{element_id}" class="carousel slide" {data_attrs}>{indicators_html}
+{indent}  <div class="carousel-inner">
+{slides_content}
+{indent}  </div>{controls_html}
+{indent}</div>"""
+
+    def _convert_star_rating(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert star-rating widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        rating = settings.get("rating", {})
+        rating_val = rating.get("size", 5) if isinstance(rating, dict) else (rating or 5)
+        scale = settings.get("rating_scale", 5)
+
+        # Icon settings
+        unmarked_style = settings.get("unmarked_star_style", "outline")  # solid, outline
+        icon_size = settings.get("icon_size", {})
+        size_val = icon_size.get("size", 24) if isinstance(icon_size, dict) else 24
+
+        # Colors
+        star_color = settings.get("star_color", "#ffc107")
+        unmarked_color = settings.get("unmarked_star_color", "#ddd")
+
+        # Title
+        title = settings.get("title", "")
+        title_html = f'<span class="rating-title me-2">{escape(title)}</span>' if title else ""
+
+        # Build stars
+        stars = []
+        full_stars = int(rating_val)
+        has_half = (rating_val - full_stars) >= 0.5
+
+        for i in range(int(scale)):
+            if i < full_stars:
+                stars.append(f'<i class="fas fa-star star filled" style="color: {star_color}; font-size: {size_val}px"></i>')
+            elif i == full_stars and has_half:
+                stars.append(f'<i class="fas fa-star-half-alt star filled" style="color: {star_color}; font-size: {size_val}px"></i>')
+            else:
+                icon_class = "far fa-star" if unmarked_style == "outline" else "fas fa-star"
+                stars.append(f'<i class="{icon_class} star" style="color: {unmarked_color}; font-size: {size_val}px"></i>')
+
+        stars_html = " ".join(stars)
+
+        return f'{indent}<div class="star-rating d-flex align-items-center">{title_html}{stars_html}</div>'
+
+    def _convert_icon(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert icon widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        # Icon settings
+        icon = settings.get("selected_icon", settings.get("icon", {}))
+        if isinstance(icon, dict):
+            icon_value = icon.get("value", "fas fa-star")
+        else:
+            icon_value = icon or "fas fa-star"
+
+        # Size
+        icon_size = settings.get("icon_size", settings.get("size", {}))
+        if isinstance(icon_size, dict):
+            size_val = icon_size.get("size", 50)
+            size_unit = icon_size.get("unit", "px")
+        else:
+            size_val = icon_size or 50
+            size_unit = "px"
+
+        # Colors
+        primary_color = settings.get("primary_color", settings.get("icon_color", "#000000"))
+        secondary_color = settings.get("secondary_color", "")
+
+        # View type (default, stacked, framed)
+        view = settings.get("view", "default")
+
+        # Alignment
+        align = settings.get("align", "center")
+
+        style_parts = [f"font-size: {size_val}{size_unit}", f"color: {primary_color}"]
+
+        if view == "stacked":
+            bg_color = secondary_color or "#f5f5f5"
+            style_parts.append(f"background-color: {bg_color}")
+            style_parts.append("padding: 20px")
+            style_parts.append("border-radius: 50%")
+            style_parts.append("display: inline-flex")
+            style_parts.append("align-items: center")
+            style_parts.append("justify-content: center")
+        elif view == "framed":
+            border_color = secondary_color or primary_color
+            style_parts.append(f"border: 2px solid {border_color}")
+            style_parts.append("padding: 15px")
+            style_parts.append("border-radius: 4px")
+            style_parts.append("display: inline-flex")
+            style_parts.append("align-items: center")
+            style_parts.append("justify-content: center")
+
+        style = "; ".join(style_parts)
+        align_class = f"text-{align}" if align else ""
+
+        if view in ["stacked", "framed"]:
+            return f'{indent}<div class="{align_class}"><span style="{style}"><i class="{icon_value}"></i></span></div>'
+        else:
+            return f'{indent}<div class="{align_class}"><i class="{icon_value}" style="{style}"></i></div>'
+
+    # ========================================================================
+    # Helper Methods
+    # ========================================================================
+
+    def _get_spacing_value(self, settings: Dict[str, Any], key: str) -> str:
+        """
+        Extract spacing value (padding/margin) from settings with responsive support.
+
+        Args:
+            settings: Element settings dict
+            key: The key to look for (e.g., 'padding', '_margin')
+
+        Returns:
+            CSS spacing string or empty string
+        """
+        spacing = settings.get(key, {})
+        if not isinstance(spacing, dict):
+            return ""
+
+        unit = spacing.get("unit", "px")
+        parts = []
+
+        for side in ["top", "right", "bottom", "left"]:
+            value = spacing.get(side, "")
+            if value or value == 0:
+                parts.append(f"{value}{unit}")
+            else:
+                parts.append("0")
+
+        if all(p == "0" for p in parts):
+            return ""
+
+        return " ".join(parts)
+
+    def _get_responsive_value(self, settings: Dict[str, Any], key: str, device: str = "") -> Any:
+        """
+        Get a value with responsive fallback.
+
+        Args:
+            settings: Element settings dict
+            key: The base key to look for
+            device: Device suffix ('', '_tablet', '_mobile')
+
+        Returns:
+            The value for the specified device or desktop fallback
+        """
+        if device:
+            device_key = f"{key}{device}"
+            if device_key in settings:
+                return settings[device_key]
+
+        return settings.get(key)
 
     def _get_background_class(self, settings: Dict[str, Any]) -> str:
         """Get Bootstrap background class from settings."""
