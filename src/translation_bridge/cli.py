@@ -130,13 +130,26 @@ def cmd_transform(args: argparse.Namespace) -> int:
         else:
             output_file = input_file.parent / f"{input_file.stem}-{target}{get_extension_for_framework(target)}"
 
+        # Determine if output is HTML string or JSON data
+        is_html_output = isinstance(result_data, str)
+
         # Write output
         if args.dry_run:
             print_info("Dry run - would write to: " + str(output_file))
-            print("\n" + json.dumps(result_data, indent=2, ensure_ascii=False)[:2000] + "...")
+            if is_html_output:
+                # Show first 2000 chars of HTML
+                preview = result_data[:2000]
+                if len(result_data) > 2000:
+                    preview += "\n..."
+                print(f"\n{preview}")
+            else:
+                print("\n" + json.dumps(result_data, indent=2, ensure_ascii=False)[:2000] + "...")
         else:
             with open(output_file, "w", encoding="utf-8") as f:
-                json.dump(result_data, f, indent=2, ensure_ascii=False)
+                if is_html_output:
+                    f.write(result_data)
+                else:
+                    json.dump(result_data, f, indent=2, ensure_ascii=False)
             print_success(f"Output written to: {output_file}")
 
         # Print statistics

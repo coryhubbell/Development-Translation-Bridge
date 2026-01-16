@@ -228,12 +228,11 @@ class ParserRegistry:
     description="Transform Elementor JSON to Bootstrap HTML components",
     version="4.0.0",
 )
-def elementor_to_bootstrap(data: Any) -> Any:
-    """Transform Elementor JSON structure to Bootstrap-compatible format."""
-    from ..transforms.core import TransformEngine
-    engine = TransformEngine()
-    # Extract content zones for Bootstrap output
-    return engine.extract_content(data)
+def elementor_to_bootstrap(data: Any) -> str:
+    """Transform Elementor JSON structure to Bootstrap 5 HTML."""
+    from ..converters.bootstrap import BootstrapConverter
+    converter = BootstrapConverter(include_metadata=True)
+    return converter.convert(data)
 
 
 @TransformRegistry.register(
