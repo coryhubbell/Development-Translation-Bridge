@@ -1,87 +1,160 @@
-#!/usr/bin/env php
-<?php
-/**
- * DEVTB - DevelopmentTranslation Bridge CLI
- *
- * Command-line interface for the Translation Bridge™
- * Converts between 10 page builder frameworks with AI optimization
- *
- * @package    DevelopmentTranslation_Bridge
- * @subpackage CLI
- * @version    3.3.0
- * @author     DevelopmentTranslation Bridge
- * @license    GPL-2.0+
- */
+#!/usr/bin/env bash
+# =============================================================================
+# DEVTB - DevelopmentTranslation Bridge CLI
+# =============================================================================
+# Unified CLI wrapper that routes commands to the appropriate backend:
+#   - transform, transform-site, analyze → Python (v4 JSON-native engine)
+#   - translate, translate-all, etc. → PHP (v3 HTML intermediate)
+#
+# Version: 4.0.0
+# =============================================================================
 
-// Prevent direct access
-if (php_sapi_name() !== 'cli') {
-    die('This script can only be run from the command line.' . PHP_EOL);
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Version
+VERSION="4.0.0"
+
+# Show version
+show_version() {
+    echo "DevelopmentTranslation Bridge v${VERSION}"
+    echo "  PHP engine: v3.4.0 (translate commands)"
+    echo "  Python engine: v4.0.0 (transform commands)"
 }
 
-// Define constants
-define('DEVTB_VERSION', '3.3.0');
-define('DEVTB_ROOT', __DIR__);
-define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes');
-define('DEVTB_TRANSLATION_BRIDGE', DEVTB_ROOT . '/translation-bridge');
-
-// Check PHP version
-if (version_compare(PHP_VERSION, '7.4.0', '<')) {
-    fwrite(STDERR, "\033[31mError: DEVTB requires PHP 7.4.0 or higher. You are running " . PHP_VERSION . "\033[0m" . PHP_EOL);
-    exit(1);
+# Show help
+show_help() {
+    echo ""
+    echo "DevelopmentTranslation Bridge v${VERSION}"
+    echo "========================================"
+    echo ""
+    echo "Universal page builder translation with JSON-native transforms"
+    echo ""
+    echo "USAGE:"
+    echo "  devtb <command> [options]"
+    echo ""
+    echo "COMMANDS (v4 Python - JSON-native, lossless):"
+    echo "  transform <source> <target> <file>    Transform a file (100% metadata preserved)"
+    echo "  transform-site <source> <target> <dir> Transform all files in directory"
+    echo "  analyze <framework> <file>            Analyze page builder content"
+    echo ""
+    echo "COMMANDS (v3 PHP - HTML intermediate):"
+    echo "  translate <source> <target> <file>    Translate between frameworks"
+    echo "  translate-all <source> <file>         Translate to all frameworks"
+    echo "  list-frameworks                       List supported frameworks"
+    echo "  validate <framework> <file>           Validate file format"
+    echo ""
+    echo "OPTIONS:"
+    echo "  -h, --help                            Show this help message"
+    echo "  -v, --version                         Show version information"
+    echo "  -n, --dry-run                         Preview without writing files"
+    echo "  -d, --debug                           Show debug information"
+    echo "  -o, --output <file>                   Specify output file path"
+    echo ""
+    echo "EXAMPLES:"
+    echo "  # v4 JSON-native transform (recommended for Elementor JSON)"
+    echo "  devtb transform elementor bootstrap page.json"
+    echo "  devtb analyze elementor page.json"
+    echo ""
+    echo "  # v3 HTML-based translate (works with all frameworks)"
+    echo "  devtb translate bootstrap divi page.html"
+    echo "  devtb translate-all bootstrap page.html"
+    echo ""
+    echo "COMPARISON:"
+    echo "  transform (v4):  JSON → JSON, 100% metadata, ~0.5s/page"
+    echo "  translate (v3):  Any → HTML → Any, ~42% metadata, ~30s/page"
+    echo ""
+    echo "For more info: https://github.com/coryhubbell/development-translation-bridge"
+    echo ""
 }
 
-// Autoloader for project classes
-spl_autoload_register(function ($class) {
-    // Convert class name to file path
-    $class = str_replace('_', '-', strtolower($class));
-    $class = str_replace('\\', '/', $class);
-
-    // Possible locations
-    $locations = [
-        DEVTB_INCLUDES . '/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/core/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/parsers/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/converters/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/models/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/utils/class-' . $class . '.php',
-    ];
-
-    foreach ($locations as $file) {
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
-    }
-});
-
-// Include required files
-require_once DEVTB_INCLUDES . '/class-devtb-cli.php';
-require_once DEVTB_INCLUDES . '/class-devtb-file-handler.php';
-require_once DEVTB_INCLUDES . '/class-devtb-logger.php';
-
-// Main execution
-try {
-    // Get command line arguments
-    $args = array_slice($argv, 1);
-
-    // Initialize CLI handler
-    $cli = new DEVTB_CLI($args);
-
-    // Execute command
-    $exit_code = $cli->execute();
-
-    // Exit with appropriate code
-    exit($exit_code);
-
-} catch (Exception $e) {
-    // Handle fatal errors
-    fwrite(STDERR, "\033[31m✗ Fatal Error: " . $e->getMessage() . "\033[0m" . PHP_EOL);
-
-    if (in_array('--debug', $args) || in_array('-d', $args)) {
-        fwrite(STDERR, "\nStack Trace:\n" . $e->getTraceAsString() . PHP_EOL);
-    } else {
-        fwrite(STDERR, "Run with --debug for more information." . PHP_EOL);
-    }
-
-    exit(1);
+# Check if Python module is installed
+check_python() {
+    if python3 -c "import translation_bridge" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
 }
+
+# Run Python command
+run_python() {
+    if check_python; then
+        python3 -m translation_bridge.cli "$@"
+    else
+        # Try running from source directory
+        PYTHONPATH="${SCRIPT_DIR}/src:${PYTHONPATH:-}" python3 -m translation_bridge.cli "$@"
+    fi
+}
+
+# Run PHP command
+run_php() {
+    local cmd="$1"
+    shift
+
+    # Show deprecation notice for translate command
+    if [[ "$cmd" == "translate" ]]; then
+        echo -e "${YELLOW}Note: For lossless JSON conversion, consider using 'devtb transform' instead.${NC}"
+        echo -e "${YELLOW}      The transform command preserves 100% of metadata (vs ~42% for translate).${NC}"
+        echo ""
+    fi
+
+    # Run the PHP CLI
+    php "${SCRIPT_DIR}/devtb-php" "$cmd" "$@"
+}
+
+# Main command routing
+main() {
+    # Handle no arguments
+    if [[ $# -eq 0 ]]; then
+        show_help
+        exit 0
+    fi
+
+    # Parse global options
+    case "$1" in
+        -h|--help|help)
+            show_help
+            exit 0
+            ;;
+        -v|--version|version)
+            show_version
+            exit 0
+            ;;
+    esac
+
+    # Route commands
+    local cmd="$1"
+    shift
+
+    case "$cmd" in
+        # v4 Python commands (JSON-native)
+        transform|transform-site|analyze)
+            run_python "$cmd" "$@"
+            ;;
+
+        # v3 PHP commands (HTML intermediate)
+        translate|translate-all|list-frameworks|validate)
+            run_php "$cmd" "$@"
+            ;;
+
+        # Unknown command - try PHP as fallback
+        *)
+            echo -e "${YELLOW}Unknown command: $cmd${NC}"
+            echo "Trying PHP backend..."
+            run_php "$cmd" "$@"
+            ;;
+    esac
+}
+
+# Run main with all arguments
+main "$@"

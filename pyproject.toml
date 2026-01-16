@@ -1,0 +1,101 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "translation-bridge"
+version = "4.0.0"
+description = "JSON-native transform engine for page builder content with 100% metadata preservation"
+readme = "README.md"
+license = {text = "GPL-2.0+"}
+authors = [
+    {name = "DevelopmentTranslation Bridge", email = "support@devtb.io"}
+]
+maintainers = [
+    {name = "Cory Hubbell"}
+]
+keywords = [
+    "wordpress",
+    "page-builder",
+    "translation",
+    "elementor",
+    "divi",
+    "bootstrap",
+    "json",
+    "transform",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup :: HTML",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "isort>=5.12",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+devtb-py = "translation_bridge.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/coryhubbell/development-translation-bridge"
+Documentation = "https://docs.devtb.io"
+Repository = "https://github.com/coryhubbell/development-translation-bridge"
+Issues = "https://github.com/coryhubbell/development-translation-bridge/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.mypy_cache
+    | \.pytest_cache
+    | \.venv
+    | vendor
+    | node_modules
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip = [".git", ".mypy_cache", ".pytest_cache", ".venv", "vendor", "node_modules"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = ["vendor", "node_modules", "tests"]

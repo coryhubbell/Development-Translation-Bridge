@@ -25,7 +25,9 @@ install: ## Install all dependencies (PHP + Node)
 # Testing
 # -----------------------------------------------------------------------------
 
-test: ## Run PHPUnit tests
+test: test-unit test-integration test-python ## Run all tests (PHP + Python)
+
+test-php: ## Run PHPUnit tests
 	@composer test
 
 test-coverage: ## Run tests with coverage report
@@ -41,6 +43,10 @@ test-unit: ## Run unit tests only
 
 test-integration: ## Run integration tests only
 	@vendor/bin/phpunit --testsuite Integration --testdox
+
+test-python: ## Run Python tests (v4 transform engine)
+	@echo "Running Python tests..."
+	@PYTHONPATH=src python -m pytest tests/python/ -v
 
 lint-php: ## Check PHP syntax
 	@find includes translation-bridge -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"

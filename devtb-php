@@ -1,0 +1,87 @@
+#!/usr/bin/env php
+<?php
+/**
+ * DEVTB - DevelopmentTranslation Bridge CLI
+ *
+ * Command-line interface for the Translation Bridge™
+ * Converts between 10 page builder frameworks with AI optimization
+ *
+ * @package    DevelopmentTranslation_Bridge
+ * @subpackage CLI
+ * @version    4.0.0
+ * @author     DevelopmentTranslation Bridge
+ * @license    GPL-2.0+
+ */
+
+// Prevent direct access
+if (php_sapi_name() !== 'cli') {
+    die('This script can only be run from the command line.' . PHP_EOL);
+}
+
+// Define constants
+define('DEVTB_VERSION', '4.0.0');
+define('DEVTB_ROOT', __DIR__);
+define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes');
+define('DEVTB_TRANSLATION_BRIDGE', DEVTB_ROOT . '/translation-bridge');
+
+// Check PHP version
+if (version_compare(PHP_VERSION, '7.4.0', '<')) {
+    fwrite(STDERR, "\033[31mError: DEVTB requires PHP 7.4.0 or higher. You are running " . PHP_VERSION . "\033[0m" . PHP_EOL);
+    exit(1);
+}
+
+// Autoloader for project classes
+spl_autoload_register(function ($class) {
+    // Convert class name to file path
+    $class = str_replace('_', '-', strtolower($class));
+    $class = str_replace('\\', '/', $class);
+
+    // Possible locations
+    $locations = [
+        DEVTB_INCLUDES . '/class-' . $class . '.php',
+        DEVTB_TRANSLATION_BRIDGE . '/core/class-' . $class . '.php',
+        DEVTB_TRANSLATION_BRIDGE . '/parsers/class-' . $class . '.php',
+        DEVTB_TRANSLATION_BRIDGE . '/converters/class-' . $class . '.php',
+        DEVTB_TRANSLATION_BRIDGE . '/models/class-' . $class . '.php',
+        DEVTB_TRANSLATION_BRIDGE . '/utils/class-' . $class . '.php',
+    ];
+
+    foreach ($locations as $file) {
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
+    }
+});
+
+// Include required files
+require_once DEVTB_INCLUDES . '/class-devtb-cli.php';
+require_once DEVTB_INCLUDES . '/class-devtb-file-handler.php';
+require_once DEVTB_INCLUDES . '/class-devtb-logger.php';
+
+// Main execution
+try {
+    // Get command line arguments
+    $args = array_slice($argv, 1);
+
+    // Initialize CLI handler
+    $cli = new DEVTB_CLI($args);
+
+    // Execute command
+    $exit_code = $cli->execute();
+
+    // Exit with appropriate code
+    exit($exit_code);
+
+} catch (Exception $e) {
+    // Handle fatal errors
+    fwrite(STDERR, "\033[31m✗ Fatal Error: " . $e->getMessage() . "\033[0m" . PHP_EOL);
+
+    if (in_array('--debug', $args) || in_array('-d', $args)) {
+        fwrite(STDERR, "\nStack Trace:\n" . $e->getTraceAsString() . PHP_EOL);
+    } else {
+        fwrite(STDERR, "Run with --debug for more information." . PHP_EOL);
+    }
+
+    exit(1);
+}
