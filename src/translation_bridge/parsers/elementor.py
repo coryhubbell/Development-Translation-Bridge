@@ -63,7 +63,7 @@ class ElementorDocument:
     name="elementor_parser",
     framework="elementor",
     description="Parse Elementor page builder JSON format",
-    version="4.0.0",
+    version="4.1.0",
     file_extensions=[".json"],
 )
 class ElementorParser:

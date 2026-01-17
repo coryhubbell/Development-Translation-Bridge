@@ -226,7 +226,7 @@ class ParserRegistry:
     source_framework="elementor",
     target_framework="bootstrap",
     description="Transform Elementor JSON to Bootstrap HTML components",
-    version="4.0.0",
+    version="4.1.0",
 )
 def elementor_to_bootstrap(data: Any) -> str:
     """Transform Elementor JSON structure to Bootstrap 5 HTML."""
@@ -240,7 +240,7 @@ def elementor_to_bootstrap(data: Any) -> str:
     source_framework="bootstrap",
     target_framework="elementor",
     description="Transform Bootstrap HTML to Elementor JSON structure",
-    version="4.0.0",
+    version="4.1.0",
 )
 def bootstrap_to_elementor(data: Any) -> Any:
     """Transform Bootstrap HTML structure to Elementor JSON format."""

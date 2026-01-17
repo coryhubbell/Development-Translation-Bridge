@@ -1,10 +1,10 @@
-# 🚀 DevelopmentTranslation Bridge 4.0
+# 🚀 DevelopmentTranslation Bridge 4.1
 ## **Universal Page Builder Translation with JSON-Native Transforms & 100% Metadata Preservation**
 ### **Convert Between Any Framework • Optional AI-Ready Output • Full REST API Access**
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-4.1.0-blue.svg)
 ![CI](https://img.shields.io/github/actions/workflow/status/coryhubbell/development-translation-bridge/ci.yml?label=CI)
 ![CLI](https://img.shields.io/badge/CLI-Production_Ready-success.svg)
 ![API](https://img.shields.io/badge/REST_API_v2-Live-success.svg)
@@ -38,7 +38,50 @@
 
 ---
 
-## 🆕 **What's New in v4.0**
+## 🆕 **What's New in v4.1**
+
+### **Complete Framework Converter Suite**
+
+v4.1 adds **8 new Python converters** for all supported frameworks, enabling full site conversions:
+
+| New Converter | Output Format | Elements Supported |
+|---------------|---------------|-------------------|
+| **ElementorConverter** | JSON | 20+ widget types |
+| **DIVIConverter** | Shortcodes | 15+ modules |
+| **GutenbergConverter** | Block HTML | 15+ blocks |
+| **BricksConverter** | JSON | 15+ elements |
+| **WPBakeryConverter** | Shortcodes | 15+ elements |
+| **BeaverConverter** | JSON | 15+ modules |
+| **AvadaConverter** | Shortcodes | 15+ elements |
+| **OxygenConverter** | JSON | 20+ elements |
+
+### **New Site-Level Features**
+
+```bash
+# Parse full Elementor site exports
+devtb transform-site elementor bootstrap ./export-kit/
+
+# Extract global styles as CSS custom properties
+devtb transform elementor bootstrap page.json --extract-styles
+
+# Generate template parts (header/footer)
+devtb transform elementor bootstrap page.json --templates
+```
+
+### **StylesConverter & TemplateConverter**
+
+- **StylesConverter** - Extract global colors, fonts, and spacing as CSS custom properties
+- **TemplateConverter** - Generate header/footer template parts for static sites
+
+### **Comprehensive Test Suite**
+
+- **91 tests** covering all converters and site conversion workflows
+- Integration tests for full page conversions
+- Cross-framework validation
+
+---
+
+## **What's New in v4.0**
 
 ### **JSON-Native Transform Engine**
 
@@ -611,7 +654,33 @@ tests/
 
 ## 📋 **Version History**
 
-### **v4.0.0 - January 2026** 🚀 Latest
+### **v4.1.0 - January 2026** 🚀 Latest
+
+#### **🆕 Complete Framework Converter Suite:**
+- **8 new Python converters** - ElementorConverter, DIVIConverter, GutenbergConverter, BricksConverter, WPBakeryConverter, BeaverConverter, AvadaConverter, OxygenConverter
+- **ElementorSiteParser** - Parse full Elementor site exports (content.json, settings.json, templates)
+- **StylesConverter** - Extract global design tokens as CSS custom properties
+- **TemplateConverter** - Generate header/footer template parts for static sites
+
+#### **📦 New Components:**
+- `src/translation_bridge/converters/elementor.py` - Convert TO Elementor JSON
+- `src/translation_bridge/converters/divi.py` - Convert TO DIVI shortcodes
+- `src/translation_bridge/converters/gutenberg.py` - Convert TO Gutenberg blocks
+- `src/translation_bridge/converters/bricks.py` - Convert TO Bricks JSON
+- `src/translation_bridge/converters/wpbakery.py` - Convert TO WPBakery shortcodes
+- `src/translation_bridge/converters/beaver.py` - Convert TO Beaver Builder JSON
+- `src/translation_bridge/converters/avada.py` - Convert TO Avada Fusion shortcodes
+- `src/translation_bridge/converters/oxygen.py` - Convert TO Oxygen JSON
+- `src/translation_bridge/parsers/elementor_site.py` - Full site export parser
+- `src/translation_bridge/converters/styles.py` - Global styles extraction
+- `src/translation_bridge/converters/templates.py` - Template part generation
+
+#### **🧪 Comprehensive Test Suite:**
+- **91 tests** covering all converters and site conversion workflows
+- Integration tests for full page conversions across all 9 frameworks
+- Cross-framework validation and round-trip testing
+
+### **v4.0.0 - January 2026**
 
 #### **🆕 JSON-Native Transform Engine:**
 - **New `transform` command** - Lossless JSON-to-JSON conversions with 100% metadata preservation
@@ -2317,7 +2386,7 @@ Translation Bridge™ is a trademark of DevelopmentTranslation Bridge.
 
 **The framework that changes everything. The bridge that connects everything. The AI that accelerates everything.**
 
-### **DevelopmentTranslation Bridge™ 3.2 - Now Available**
+### **DevelopmentTranslation Bridge™ 4.1 - Now Available**
 
 </div>
 
