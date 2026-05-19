@@ -30,6 +30,18 @@ use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
 class DEVTB_Avada_Converter implements DEVTB_Converter_Interface {
 
 	/**
+	 * Upstream framework version this converter is calibrated against.
+	 */
+	public const TARGET_CMS_VERSION = '7.15.3';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
+
+	/**
 	 * Convert universal component to Avada shortcode
 	 *
 	 * @param DEVTB_Component|array $component Component to convert.

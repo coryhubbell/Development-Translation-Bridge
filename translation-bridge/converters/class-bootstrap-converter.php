@@ -1,6 +1,6 @@
 <?php
 /**
- * Bootstrap 5.3.3 Converter
+ * Bootstrap 5.3.x Converter
  *
  * Intelligent Bootstrap HTML converter featuring:
  * - Component to HTML generation
@@ -28,6 +28,18 @@ use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
  * Convert universal components to Bootstrap 5.3.3 HTML.
  */
 class DEVTB_Bootstrap_Converter implements DEVTB_Converter_Interface {
+
+	/**
+	 * Upstream framework version this converter is calibrated against.
+	 */
+	public const TARGET_CMS_VERSION = '5.3.8';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
 
 	/**
 	 * Convert universal component(s) to Bootstrap HTML

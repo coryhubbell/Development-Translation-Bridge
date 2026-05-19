@@ -30,6 +30,18 @@ use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
 class DEVTB_Bricks_Converter implements DEVTB_Converter_Interface {
 
 	/**
+	 * Upstream framework version this converter is calibrated against.
+	 */
+	public const TARGET_CMS_VERSION = '2.3.5';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
+
+	/**
 	 * Element ID counter for unique IDs
 	 *
 	 * @var int
@@ -132,11 +144,11 @@ class DEVTB_Bricks_Converter implements DEVTB_Converter_Interface {
 			'card'            => 'icon-box',
 			'rating'          => 'icon',
 			'slider'          => 'carousel',
-			'gallery'         => 'carousel',
+			'gallery'         => 'image-gallery',
 			'list'            => 'list',
 			'counter'         => 'counter',
 			'progress'        => 'progress-bar',
-			'testimonial'     => 'testimonial',
+			'testimonial'     => 'testimonials',
 			'tabs'            => 'tabs',
 			'accordion'       => 'accordion',
 			'social-icons'    => 'social-icons',

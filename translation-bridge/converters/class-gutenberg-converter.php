@@ -28,6 +28,18 @@ use DEVTB\TranslationBridge\Utils\DEVTB_HTML_Helper;
 class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 
 	/**
+	 * Upstream framework (WordPress core) version this converter is calibrated against.
+	 */
+	public const TARGET_CMS_VERSION = '6.9.0';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
+
+	/**
 	 * Convert universal component to Gutenberg block markup
 	 *
 	 * @param DEVTB_Component|array $component Component to convert.
@@ -129,10 +141,9 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	private function convert_column( DEVTB_Component $component ): string {
 		$attributes = $this->denormalize_attributes( $component->attributes );
 
-		// Extract width if present
+		// Extract width if present — canonical core/column width is a string with unit ("50%").
 		if ( isset( $component->attributes['width'] ) ) {
-			$width = floatval( $component->attributes['width'] );
-			$attributes['width'] = $width;
+			$attributes['width'] = floatval( $component->attributes['width'] ) . '%';
 		}
 
 		$opening = $this->create_block_delimiter( 'core/column', $attributes );
@@ -293,11 +304,13 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 
 			case 'core/heading':
 				$level = $component->attributes['level'] ?? 2;
-				return '<h' . $level . '>' . esc_html( $content ) . '</h' . $level . '>';
+				// `wp-block-heading` class is canonical since WP 6.3; without it 6.7+ marks the block invalid.
+				return '<h' . $level . ' class="wp-block-heading">' . esc_html( $content ) . '</h' . $level . '>';
 
 			case 'core/button':
 				$url = $component->attributes['href'] ?? '#';
-				return '<div class="wp-block-button"><a class="wp-block-button__link" href="' . esc_url( $url ) . '">' . esc_html( $content ) . '</a></div>';
+				// `wp-element-button` is required by theme.json element-styling pipeline since WP 6.1.
+				return '<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="' . esc_url( $url ) . '">' . esc_html( $content ) . '</a></div>';
 
 			case 'core/quote':
 				return '<blockquote class="wp-block-quote"><p>' . esc_html( $content ) . '</p></blockquote>';
@@ -319,7 +332,8 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 				return '<figure class="wp-block-audio"><audio controls src="' . esc_url( $url ) . '"></audio></figure>';
 
 			case 'core/separator':
-				return '<hr class="wp-block-separator"/>';
+				// `has-alpha-channel-opacity` is canonical since WP 6.5; without it the separator re-renders and loses opacity.
+				return '<hr class="wp-block-separator has-alpha-channel-opacity"/>';
 
 			case 'core/spacer':
 				$height = $component->attributes['height'] ?? '100px';
@@ -342,27 +356,14 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	private function denormalize_attributes( array $attributes ): array {
 		$gutenberg_attrs = [];
 
-		// Text color
-		if ( isset( $attributes['color'] ) ) {
-			$gutenberg_attrs['customTextColor'] = $attributes['color'];
-		}
+		// Note: `customTextColor`, `customBackgroundColor`, `customFontSize` were canonical
+		// pre-WP-5.8 and are no longer emitted. Color/typography now lives under `style.*`
+		// (built further down) so we avoid producing duplicate/conflicting attribute pairs.
 
-		// Background color
-		if ( isset( $attributes['background-color'] ) ) {
-			$gutenberg_attrs['customBackgroundColor'] = $attributes['background-color'];
-		}
-
-		// Font size
-		if ( isset( $attributes['font-size'] ) ) {
-			$size = intval( $attributes['font-size'] );
-			if ( $size > 0 ) {
-				$gutenberg_attrs['customFontSize'] = $size;
-			}
-		}
-
-		// Text alignment
+		// Text alignment (paragraph/heading use `textAlign`; `align` means block-level
+		// alignment in canonical 6.5+ schema and will mis-render text alignment).
 		if ( isset( $attributes['text-align'] ) ) {
-			$gutenberg_attrs['align'] = $attributes['text-align'];
+			$gutenberg_attrs['textAlign'] = $attributes['text-align'];
 		}
 
 		// Class name
@@ -375,9 +376,9 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 			$gutenberg_attrs['anchor'] = $attributes['id'];
 		}
 
-		// Width
+		// Width — canonical `core/column` width is a string with unit (e.g. "50%"), not a bare float.
 		if ( isset( $attributes['width'] ) ) {
-			$gutenberg_attrs['width'] = floatval( $attributes['width'] );
+			$gutenberg_attrs['width'] = floatval( $attributes['width'] ) . '%';
 		}
 
 		// Build style object
@@ -483,7 +484,10 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	 * @return string Opening delimiter.
 	 */
 	private function create_block_delimiter( string $block_name, array $attributes = [] ): string {
-		$delimiter = '<!-- wp:' . $block_name;
+		// Canonical WordPress serialization drops the `core/` namespace from core blocks.
+		$name = ( strpos( $block_name, 'core/' ) === 0 ) ? substr( $block_name, 5 ) : $block_name;
+
+		$delimiter = '<!-- wp:' . $name;
 
 		if ( ! empty( $attributes ) ) {
 			$delimiter .= ' ' . wp_json_encode( $attributes, JSON_UNESCAPED_SLASHES );
@@ -501,7 +505,8 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	 * @return string Closing delimiter.
 	 */
 	private function create_closing_delimiter( string $block_name ): string {
-		return '<!-- /wp:' . $block_name . ' -->';
+		$name = ( strpos( $block_name, 'core/' ) === 0 ) ? substr( $block_name, 5 ) : $block_name;
+		return '<!-- /wp:' . $name . ' -->';
 	}
 
 	/**

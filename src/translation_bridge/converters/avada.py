@@ -9,6 +9,10 @@ from typing import Any, Dict, List
 from html import escape
 
 
+# Upstream framework version this converter is calibrated against.
+TARGET_CMS_VERSION: str = "7.15.3"
+
+
 class AvadaConverter:
     """
     Converts parsed content to Avada Fusion Builder shortcode format.

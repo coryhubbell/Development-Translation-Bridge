@@ -30,6 +30,41 @@ use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
 class DEVTB_Elementor_Parser implements DEVTB_Parser_Interface {
 
 	/**
+	 * Detect Elementor 4.x ("Atomic Editor") content.
+	 *
+	 * 4.x introduced a new element model with `elType` values prefixed `e-`
+	 * (e.g. `e-div-block`, `e-flexbox`, `e-grid`) and a per-element `version`
+	 * field >= 4. 3.x uses bare elType strings.
+	 *
+	 * Callers should passthrough atomic v4 content untouched; native 4.x
+	 * parsing is planned for Translation Bridge 4.3.
+	 *
+	 * @param mixed $data Parsed JSON (array or scalar).
+	 * @return bool
+	 */
+	public static function is_atomic_v4_payload( $data ): bool {
+		if ( is_array( $data ) ) {
+			if ( isset( $data['elType'] ) && is_string( $data['elType'] ) && str_starts_with( $data['elType'], 'e-' ) ) {
+				return true;
+			}
+			if ( isset( $data['version'] ) && (int) $data['version'] >= 4 ) {
+				return true;
+			}
+			foreach ( [ 'content', 'elements' ] as $key ) {
+				if ( isset( $data[ $key ] ) && self::is_atomic_v4_payload( $data[ $key ] ) ) {
+					return true;
+				}
+			}
+			foreach ( $data as $item ) {
+				if ( is_array( $item ) && self::is_atomic_v4_payload( $item ) ) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Supported Elementor widget types
 	 *
 	 * @var array<string>

@@ -10,6 +10,10 @@ from html import escape
 import json
 
 
+# Upstream framework (WordPress core) version this converter is calibrated against.
+TARGET_CMS_VERSION: str = "6.9.0"
+
+
 class GutenbergConverter:
     """
     Converts parsed content to Gutenberg block format.
@@ -205,7 +209,8 @@ class GutenbergConverter:
 
         attrs = {}
         if settings.get("align"):
-            attrs["align"] = settings["align"]
+            # core/paragraph uses `textAlign` for text alignment; `align` is block-level alignment.
+            attrs["textAlign"] = settings["align"]
 
         return self._build_block("core/paragraph", attrs, html)
 
@@ -336,16 +341,22 @@ class GutenbergConverter:
         return self._build_block("core/html", {}, html)
 
     def _build_list_block(self, settings: Dict[str, Any]) -> str:
-        """Build core/list block."""
+        """Build core/list block.
+
+        Since WP 6.0 the canonical shape is core/list containing core/list-item innerBlocks,
+        not a flat <ul><li> blob. Flat HTML still parses but triggers a deprecation migration
+        on first edit and is fragile under block apiVersion 3.
+        """
         items = settings.get("icon_list", [])
 
-        list_items = []
+        list_items_html = []
         for item in items:
             if isinstance(item, dict):
                 text = item.get("text", "")
-                list_items.append(f'<li>{escape(text)}</li>')
+                inner = f'<li>{escape(text)}</li>'
+                list_items_html.append(self._build_block("core/list-item", {}, inner))
 
-        html = f'<ul class="wp-block-list">\n{"".join(list_items)}\n</ul>'
+        html = '<ul class="wp-block-list">\n' + "\n".join(list_items_html) + '\n</ul>'
         return self._build_block("core/list", {}, html)
 
     def _build_quote_block(self, settings: Dict[str, Any]) -> str:
@@ -392,12 +403,17 @@ class GutenbergConverter:
         return self._build_block("core/group", attrs, html)
 
     def _build_block(self, block_type: str, attrs: Dict[str, Any], html: str) -> str:
-        """Build a Gutenberg block with delimited comments."""
+        """Build a Gutenberg block with delimited comments.
+
+        Canonical WordPress serialization drops the `core/` namespace from core
+        blocks (`<!-- wp:paragraph -->`, not `<!-- wp:core/paragraph -->`).
+        """
+        name = block_type[5:] if block_type.startswith("core/") else block_type
         if attrs:
             attrs_json = json.dumps(attrs, separators=(',', ':'))
-            return f'<!-- wp:{block_type} {attrs_json} -->\n{html}\n<!-- /wp:{block_type} -->'
+            return f'<!-- wp:{name} {attrs_json} -->\n{html}\n<!-- /wp:{name} -->'
         else:
-            return f'<!-- wp:{block_type} -->\n{html}\n<!-- /wp:{block_type} -->'
+            return f'<!-- wp:{name} -->\n{html}\n<!-- /wp:{name} -->'
 
     def get_framework(self) -> str:
         """Return framework name."""

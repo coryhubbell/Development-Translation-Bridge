@@ -9,6 +9,10 @@ from typing import Any, Dict, List
 from html import escape
 
 
+# Upstream framework version this converter is calibrated against.
+TARGET_CMS_VERSION: str = "8.7.3"
+
+
 class WPBakeryConverter:
     """
     Converts parsed content to WPBakery shortcode format.

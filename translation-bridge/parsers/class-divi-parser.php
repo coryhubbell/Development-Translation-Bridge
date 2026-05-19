@@ -423,6 +423,27 @@ class DEVTB_DIVI_Parser implements DEVTB_Parser_Interface {
 	}
 
 	/**
+	 * Detect DIVI 5 ("block-based engine") content.
+	 *
+	 * DIVI 5 adopted the WordPress block serialization spec verbatim with namespace
+	 * `divi`, e.g. `<!-- wp:divi/section ... -->`. The 4.x shortcode track uses
+	 * `[et_pb_*]` and never emits `wp:divi/` HTML comments. Callers should
+	 * passthrough DIVI 5 content untouched; native parsing is planned for 4.3.
+	 *
+	 * @param string|array $content Content to check.
+	 * @return bool
+	 */
+	public static function is_divi5_payload( $content ): bool {
+		if ( is_array( $content ) ) {
+			$content = implode( "\n", $content );
+		}
+		if ( ! is_string( $content ) || empty( $content ) ) {
+			return false;
+		}
+		return (bool) preg_match( '/<!--\s*\/?wp:divi\//', $content );
+	}
+
+	/**
 	 * Validate DIVI shortcode content
 	 *
 	 * @param string|array $content Content to validate.
@@ -434,6 +455,11 @@ class DEVTB_DIVI_Parser implements DEVTB_Parser_Interface {
 		}
 
 		if ( ! is_string( $content ) || empty( $content ) ) {
+			return false;
+		}
+
+		// DIVI 5 (block-based) content is not handled by this 4.x parser — caller passthrough.
+		if ( self::is_divi5_payload( $content ) ) {
 			return false;
 		}
 

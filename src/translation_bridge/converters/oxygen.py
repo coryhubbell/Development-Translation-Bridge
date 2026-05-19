@@ -10,6 +10,13 @@ import secrets
 import json
 
 
+# Upstream framework version this converter is calibrated against.
+# The converter emits the legacy Oxygen 4.x JSON schema (`ct_*` element vocabulary);
+# Oxygen 6 is a ground-up rewrite with a new schema. Native Oxygen 6 support is
+# planned for Translation Bridge 4.3.
+TARGET_CMS_VERSION: str = "4.8.3"
+
+
 class OxygenConverter:
     """
     Converts parsed content to Oxygen Builder JSON format.

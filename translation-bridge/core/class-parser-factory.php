@@ -20,6 +20,8 @@ use DEVTB\TranslationBridge\Parsers\DEVTB_WPBakery_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Beaver_Builder_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Gutenberg_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Oxygen_Parser;
+use DEVTB\TranslationBridge\Parsers\DEVTB_Kadence_Parser;
+use DEVTB\TranslationBridge\Parsers\DEVTB_Thrive_Parser;
 
 /**
  * Class DEVTB_Parser_Factory
@@ -104,6 +106,17 @@ class DEVTB_Parser_Factory {
 			case 'oxygen-builder':
 				return new DEVTB_Oxygen_Parser();
 
+			case 'kadence':
+			case 'kadence-blocks':
+			case 'kadenceblocks':
+				return new DEVTB_Kadence_Parser();
+
+			case 'thrive':
+			case 'thrive-themes':
+			case 'thrive-architect':
+			case 'thrive-theme-builder':
+				return new DEVTB_Thrive_Parser();
+
 			default:
 				return null;
 		}
@@ -115,7 +128,7 @@ class DEVTB_Parser_Factory {
 	 * @return array<string> Array of framework names.
 	 */
 	public static function get_supported_frameworks(): array {
-		return [ 'bootstrap', 'divi', 'elementor', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen' ];
+		return [ 'bootstrap', 'divi', 'elementor', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen', 'kadence', 'thrive' ];
 	}
 
 	/**

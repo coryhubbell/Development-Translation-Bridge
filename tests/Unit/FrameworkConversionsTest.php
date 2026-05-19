@@ -2,7 +2,7 @@
 /**
  * Framework Conversions Test
  *
- * Tests all 72 framework conversion pairs (9 frameworks × 8 targets each).
+ * Tests all 110 framework conversion pairs (11 frameworks × 10 targets each).
  * Uses PHPUnit data providers to test every source→target combination.
  *
  * @package DevelopmentTranslation_Bridge
@@ -32,6 +32,8 @@ class FrameworkConversionsTest extends TestCase {
         'wpbakery',
         'bricks',
         'avada',
+        'kadence',
+        'thrive',
     ];
 
     /**
@@ -97,6 +99,8 @@ class FrameworkConversionsTest extends TestCase {
         require_once $bridge_path . '/parsers/class-wpbakery-parser.php';
         require_once $bridge_path . '/parsers/class-bricks-parser.php';
         require_once $bridge_path . '/parsers/class-avada-parser.php';
+        require_once $bridge_path . '/parsers/class-kadence-parser.php';
+        require_once $bridge_path . '/parsers/class-thrive-parser.php';
         // Claude parser removed - AI-ready is now a modifier, not a framework
 
         // Load converters
@@ -109,6 +113,8 @@ class FrameworkConversionsTest extends TestCase {
         require_once $bridge_path . '/converters/class-wpbakery-converter.php';
         require_once $bridge_path . '/converters/class-bricks-converter.php';
         require_once $bridge_path . '/converters/class-avada-converter.php';
+        require_once $bridge_path . '/converters/class-kadence-converter.php';
+        require_once $bridge_path . '/converters/class-thrive-converter.php';
         // Claude converter removed - AI-ready is now a modifier, not a framework
     }
 
@@ -353,6 +359,43 @@ This is sample Avada content.
 [/fusion_builder_row]
 [/fusion_builder_container]
 SHORTCODE;
+
+        // Kadence - Block markup with kadence/* namespace
+        self::$sampleInputs['kadence'] = <<<HTML
+<!-- wp:kadence/rowlayout {"uniqueID":"_kb001-c4ca","columns":1,"colLayout":"row"} -->
+<div class="kb-row-layout-wrap alignnone">
+<div class="kt-row-column-wrap kt-has-1-columns">
+<!-- wp:kadence/column {"uniqueID":"_kb002-c81e"} -->
+<div class="kadence-column_kb002-c81e inner-column">
+<div class="kt-inside-inner-col">
+<!-- wp:kadence/advancedheading {"uniqueID":"_kb003-eccb","level":2} -->
+<h2 class="kt-adv-heading_kb003-eccb wp-block-kadence-advancedheading">Welcome</h2>
+<!-- /wp:kadence/advancedheading -->
+<!-- wp:paragraph -->
+<p>This is sample Kadence content.</p>
+<!-- /wp:paragraph -->
+<!-- wp:kadence/advancedbtn {"uniqueID":"_kb004-a87f"} -->
+<div class="wp-block-kadence-advancedbtn kb-btns-outer-wrap kt-btn-align-inherit"><a href="#" class="kt-button"><span class="kt-btn-text">Learn More</span></a></div>
+<!-- /wp:kadence/advancedbtn -->
+</div>
+</div>
+<!-- /wp:kadence/column -->
+</div>
+</div>
+<!-- /wp:kadence/rowlayout -->
+HTML;
+
+        // Thrive - TCB HTML with data-css tokens + inline style block
+        self::$sampleInputs['thrive'] = <<<HTML
+<div class="tve_flt tcb-flex-row" data-css="tve-u-c4ca4238a0b"><div class="tcb-flex-col" data-css="tve-u-c81e728d9d4"><h2 class="tve_h2" data-css="tve-u-eccbc87e4b5">Welcome</h2><p class="tve_p" data-css="tve-u-a87ff679a2f">This is sample Thrive content.</p><div class="tcb-button-block" data-css="tve-u-e4da3b7fbbc"><a href="#" class="tcb-button-link"><span class="tcb-button-texts">Learn More</span></a></div></div></div>
+<style type="text/css" class="tve_custom_style">
+.tve-u-c4ca4238a0b{display:flex;flex-wrap:wrap;}
+.tve-u-c81e728d9d4{width:100%;}
+.tve-u-eccbc87e4b5{}
+.tve-u-a87ff679a2f{}
+.tve-u-e4da3b7fbbc{display:inline-block;cursor:pointer;}
+</style>
+HTML;
 
         // Claude removed - AI-ready is now a modifier, not a framework
         // Use 'bootstrap' with --ai-ready flag instead:

@@ -29,6 +29,21 @@ use DEVTB\TranslationBridge\Utils\DEVTB_Shortcode_Helper;
 class DEVTB_DIVI_Converter implements DEVTB_Converter_Interface {
 
 	/**
+	 * Upstream framework version this converter is calibrated against.
+	 *
+	 * DIVI 5 ships a block-based engine alongside legacy shortcodes; this
+	 * converter targets the 4.x legacy track. DIVI 5 native is planned for 4.3.
+	 */
+	public const TARGET_CMS_VERSION = '4.27.0';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
+
+	/**
 	 * Convert universal component(s) to DIVI shortcodes
 	 *
 	 * @param DEVTB_Component|DEVTB_Component[] $component Component(s) to convert.

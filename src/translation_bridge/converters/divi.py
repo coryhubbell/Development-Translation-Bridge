@@ -5,8 +5,29 @@ Converts universal/parsed data TO DIVI Builder shortcode format.
 Generates proper shortcode structure: [et_pb_section][et_pb_row][et_pb_column][et_pb_module]
 """
 
+import re
 from typing import Any, Dict, List, Optional
 from html import escape
+
+
+# Upstream framework version this converter is calibrated against.
+# DIVI 5 introduces a block-based engine; this converter targets the 4.x legacy track.
+# DIVI 5 native support is planned for 4.3.
+TARGET_CMS_VERSION: str = "4.27.0"
+
+# DIVI 5 uses WordPress block serialization with the `divi` namespace, e.g.
+# `<!-- wp:divi/section ... -->`. 4.x never emits this token. Callers should
+# detect via is_divi5_payload() and passthrough DIVI 5 content untouched.
+_DIVI5_BLOCK_PATTERN = re.compile(r"<!--\s*/?wp:divi/")
+
+
+def is_divi5_payload(content: Any) -> bool:
+    """Detect DIVI 5 ("block-based engine") content. See module-level note."""
+    if isinstance(content, list):
+        content = "\n".join(str(c) for c in content)
+    if not isinstance(content, str) or not content:
+        return False
+    return bool(_DIVI5_BLOCK_PATTERN.search(content))
 
 
 class DiviConverter:

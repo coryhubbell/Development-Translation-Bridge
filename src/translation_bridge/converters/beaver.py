@@ -10,6 +10,10 @@ import secrets
 import json
 
 
+# Upstream framework version this converter is calibrated against.
+TARGET_CMS_VERSION: str = "2.10.2"
+
+
 class BeaverConverter:
     """
     Converts parsed content to Beaver Builder JSON format.

@@ -14,6 +14,33 @@ from ..transforms.registry import ParserRegistry
 from ..transforms.core import TransformEngine, Zone, ZoneType
 
 
+def is_atomic_v4_payload(data: Any) -> bool:
+    """Detect Elementor 4.x ("Atomic Editor") content.
+
+    4.x introduced a new element model with `elType` values prefixed `e-`
+    (e.g. `e-div-block`, `e-flexbox`, `e-grid`) and a per-element `version`
+    field >= 4. 3.x uses bare elType strings (`section`, `column`, `widget`,
+    `container`).
+
+    Callers should passthrough atomic v4 content untouched; native 4.x parsing
+    is planned for Translation Bridge 4.3.
+    """
+    if isinstance(data, dict):
+        if str(data.get("elType", "")).startswith("e-"):
+            return True
+        try:
+            if int(data.get("version", 0) or 0) >= 4:
+                return True
+        except (TypeError, ValueError):
+            pass
+        for key in ("content", "elements"):
+            if key in data and is_atomic_v4_payload(data[key]):
+                return True
+    elif isinstance(data, list):
+        return any(is_atomic_v4_payload(item) for item in data)
+    return False
+
+
 @dataclass
 class ElementorElement:
     """Represents a parsed Elementor element."""
@@ -63,7 +90,7 @@ class ElementorDocument:
     name="elementor_parser",
     framework="elementor",
     description="Parse Elementor page builder JSON format",
-    version="4.1.0",
+    version="4.2.0",
     file_extensions=[".json"],
 )
 class ElementorParser:

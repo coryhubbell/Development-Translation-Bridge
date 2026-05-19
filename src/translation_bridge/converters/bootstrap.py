@@ -9,6 +9,10 @@ from typing import Any, Dict, List, Optional
 from html import escape
 
 
+# Upstream framework version this converter is calibrated against.
+TARGET_CMS_VERSION: str = "5.3.8"
+
+
 class BootstrapConverter:
     """
     Converts page builder JSON to Bootstrap 5 HTML.

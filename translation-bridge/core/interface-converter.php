@@ -66,4 +66,14 @@ interface DEVTB_Converter_Interface {
 	 * @return string|array Fallback output.
 	 */
 	public function get_fallback( DEVTB_Component $component );
+
+	/**
+	 * Get the upstream CMS version this converter is calibrated against.
+	 *
+	 * Used to track drift between our converter coverage and live CMS releases.
+	 * Format: semver-style string ("3.30.0", "7.15.3").
+	 *
+	 * @return string
+	 */
+	public function get_target_cms_version(): string;
 }

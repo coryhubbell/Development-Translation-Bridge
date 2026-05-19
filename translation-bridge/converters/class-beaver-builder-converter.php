@@ -28,6 +28,18 @@ use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
 class DEVTB_Beaver_Builder_Converter implements DEVTB_Converter_Interface {
 
 	/**
+	 * Upstream framework version this converter is calibrated against.
+	 */
+	public const TARGET_CMS_VERSION = '2.10.2';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
+
+	/**
 	 * Node ID counter for unique IDs
 	 *
 	 * @var int

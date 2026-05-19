@@ -20,6 +20,8 @@ use DEVTB\TranslationBridge\Converters\DEVTB_WPBakery_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Beaver_Builder_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Gutenberg_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Oxygen_Converter;
+use DEVTB\TranslationBridge\Converters\DEVTB_Kadence_Converter;
+use DEVTB\TranslationBridge\Converters\DEVTB_Thrive_Converter;
 
 /**
  * Class DEVTB_Converter_Factory
@@ -104,6 +106,17 @@ class DEVTB_Converter_Factory {
 			case 'oxygen-builder':
 				return new DEVTB_Oxygen_Converter();
 
+			case 'kadence':
+			case 'kadence-blocks':
+			case 'kadenceblocks':
+				return new DEVTB_Kadence_Converter();
+
+			case 'thrive':
+			case 'thrive-themes':
+			case 'thrive-architect':
+			case 'thrive-theme-builder':
+				return new DEVTB_Thrive_Converter();
+
 			default:
 				return null;
 		}
@@ -115,7 +128,7 @@ class DEVTB_Converter_Factory {
 	 * @return array<string> Array of framework names.
 	 */
 	public static function get_supported_frameworks(): array {
-		return [ 'bootstrap', 'divi', 'elementor', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen' ];
+		return [ 'bootstrap', 'divi', 'elementor', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen', 'kadence', 'thrive' ];
 	}
 
 	/**

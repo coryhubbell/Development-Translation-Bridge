@@ -10,6 +10,10 @@ import secrets
 import json
 
 
+# Upstream framework version this converter is calibrated against.
+TARGET_CMS_VERSION: str = "2.3.5"
+
+
 class BricksConverter:
     """
     Converts parsed content to Bricks Builder JSON format.
@@ -80,7 +84,7 @@ class BricksConverter:
         """
         return self._convert_to_elements(data)
 
-    def _convert_to_elements(self, data: Any, parent: int = 0) -> List[Dict[str, Any]]:
+    def _convert_to_elements(self, data: Any, parent: str = "0") -> List[Dict[str, Any]]:
         """Convert data to Bricks element structure."""
         elements = []
 
@@ -98,7 +102,7 @@ class BricksConverter:
 
         return elements
 
-    def _convert_element(self, element: Dict[str, Any], parent: int = 0) -> List[Dict[str, Any]]:
+    def _convert_element(self, element: Dict[str, Any], parent: str = "0") -> List[Dict[str, Any]]:
         """Convert a single element and its children."""
         el_type = element.get("elType", element.get("type", ""))
         widget_type = element.get("widgetType", "")
@@ -137,7 +141,7 @@ class BricksConverter:
 
         return elements
 
-    def _create_section(self, element: Dict[str, Any], parent: int) -> Dict[str, Any]:
+    def _create_section(self, element: Dict[str, Any], parent: str) -> Dict[str, Any]:
         """Create a Bricks section element."""
         settings = element.get("settings", {})
 
@@ -168,7 +172,7 @@ class BricksConverter:
             "settings": bricks_settings,
         }
 
-    def _create_container(self, element: Dict[str, Any], parent: int) -> Dict[str, Any]:
+    def _create_container(self, element: Dict[str, Any], parent: str) -> Dict[str, Any]:
         """Create a Bricks container/div element."""
         settings = element.get("settings", {})
 
@@ -189,7 +193,7 @@ class BricksConverter:
             "settings": bricks_settings,
         }
 
-    def _create_widget(self, element: Dict[str, Any], parent: int) -> Dict[str, Any]:
+    def _create_widget(self, element: Dict[str, Any], parent: str) -> Dict[str, Any]:
         """Create a Bricks widget element."""
         widget_type = element.get("widgetType", element.get("type", "text"))
         settings = element.get("settings", element.get("attributes", {}))
@@ -205,7 +209,7 @@ class BricksConverter:
             "settings": bricks_settings,
         }
 
-    def _create_generic(self, element: Dict[str, Any], parent: int) -> Dict[str, Any]:
+    def _create_generic(self, element: Dict[str, Any], parent: str) -> Dict[str, Any]:
         """Create a generic Bricks element."""
         comp_type = element.get("type", "div")
         bricks_name = self.ELEMENT_TYPE_MAP.get(comp_type, "div")

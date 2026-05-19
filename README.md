@@ -1,16 +1,16 @@
-# 🚀 DevelopmentTranslation Bridge 4.1
+# 🚀 DevelopmentTranslation Bridge 4.2
 ## **Universal Page Builder Translation with JSON-Native Transforms & 100% Metadata Preservation**
 ### **Convert Between Any Framework • Optional AI-Ready Output • Full REST API Access**
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-4.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)
 ![CI](https://img.shields.io/github/actions/workflow/status/coryhubbell/development-translation-bridge/ci.yml?label=CI)
 ![CLI](https://img.shields.io/badge/CLI-Production_Ready-success.svg)
 ![API](https://img.shields.io/badge/REST_API_v2-Live-success.svg)
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.3-purple.svg)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.8-purple.svg)
 ![DIVI Compatible](https://img.shields.io/badge/DIVI-Compatible-orange.svg)
 ![Elementor Compatible](https://img.shields.io/badge/Elementor-Compatible-red.svg)
 ![Avada Compatible](https://img.shields.io/badge/Avada-Compatible-crimson.svg)
@@ -19,8 +19,10 @@
 ![Beaver Builder Compatible](https://img.shields.io/badge/Beaver_Builder-Compatible-green.svg)
 ![Gutenberg Compatible](https://img.shields.io/badge/Gutenberg-Compatible-navy.svg)
 ![Oxygen Compatible](https://img.shields.io/badge/Oxygen-Compatible-cyan.svg)
+![Kadence Compatible](https://img.shields.io/badge/Kadence-Compatible-violet.svg)
+![Thrive Compatible](https://img.shields.io/badge/Thrive-Compatible-amber.svg)
 ![AI-Ready](https://img.shields.io/badge/AI--Ready-Optional_Flag-black.svg)
-![Frameworks](https://img.shields.io/badge/Frameworks-9-brightgreen.svg)
+![Frameworks](https://img.shields.io/badge/Frameworks-11-brightgreen.svg)
 ![Testing](https://img.shields.io/badge/Testing-PHPUnit_9.5-success.svg)
 ![Security](https://img.shields.io/badge/Security-AES--256--CBC-critical.svg)
 ![Code Quality](https://img.shields.io/badge/Code_Quality-Enterprise-gold.svg)

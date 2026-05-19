@@ -30,6 +30,21 @@ use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
 class DEVTB_Elementor_Converter implements DEVTB_Converter_Interface {
 
 	/**
+	 * Upstream framework version this converter is calibrated against.
+	 *
+	 * Elementor 4.x ("Atomic Editor") is a full rewrite and is detected and
+	 * passthrough'd as of 4.2; native 4.x support is planned for 4.3.
+	 */
+	public const TARGET_CMS_VERSION = '3.30.0';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
+
+	/**
 	 * Element ID counter for unique IDs
 	 *
 	 * @var int
@@ -359,7 +374,8 @@ class DEVTB_Elementor_Converter implements DEVTB_Converter_Interface {
 			'form'            => 'form',
 			'nav'             => 'nav-menu',
 			'pricing-table'   => 'price-table',
-			'cta'             => 'call-to-action',
+			// CTA falls back to icon-box for Elementor free core; "call-to-action" is Pro-only.
+			'cta'             => 'icon-box',
 			'countdown'       => 'countdown',
 			'blockquote'      => 'blockquote',
 			'portfolio'       => 'portfolio',

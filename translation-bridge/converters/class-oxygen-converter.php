@@ -29,6 +29,22 @@ use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
 class DEVTB_Oxygen_Converter implements DEVTB_Converter_Interface {
 
 	/**
+	 * Upstream framework version this converter is calibrated against.
+	 *
+	 * The converter emits the legacy Oxygen 4.x JSON schema (`ct_*` element vocabulary,
+	 * `id`/`ct_id`/`ct_parent` linkage). Oxygen 6 is a ground-up rewrite with a new
+	 * schema; native Oxygen 6 support is planned for Translation Bridge 4.3.
+	 */
+	public const TARGET_CMS_VERSION = '4.8.3';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
+
+	/**
 	 * Element ID counter
 	 *
 	 * @var int
@@ -380,9 +396,11 @@ class DEVTB_Oxygen_Converter implements DEVTB_Converter_Interface {
 	 * Get fallback conversion
 	 */
 	public function get_fallback( DEVTB_Component $component ) {
-		// Return as code block for unsupported types
+		// Return as code block for unsupported types.
+		// Bug fix (4.2): was referencing $this->current_id which doesn't exist; the class
+		// declares $id_counter.
 		return [
-			'id' => ++$this->current_id,
+			'id' => ++$this->id_counter,
 			'name' => 'ct_code_block',
 			'options' => [
 				'code' => $component->content ?? '',

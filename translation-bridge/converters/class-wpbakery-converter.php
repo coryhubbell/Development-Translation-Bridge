@@ -30,6 +30,18 @@ use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
 class DEVTB_WPBakery_Converter implements DEVTB_Converter_Interface {
 
 	/**
+	 * Upstream framework version this converter is calibrated against.
+	 */
+	public const TARGET_CMS_VERSION = '8.7.3';
+
+	/**
+	 * @inheritDoc
+	 */
+	public function get_target_cms_version(): string {
+		return self::TARGET_CMS_VERSION;
+	}
+
+	/**
 	 * Convert universal component to WPBakery shortcode
 	 *
 	 * @param DEVTB_Component|array $component Component to convert.

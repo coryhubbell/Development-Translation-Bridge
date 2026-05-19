@@ -10,6 +10,12 @@ import secrets
 from dataclasses import dataclass, field
 
 
+# Upstream framework version this converter is calibrated against.
+# Elementor 4.x ("Atomic Editor") is a full rewrite; it is detect-and-passthrough'd
+# in 4.2 and planned for native support in 4.3.
+TARGET_CMS_VERSION: str = "3.30.0"
+
+
 @dataclass
 class ElementorSettings:
     """Settings for Elementor conversion."""
@@ -17,7 +23,7 @@ class ElementorSettings:
     include_responsive: bool = True
     include_hover_states: bool = True
     default_font_family: str = "Poppins"
-    version: str = "3.18.0"
+    version: str = TARGET_CMS_VERSION
 
 
 class ElementorConverter:
@@ -55,7 +61,8 @@ class ElementorConverter:
         "nav": "nav-menu",
         "menu": "nav-menu",
         "rating": "star-rating",
-        "cta": "call-to-action",
+        # CTA falls back to icon-box for Elementor free core; "call-to-action" is Pro-only.
+        "cta": "icon-box",
         "html": "html",
     }
 
