@@ -4,7 +4,7 @@ Theme URI: https://github.com/coryhubbell/development-translation-bridge
 Author: Cory Hubbell
 Author URI: https://github.com/coryhubbell
 Description: DevelopmentTranslation Bridge - Universal WordPress page builder translation across 14 frameworks. Converts content between Bootstrap, DIVI, DIVI 5, Elementor, Elementor 4 Atomic, Avada Fusion, Bricks, WPBakery, Beaver Builder, Gutenberg, Oxygen, Oxygen 6, Kadence, and Thrive Architect. Includes the Translation Bridge architecture, AI-Ready annotations (--ai-ready flag), and a REST API + CLI for programmatic use.
-Version: 4.3.1
+Version: 4.3.2
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 8.1
@@ -13,22 +13,25 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: devtb
 Tags: page-builder, translation, bootstrap, elementor, divi, conversion, rest-api, cli
 
-DevelopmentTranslation Bridge is a revolutionary theme that enables seamless translation between major page builder frameworks:
+DevelopmentTranslation Bridge enables seamless translation across 14 page builder frameworks:
 - Bootstrap 5.3.x (HTML/CSS)
 - DIVI Builder (shortcodes)
+- DIVI 5 (block markup)
 - Elementor (JSON)
+- Elementor 4 Atomic (JSON)
 - Avada Fusion Builder (HTML)
 - Bricks Builder (JSON)
 - WPBakery Page Builder (shortcodes)
 - Beaver Builder (JSON)
 - Gutenberg Block Editor (HTML)
 - Oxygen Builder (JSON)
+- Oxygen 6 / Breakdance (JSON)
 - Kadence Blocks + Theme (block markup)
-- Thrive Themes Architect + Theme Builder (HTML)
+- Thrive Architect (HTML)
 
 Key Features:
 - Translation Bridge architecture
-- 110 translation pairs (11 frameworks x 10 targets)
+- 182 translation pairs (14 frameworks x 13 targets)
 - Optional AI-Ready annotations (--ai-ready flag)
 - 98% visual accuracy in conversions
 - 30-second conversion times
@@ -51,7 +54,7 @@ This theme is optimized for developers who work with multiple page builders and 
 /*
 ╔════════════════════════════════════════════════════════════════════════════╗
 ║               DEVELOPMENTTRANSLATION BRIDGE THEME STYLES                    ║
-║                    Translation Bridge System v3.3.0                         ║
+║                    Translation Bridge System v4.3.2                         ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
 This theme is primarily a framework translation system. The visual styles are

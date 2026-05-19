@@ -6,7 +6,7 @@
  * admin interface integration.
  *
  * @package    DevelopmentTranslation_Bridge
- * @version    4.3.1
+ * @version    4.3.2
  * @license    GPL-2.0+
  */
 
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('DEVTB_THEME_VERSION', '4.3.1');
+define('DEVTB_THEME_VERSION', '4.3.2');
 define('DEVTB_ROOT', get_template_directory());
 define('DEVTB_THEME_DIR', get_template_directory());
 define('DEVTB_THEME_URL', get_template_directory_uri());
@@ -312,7 +312,7 @@ function devtb_admin_page() {
                     </tr>
                     <tr>
                         <td><code>devtb translate-all &lt;source&gt; &lt;file&gt;</code></td>
-                        <td><?php _e('Translate to all frameworks (9 files)', 'devtb'); ?></td>
+                        <td><?php _e('Translate to all frameworks (14 files)', 'devtb'); ?></td>
                     </tr>
                     <tr>
                         <td><code>devtb list-frameworks</code></td>
@@ -396,7 +396,7 @@ function devtb_frameworks_page() {
 
         <div class="card">
             <h2>Framework Details</h2>
-            <p><strong>Translation Pairs:</strong> 72 (9 frameworks x 8 targets)</p>
+            <p><strong>Translation Pairs:</strong> 182 (14 frameworks x 13 targets)</p>
             <p><strong>AI-Ready Option:</strong> Use <code>--ai-ready</code> flag to add AI-friendly attributes</p>
             <p><strong>Visual Accuracy:</strong> 98% across all conversions</p>
             <p><strong>Conversion Speed:</strong> ~30 seconds average</p>

@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    4.3.1
+ * @version    4.3.2
  */
 
 class DEVTB_CLI {
@@ -691,7 +691,7 @@ class DEVTB_CLI {
         echo "    Translate from one framework to another" . PHP_EOL;
         echo PHP_EOL;
         echo "  " . $this->bold("translate-all") . " <source> <file>" . PHP_EOL;
-        echo "    Translate to all frameworks (generates 9 files)" . PHP_EOL;
+        echo "    Translate to all frameworks (generates 14 files)" . PHP_EOL;
         echo PHP_EOL;
         echo "  " . $this->bold("list-frameworks") . PHP_EOL;
         echo "    List all supported frameworks" . PHP_EOL;

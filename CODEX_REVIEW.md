@@ -1,15 +1,15 @@
-# Codex Review Summary — v4.3.1 Production-Readiness Patch
+# Codex Review Summary — v4.3.1 / v4.3.2 Production-Readiness Patch
 
-**Released:** [v4.3.1](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1)
+**Released:** [v4.3.2](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.2) (errata cleanup) — built on [v4.3.1](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1)
 **Baseline:** `8dd249b` (v4.3.0 HEAD prior to this work; previous tag `a9e0a06` / v4.3.0 itself)
-**Commits in this patch:** `8d99c0a` (core) → `e6db31f` (style.css + lockfiles + PHP floor + admin build docs) → the v4.3.1 tag commit (version-string bump to 4.3.1 + this review summary)
-**Scope:** Production fatal fix → matrix consistency → test green → deprecation cleanup → release hygiene
+**Commits in this patch:** `8d99c0a` (core) → `e6db31f` (style.css + lockfiles + PHP floor + admin build docs) → the v4.3.1 tag commit (version-string bump + this review summary) → the v4.3.2 tag commit (user-facing copy errata + version bump)
+**Scope:** Production fatal fix → matrix consistency → test green → deprecation cleanup → release hygiene → user-facing copy
 
 ---
 
 ## TL;DR
 
-| Metric                  | Before (v4.3.0 / `8dd249b`)         | After (v4.3.1 / `6fbe2ce`)           |
+| Metric                  | Before (v4.3.0 / `8dd249b`)         | After (v4.3.2)                       |
 |-------------------------|-------------------------------------|--------------------------------------|
 | CLI `./devtb translate` | **Fatal** (autoloader broken)       | **Works** end-to-end across 14 frameworks |
 | Framework matrix        | 9 / 9 / 10 / 9 mismatched           | 14 everywhere (REST, CLI, admin, file-handler) |
@@ -19,7 +19,8 @@
 | Admin lint              | 2 errors, 1 warning                 | **Clean**                            |
 | Admin build             | Passed (with stale fallback string) | Passed                                |
 | Stale `claude` framework references | 7 files                  | 0                                    |
-| Stale version strings   | 13+ `@version` doc comments + 4 metadata sites | All synced to 4.3.1       |
+| Stale version strings   | 13+ `@version` doc comments + 4 metadata sites | All synced to 4.3.2       |
+| Stale user-facing copy  | "9 files", "72 pairs", "110 pairs", "v3.3.0" banner, 11-framework list | All updated to "14 files", "182 pairs", "v4.3.2" banner, 14-framework list |
 | Declared PHP floor      | 7.4 (EOL'd 2022-11)                 | **8.1**                              |
 | Security advisories     | 1 high (CVE-2026-24765 in phpunit)  | **0** (phpunit bumped 9.6.29 → 9.6.34) |
 | Admin build step        | Undocumented; `dist/` gitignored    | Documented in README + soft-enforced via `prepack` |
@@ -346,6 +347,22 @@ This file was first written against commit `8d99c0a` alone. Since then:
 - **PHP floor bumped to 8.1** — supersedes the original assumption that 7.4 was fine to keep. See the `e6db31f` section above.
 - **CVE-2026-24765 cleared** — surfaced and resolved during the `composer.lock` regeneration. Was not present in the original commit.
 - **Admin build step is now documented + soft-enforced** — the original `8d99c0a` left this as a known gap. `e6db31f` closes it.
-- **Versions are now 4.3.1** — every `4.3.0` reference outside CHANGELOG/release notes is now `4.3.1`.
+- **Versions are now 4.3.2** — every `4.3.0`/`4.3.1` reference outside CHANGELOG/release notes is now `4.3.2`.
+- **User-facing copy errata fixed in v4.3.2** — see the section below.
 
 The Step-by-Step Change Index (Steps 1-9) above still describes the core fixes accurately; only the surrounding metadata moved.
+
+## v4.3.2 — User-facing copy errata
+
+External code review (post v4.3.1) flagged three pockets of stale user-facing text that the matrix-consistency pass missed because they live in human-language strings rather than data structures:
+
+- **`style.css` theme header / comment block (lines 16-31, 54).** The long description still enumerated 11 frameworks, claimed "110 translation pairs (11 frameworks x 10 targets)", and the ASCII banner read "Translation Bridge System v3.3.0". WordPress shows this block in the Themes admin UI. Updated to: 14-framework list, "182 translation pairs (14 frameworks x 13 targets)", and the v4.3.2 banner.
+- **`functions.php` admin help table.** The `translate-all` row described its output as "9 files" (line 315), and the Framework Details card under the admin menu showed "Translation Pairs: 72 (9 frameworks x 8 targets)" (line 399). Both now reflect 14 / 182.
+
+No code or test behavior changed — these are strings displayed to operators in the WP admin and theme-listing UI. Confirmed via:
+```bash
+grep -rnE "9 files|72 pairs|110 pairs|11 frameworks|v3\.3\.0" --include="*.php" --include="*.css" --include="*.md" .
+# → no matches outside vendor/, node_modules/, CHANGELOG, and historical release notes
+```
+
+This release is a forward commit on `main` (no history rewrite) and a normal annotated tag (`v4.3.2`).

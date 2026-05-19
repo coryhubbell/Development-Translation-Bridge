@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage WPBakery
- * @version    4.3.1
+ * @version    4.3.2
  */
 
 class DEVTB_WPBakery_Templates {
