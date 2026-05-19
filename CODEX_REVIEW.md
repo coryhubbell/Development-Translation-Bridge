@@ -1,14 +1,15 @@
-# Codex Review Summary — v4.3.0 Production-Readiness Fixes
+# Codex Review Summary — v4.3.1 Production-Readiness Patch
 
-**Branch:** `main` (uncommitted at time of writing; this PR squashes 10 logical steps)
-**Baseline:** `8dd249b` (HEAD prior to this change)
-**Scope:** Production fatal fix → matrix consistency → test green → deprecation cleanup
+**Released:** [v4.3.1](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1)
+**Baseline:** `8dd249b` (v4.3.0 HEAD prior to this work; previous tag `a9e0a06` / v4.3.0 itself)
+**Commits in this patch:** `8d99c0a` (core) → `e6db31f` (style.css + lockfiles + PHP floor + admin build docs) → the v4.3.1 tag commit (version-string bump to 4.3.1 + this review summary)
+**Scope:** Production fatal fix → matrix consistency → test green → deprecation cleanup → release hygiene
 
 ---
 
 ## TL;DR
 
-| Metric                  | Before                              | After                                |
+| Metric                  | Before (v4.3.0 / `8dd249b`)         | After (v4.3.1 / `6fbe2ce`)           |
 |-------------------------|-------------------------------------|--------------------------------------|
 | CLI `./devtb translate` | **Fatal** (autoloader broken)       | **Works** end-to-end across 14 frameworks |
 | Framework matrix        | 9 / 9 / 10 / 9 mismatched           | 14 everywhere (REST, CLI, admin, file-handler) |
@@ -18,7 +19,10 @@
 | Admin lint              | 2 errors, 1 warning                 | **Clean**                            |
 | Admin build             | Passed (with stale fallback string) | Passed                                |
 | Stale `claude` framework references | 7 files                  | 0                                    |
-| Stale version strings   | 13+ `@version` doc comments + 4 metadata sites | All synced to 4.3.0       |
+| Stale version strings   | 13+ `@version` doc comments + 4 metadata sites | All synced to 4.3.1       |
+| Declared PHP floor      | 7.4 (EOL'd 2022-11)                 | **8.1**                              |
+| Security advisories     | 1 high (CVE-2026-24765 in phpunit)  | **0** (phpunit bumped 9.6.29 → 9.6.34) |
+| Admin build step        | Undocumented; `dist/` gitignored    | Documented in README + soft-enforced via `prepack` |
 
 ---
 
@@ -265,6 +269,54 @@ grep -rn "'claude'" --include="*.php" --include="*.ts" --include="*.tsx" include
 
 ---
 
+## v4.3.1 Follow-Up Commits
+
+The bulk of the work above landed in `8d99c0a`. Two smaller commits followed before tagging v4.3.1:
+
+### `e6db31f` — Release hygiene (style.css, lockfiles, PHP floor, admin build docs)
+
+This commit closed the remaining "production-clean" gaps after the core fixes shipped:
+
+- **`style.css` theme header** — Version `4.2.0` → `4.3.0`; Description rewritten to enumerate all 14 frameworks (was 11); dropped the stale `claude` tag from the Tags line; `Requires PHP: 7.4` → `8.1`. WordPress reads this header to display the theme version, so it had to match.
+- **PHP floor: 7.4 → 8.1.** Bumped in three places that act as the version gate:
+  - `composer.json` `"php": ">=8.1"`
+  - `devtb-php` `version_compare(PHP_VERSION, '8.1.0', '<')` runtime check
+  - README install prerequisites
+  Rationale: PHP 7.4 EOL'd 2022-11 and 8.0 EOL'd 2023-11. Static analysis confirmed no PHP 8-only syntax was actually in use, so 7.4 still technically worked — but staying there masked the fact that the codebase is only tested against 8.5.3 and will accumulate deprecation noise as more 8.x rules land. 8.1 has security support through 2025-12. User-confirmed decision.
+- **`composer.lock` regenerated** — beyond just refreshing the content-hash, `composer update` surfaced `CVE-2026-24765` (Unsafe Deserialization in PHPT Code Coverage Handling, severity high) affecting phpunit 9.6.29. Bumped to 9.6.34 (still in the existing `^9.5` constraint range — no manual constraint change needed). Pulled along: `doctrine/instantiator 2.0.0 → 2.1.0`, `nikic/php-parser v5.6.2 → v5.7.0`, `sebastian/comparator 4.0.9 → 4.0.10`. `composer audit` is now clean.
+- **`admin/package-lock.json` regenerated** — picked up the `admin/package.json` version bump to 4.3.0 (root project version, not transitive deps).
+- **`admin/package.json` release scripts** — added two:
+  ```json
+  "prepack":       "npm run build",
+  "release-build": "npm ci && npm run lint && npm run build"
+  ```
+  `prepack` is npm's lifecycle hook for `npm pack`, so anyone bundling a release tarball automatically rebuilds the React UI. `release-build` is a manual one-liner for release engineers (clean install + lint + build).
+- **README.md install section** — added the `cd admin && npm ci && npm run build` step explicitly, since `admin/dist/` is gitignored (verified via `admin/.gitignore:11`). Bumped PHP requirement to 8.1+; added Node 20+ to prereqs.
+
+### Version string bump to 4.3.1 (this commit is the v4.3.1 tag)
+
+Mechanical pass syncing every version reference for the v4.3.1 tag, plus this `CODEX_REVIEW.md` update folded in so the review summary ships inside the tag. 30 version-string files touched, all single-string substitutions:
+
+- `style.css` `Version: 4.3.0` → `4.3.1`
+- `composer.json`, `package.json`, `admin/package.json` `version` field
+- `composer.lock` + `admin/package-lock.json` regenerated
+- `devtb` (bash wrapper) `VERSION="4.3.0"` → `"4.3.1"`
+- `devtb-php` `define('DEVTB_VERSION', '4.3.0')` → `'4.3.1'` (guarded by `!defined()`)
+- `functions.php` `DEVTB_THEME_VERSION` constant
+- `tests/bootstrap.php` `DEVTB_VERSION` constant
+- `includes/class-devtb-config.php` `VERSION` const
+- `includes/class-devtb-visual-interface.php` fallback string at render_page line 297
+- `admin/src/components/Layout/Toolbar.tsx` fallback string
+- All `@version` PHP doc comments across `includes/*.php` and `functions.php` (24 doc comments)
+
+**Trap caught.** The CLI's reported version comes from the **bash wrapper** `devtb` line 25, not from the PHP `DEVTB_VERSION` constant. Without bumping the bash wrapper, `./devtb --version` would still print `v4.3.0` even after every PHP-side bump. Re-running the smoke test caught it before commit.
+
+### Tag + Release
+
+After the version-bump commit landed, `git tag -a v4.3.1` was created and pushed. `gh release create v4.3.1` published the GitHub release at https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1 with notes covering the patch and breaking-change callouts. The tag was amended once to fold this review summary into the tagged commit, so `CODEX_REVIEW.md` ships inside the tarball.
+
+---
+
 ## Reviewer Hot Spots
 
 If you only have time to look at three things:
@@ -284,3 +336,16 @@ If you only have time to look at three things:
 - **Admin `FrameworkSelector`** still hardcodes the 14-framework array. A TODO comment was added pointing to `/devtb/v2/frameworks` as the eventual source of truth. Same for `MonacoEditor`'s language map. Per the plan: "no new abstractions unless they're a clear win" — wiring up runtime fetch + loading states is a meaningful refactor.
 
 - **Browserslist data is 6 months old**, baseline-browser-mapping is 2 months old. Vite emits a soft warning. Updating these is a one-line npm command but it's a dependency-floor change that should be its own commit.
+
+- **Short CLI flags (`-d`, `-v`) remain greedy.** Long flags got a `BOOLEAN_FLAGS` schema in Step 3 to fix `--dry-run divi` greedy-consumption, but short flags stayed greedy because `-d` is the short for both `--debug` (boolean) and `--output-dir` (value-taking). Disambiguating short flags requires per-command argument schemas, which is out of scope. Inline comment on `class-devtb-cli.php:185-195` explains the trade-off.
+
+## Changes from the original v4.3.0 patch (this doc supersedes the `8d99c0a`-only summary)
+
+This file was first written against commit `8d99c0a` alone. Since then:
+
+- **PHP floor bumped to 8.1** — supersedes the original assumption that 7.4 was fine to keep. See the `e6db31f` section above.
+- **CVE-2026-24765 cleared** — surfaced and resolved during the `composer.lock` regeneration. Was not present in the original commit.
+- **Admin build step is now documented + soft-enforced** — the original `8d99c0a` left this as a known gap. `e6db31f` closes it.
+- **Versions are now 4.3.1** — every `4.3.0` reference outside CHANGELOG/release notes is now `4.3.1`.
+
+The Step-by-Step Change Index (Steps 1-9) above still describes the core fixes accurately; only the surrounding metadata moved.
