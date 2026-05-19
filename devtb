@@ -6,7 +6,7 @@
 #   - transform, transform-site, analyze → Python (v4 JSON-native engine)
 #   - translate, translate-all, etc. → PHP (v3 HTML intermediate)
 #
-# Version: 4.0.0
+# Version: 4.3.0
 # =============================================================================
 
 set -e
@@ -22,13 +22,13 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Version
-VERSION="4.0.0"
+VERSION="4.3.0"
 
 # Show version
 show_version() {
     echo "DevelopmentTranslation Bridge v${VERSION}"
-    echo "  PHP engine: v3.4.0 (translate commands)"
-    echo "  Python engine: v4.0.0 (transform commands)"
+    echo "  PHP engine: v3.x (translate commands)"
+    echo "  Python engine: v4.x (transform commands)"
 }
 
 # Show help
