@@ -3,15 +3,15 @@ Theme Name: DevelopmentTranslation Bridge
 Theme URI: https://github.com/coryhubbell/development-translation-bridge
 Author: Cory Hubbell
 Author URI: https://github.com/coryhubbell
-Description: DevelopmentTranslation Bridge - The world's first universal page builder translation system. Seamlessly convert between Bootstrap 5.3.x, DIVI, Elementor, Avada Fusion, Bricks, WPBakery, Beaver Builder, Gutenberg, Oxygen, Kadence, and Thrive Themes. Featuring the Translation Bridge architecture with 98% visual accuracy, 30-second conversion times, optional AI-Ready annotations (--ai-ready flag), and comprehensive AI integration for modern WordPress development.
-Version: 4.2.0
+Description: DevelopmentTranslation Bridge - Universal WordPress page builder translation across 14 frameworks. Converts content between Bootstrap, DIVI, DIVI 5, Elementor, Elementor 4 Atomic, Avada Fusion, Bricks, WPBakery, Beaver Builder, Gutenberg, Oxygen, Oxygen 6, Kadence, and Thrive Architect. Includes the Translation Bridge architecture, AI-Ready annotations (--ai-ready flag), and a REST API + CLI for programmatic use.
+Version: 4.3.0
 Requires at least: 5.8
 Tested up to: 6.9
-Requires PHP: 7.4
+Requires PHP: 8.1
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: devtb
-Tags: page-builder, translation, bootstrap, elementor, divi, ai, claude, conversion
+Tags: page-builder, translation, bootstrap, elementor, divi, conversion, rest-api, cli
 
 DevelopmentTranslation Bridge is a revolutionary theme that enables seamless translation between major page builder frameworks:
 - Bootstrap 5.3.x (HTML/CSS)

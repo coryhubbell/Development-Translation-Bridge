@@ -90,8 +90,9 @@ Full notes: [GitHub release v4.3.0](https://github.com/coryhubbell/Development-T
 
 ### Requirements
 
-- PHP **7.4+** (for the `translate` path, plugin install, and REST API)
+- PHP **8.1+** (for the `translate` path, theme install, and REST API)
 - Python **3.9+** (for the `transform` path and CLI)
+- Node **20+** + npm (only to rebuild the React admin UI from source)
 - Composer 2.0+ and pip (only if installing from source)
 
 ### Install
@@ -105,6 +106,15 @@ composer install
 
 # Python package
 pip install -e .
+
+# Build the React admin UI (required for the Visual Interface in production).
+# admin/dist/ is gitignored, so this step is needed after every clone or pull
+# that touches admin/. In WP_DEBUG mode the Vite dev server is used instead;
+# see admin/README.md for the dev workflow.
+cd admin
+npm ci
+npm run build
+cd ..
 
 # Make the CLI executable
 chmod +x devtb
