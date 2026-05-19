@@ -22,7 +22,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Version
-VERSION="4.3.2"
+VERSION="4.3.3"
 
 # Show version
 show_version() {

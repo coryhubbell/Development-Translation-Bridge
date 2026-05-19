@@ -116,7 +116,7 @@ function Toolbar() {
         </div>
 
         <span className="text-xs px-2 py-1 bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300 rounded-full font-medium">
-          v{window.devtbData?.version || '4.3.2'}
+          v{window.devtbData?.version || '4.3.3'}
         </span>
 
         {/* Dirty indicator */}

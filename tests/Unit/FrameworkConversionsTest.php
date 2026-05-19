@@ -2,7 +2,7 @@
 /**
  * Framework Conversions Test
  *
- * Tests all 110 framework conversion pairs (11 frameworks × 10 targets each).
+ * Tests all 182 framework conversion pairs (14 frameworks × 13 targets each).
  * Uses PHPUnit data providers to test every source→target combination.
  *
  * @package DevelopmentTranslation_Bridge
@@ -521,7 +521,7 @@ HTML;
     }
 
     /**
-     * Data provider for all 72 framework conversion pairs
+     * Data provider for all framework conversion pairs (count = N × (N-1)).
      *
      * @return array Test data sets
      */

@@ -6,7 +6,7 @@
  * admin interface integration.
  *
  * @package    DevelopmentTranslation_Bridge
- * @version    4.3.2
+ * @version    4.3.3
  * @license    GPL-2.0+
  */
 
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('DEVTB_THEME_VERSION', '4.3.2');
+define('DEVTB_THEME_VERSION', '4.3.3');
 define('DEVTB_ROOT', get_template_directory());
 define('DEVTB_THEME_DIR', get_template_directory());
 define('DEVTB_THEME_URL', get_template_directory_uri());
@@ -276,19 +276,25 @@ function devtb_admin_page() {
 
         <div class="card">
             <h2><?php _e('Supported Frameworks', 'devtb'); ?></h2>
+            <?php
+            // Pull live data from the canonical factory so this stays in sync with REST/CLI/admin.
+            $framework_info    = \DEVTB\TranslationBridge\Core\DEVTB_Converter_Factory::get_framework_info();
+            $framework_count   = count($framework_info);
+            $translation_pairs = $framework_count * ($framework_count - 1);
+            ?>
             <ul>
-                <li><strong>Bootstrap</strong> - Bootstrap 5.3.3 HTML/CSS</li>
-                <li><strong>DIVI</strong> - DIVI Builder shortcodes</li>
-                <li><strong>Elementor</strong> - Elementor JSON format</li>
-                <li><strong>Avada</strong> - Avada Fusion Builder HTML</li>
-                <li><strong>Bricks</strong> - Bricks Builder JSON</li>
-                <li><strong>WPBakery</strong> - WPBakery Page Builder shortcodes</li>
-                <li><strong>Beaver Builder</strong> - Beaver Builder modules</li>
-                <li><strong>Gutenberg</strong> - Gutenberg Block Editor</li>
-                <li><strong>Oxygen</strong> - Oxygen Builder JSON</li>
+                <?php foreach ($framework_info as $slug => $meta): ?>
+                    <li>
+                        <strong><?php echo esc_html($meta['name']); ?></strong>
+                        <?php if (!empty($meta['cms_version'])): ?>
+                            — <?php echo esc_html($meta['cms_version']); ?>
+                        <?php endif; ?>
+                        (<?php echo esc_html($meta['format']); ?>)
+                    </li>
+                <?php endforeach; ?>
             </ul>
-            <p><strong>72 Translation Pairs</strong> - Convert any framework to any other framework</p>
-            <p><strong>AI-Ready Option</strong> - Use <code>--ai-ready</code> flag to add AI-friendly attributes</p>
+            <p><strong><?php echo (int) $translation_pairs; ?> Translation Pairs</strong> — convert any framework to any other framework</p>
+            <p><strong>AI-Ready Option</strong> — use <code>--ai-ready</code> flag to add AI-friendly attributes</p>
         </div>
 
         <div class="card">
@@ -344,49 +350,28 @@ function devtb_frameworks_page() {
         <div class="card">
             <h2>Translation Matrix</h2>
             <?php
-            $frameworks = [
-                'bootstrap'      => 'Bootstrap 5.3.3',
-                'divi'           => 'DIVI Builder',
-                'elementor'      => 'Elementor',
-                'avada'          => 'Avada Fusion Builder',
-                'bricks'         => 'Bricks Builder',
-                'wpbakery'       => 'WPBakery Page Builder',
-                'beaver-builder' => 'Beaver Builder',
-                'gutenberg'      => 'Gutenberg Block Editor',
-                'oxygen'         => 'Oxygen Builder',
-            ];
-            $framework_count = count($frameworks);
+            // Single source of truth: factory's framework info (slug => name/cms_version/format/extension).
+            $framework_info    = \DEVTB\TranslationBridge\Core\DEVTB_Converter_Factory::get_framework_info();
+            $framework_count   = count($framework_info);
+            $translation_pairs = $framework_count * ($framework_count - 1);
             ?>
-            <p>The Translation Bridge supports conversion between all <?php echo $framework_count; ?> frameworks:</p>
+            <p>The Translation Bridge supports conversion between all <?php echo (int) $framework_count; ?> frameworks:</p>
 
             <table class="widefat">
                 <thead>
                     <tr>
                         <th>Framework</th>
+                        <th>Target CMS</th>
                         <th>Format</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($frameworks as $key => $name): ?>
+                    <?php foreach ($framework_info as $slug => $meta): ?>
                     <tr>
-                        <td><strong><?php echo esc_html($name); ?></strong></td>
-                        <td>
-                            <?php
-                            $formats = [
-                                'bootstrap'      => 'HTML/CSS',
-                                'divi'           => 'Shortcodes',
-                                'elementor'      => 'JSON',
-                                'avada'          => 'HTML',
-                                'bricks'         => 'JSON',
-                                'wpbakery'       => 'Shortcodes',
-                                'beaver-builder' => 'Serialized PHP',
-                                'gutenberg'      => 'HTML Comments',
-                                'oxygen'         => 'JSON',
-                            ];
-                            echo esc_html($formats[$key] ?? 'Unknown');
-                            ?>
-                        </td>
+                        <td><strong><?php echo esc_html($meta['name']); ?></strong></td>
+                        <td><?php echo esc_html($meta['cms_version'] ?: '—'); ?></td>
+                        <td><?php echo esc_html($meta['format']); ?></td>
                         <td><span style="color: green;">✓ Active</span></td>
                     </tr>
                     <?php endforeach; ?>
@@ -396,7 +381,7 @@ function devtb_frameworks_page() {
 
         <div class="card">
             <h2>Framework Details</h2>
-            <p><strong>Translation Pairs:</strong> 182 (14 frameworks x 13 targets)</p>
+            <p><strong>Translation Pairs:</strong> <?php echo (int) $translation_pairs; ?> (<?php echo (int) $framework_count; ?> frameworks × <?php echo (int) ($framework_count - 1); ?> targets)</p>
             <p><strong>AI-Ready Option:</strong> Use <code>--ai-ready</code> flag to add AI-friendly attributes</p>
             <p><strong>Visual Accuracy:</strong> 98% across all conversions</p>
             <p><strong>Conversion Speed:</strong> ~30 seconds average</p>
@@ -439,16 +424,11 @@ function devtb_settings_page() {
                 <tr>
                     <th scope="row"><?php _e('Default Source Framework', 'devtb'); ?></th>
                     <td>
+                        <?php $current_default = get_option('devtb_default_source', 'bootstrap'); ?>
                         <select name="devtb_default_source">
-                            <option value="bootstrap">Bootstrap</option>
-                            <option value="divi">DIVI</option>
-                            <option value="elementor">Elementor</option>
-                            <option value="avada">Avada</option>
-                            <option value="bricks">Bricks</option>
-                            <option value="wpbakery">WPBakery</option>
-                            <option value="beaver-builder">Beaver Builder</option>
-                            <option value="gutenberg">Gutenberg</option>
-                            <option value="oxygen">Oxygen</option>
+                            <?php foreach (\DEVTB\TranslationBridge\Core\DEVTB_Converter_Factory::get_framework_info() as $slug => $meta): ?>
+                                <option value="<?php echo esc_attr($slug); ?>" <?php selected($current_default, $slug); ?>><?php echo esc_html($meta['name']); ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </td>
                 </tr>
@@ -514,6 +494,11 @@ function devtb_docs_page() {
  * Show System Status
  */
 function devtb_show_system_status() {
+    // Pull live framework info from the factory.
+    $framework_info    = \DEVTB\TranslationBridge\Core\DEVTB_Converter_Factory::get_framework_info();
+    $framework_count   = count($framework_info);
+    $translation_pairs = $framework_count * ($framework_count - 1);
+    $framework_names   = array_map(static fn($meta) => $meta['name'], $framework_info);
     ?>
     <table class="widefat">
         <tr>
@@ -522,7 +507,7 @@ function devtb_show_system_status() {
         </tr>
         <tr>
             <th><?php _e('PHP Version', 'devtb'); ?></th>
-            <td><?php echo PHP_VERSION; ?> <?php echo version_compare(PHP_VERSION, '7.4.0', '>=') ? '✓' : '✗ (7.4+ required)'; ?></td>
+            <td><?php echo PHP_VERSION; ?> <?php echo version_compare(PHP_VERSION, '8.1.0', '>=') ? '✓' : '✗ (8.1+ required)'; ?></td>
         </tr>
         <tr>
             <th><?php _e('Translation Bridge', 'devtb'); ?></th>
@@ -538,11 +523,11 @@ function devtb_show_system_status() {
         </tr>
         <tr>
             <th><?php _e('Supported Frameworks', 'devtb'); ?></th>
-            <td>9 (Bootstrap, DIVI, Elementor, Avada, Bricks, WPBakery, Beaver Builder, Gutenberg, Oxygen)</td>
+            <td><?php echo (int) $framework_count; ?> (<?php echo esc_html(implode(', ', $framework_names)); ?>)</td>
         </tr>
         <tr>
             <th><?php _e('Translation Pairs', 'devtb'); ?></th>
-            <td>72</td>
+            <td><?php echo (int) $translation_pairs; ?></td>
         </tr>
         <tr>
             <th><?php _e('AI-Ready Option', 'devtb'); ?></th>
@@ -564,10 +549,10 @@ function devtb_admin_notices() {
     }
 
     // Check PHP version
-    if (version_compare(PHP_VERSION, '7.4.0', '<')) {
+    if (version_compare(PHP_VERSION, '8.1.0', '<')) {
         ?>
         <div class="notice notice-error">
-            <p><strong><?php _e('DevelopmentTranslation Bridge requires PHP 7.4 or higher.', 'devtb'); ?></strong></p>
+            <p><strong><?php _e('DevelopmentTranslation Bridge requires PHP 8.1 or higher.', 'devtb'); ?></strong></p>
             <p><?php printf(__('You are running PHP %s. Please upgrade to use this theme.', 'devtb'), PHP_VERSION); ?></p>
         </div>
         <?php

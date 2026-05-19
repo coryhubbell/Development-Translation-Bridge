@@ -1,15 +1,15 @@
-# Codex Review Summary — v4.3.1 / v4.3.2 Production-Readiness Patch
+# Codex Review Summary — v4.3.1 → v4.3.3 Production-Readiness Patch Chain
 
-**Released:** [v4.3.2](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.2) (errata cleanup) — built on [v4.3.1](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1)
+**Released:** [v4.3.3](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) (admin pages now factory-driven) — built on [v4.3.2](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.2) (string errata) and [v4.3.1](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1) (production-readiness)
 **Baseline:** `8dd249b` (v4.3.0 HEAD prior to this work; previous tag `a9e0a06` / v4.3.0 itself)
-**Commits in this patch:** `8d99c0a` (core) → `e6db31f` (style.css + lockfiles + PHP floor + admin build docs) → the v4.3.1 tag commit (version-string bump + this review summary) → the v4.3.2 tag commit (user-facing copy errata + version bump)
-**Scope:** Production fatal fix → matrix consistency → test green → deprecation cleanup → release hygiene → user-facing copy
+**Commits in this patch chain:** `8d99c0a` (core) → `e6db31f` (style.css + lockfiles + PHP floor + admin build docs) → the v4.3.1 tag commit (version-string bump + this review summary) → the v4.3.2 tag commit (user-facing copy errata) → the v4.3.3 tag commit (functions.php admin pages refactored to factory delegation, eliminating the remaining drift surface)
+**Scope:** Production fatal fix → matrix consistency → test green → deprecation cleanup → release hygiene → user-facing copy → admin-page factory delegation
 
 ---
 
 ## TL;DR
 
-| Metric                  | Before (v4.3.0 / `8dd249b`)         | After (v4.3.2)                       |
+| Metric                  | Before (v4.3.0 / `8dd249b`)         | After (v4.3.3)                       |
 |-------------------------|-------------------------------------|--------------------------------------|
 | CLI `./devtb translate` | **Fatal** (autoloader broken)       | **Works** end-to-end across 14 frameworks |
 | Framework matrix        | 9 / 9 / 10 / 9 mismatched           | 14 everywhere (REST, CLI, admin, file-handler) |
@@ -19,8 +19,9 @@
 | Admin lint              | 2 errors, 1 warning                 | **Clean**                            |
 | Admin build             | Passed (with stale fallback string) | Passed                                |
 | Stale `claude` framework references | 7 files                  | 0                                    |
-| Stale version strings   | 13+ `@version` doc comments + 4 metadata sites | All synced to 4.3.2       |
-| Stale user-facing copy  | "9 files", "72 pairs", "110 pairs", "v3.3.0" banner, 11-framework list | All updated to "14 files", "182 pairs", "v4.3.2" banner, 14-framework list |
+| Stale version strings   | 13+ `@version` doc comments + 4 metadata sites | All synced to 4.3.3       |
+| Stale user-facing copy  | "9 files", "72 pairs", "110 pairs", "v3.3.0" banner, 11-framework list, plus 4 more 9-framework hardcoded admin tables | All updated (or factory-driven, eliminating the drift surface) |
+| `functions.php` admin pages drift source | 4 hardcoded 9-framework tables/lists, 2 hardcoded pair counts | All four call sites now consume `DEVTB_Converter_Factory::get_framework_info()` |
 | Declared PHP floor      | 7.4 (EOL'd 2022-11)                 | **8.1**                              |
 | Security advisories     | 1 high (CVE-2026-24765 in phpunit)  | **0** (phpunit bumped 9.6.29 → 9.6.34) |
 | Admin build step        | Undocumented; `dist/` gitignored    | Documented in README + soft-enforced via `prepack` |
@@ -347,8 +348,9 @@ This file was first written against commit `8d99c0a` alone. Since then:
 - **PHP floor bumped to 8.1** — supersedes the original assumption that 7.4 was fine to keep. See the `e6db31f` section above.
 - **CVE-2026-24765 cleared** — surfaced and resolved during the `composer.lock` regeneration. Was not present in the original commit.
 - **Admin build step is now documented + soft-enforced** — the original `8d99c0a` left this as a known gap. `e6db31f` closes it.
-- **Versions are now 4.3.2** — every `4.3.0`/`4.3.1` reference outside CHANGELOG/release notes is now `4.3.2`.
+- **Versions are now 4.3.3** — every `4.3.0`/`4.3.1`/`4.3.2` reference outside CHANGELOG/release notes is now `4.3.3`.
 - **User-facing copy errata fixed in v4.3.2** — see the section below.
+- **Admin pages now factory-driven in v4.3.3** — `functions.php` no longer hardcodes framework lists anywhere; all four admin call sites delegate to `DEVTB_Converter_Factory::get_framework_info()`. See the v4.3.3 section below.
 
 The Step-by-Step Change Index (Steps 1-9) above still describes the core fixes accurately; only the surrounding metadata moved.
 
@@ -366,3 +368,25 @@ grep -rnE "9 files|72 pairs|110 pairs|11 frameworks|v3\.3\.0" --include="*.php" 
 ```
 
 This release is a forward commit on `main` (no history rewrite) and a normal annotated tag (`v4.3.2`).
+
+## v4.3.3 — Admin pages now factory-driven
+
+Post-v4.3.2 review surfaced that `functions.php` still had **four more** hardcoded 9-framework tables that v4.3.2 missed. Rather than chase strings a third time, the v4.3.3 commit refactors the affected admin pages to **delegate to the converter factory** so the drift surface is eliminated.
+
+**Refactored call sites in `functions.php`:**
+
+- **Admin home → "Supported Frameworks" card.** Was a static `<ul>` of 9 hardcoded `<li>` entries + the string "72 Translation Pairs". Now loops `\DEVTB\TranslationBridge\Core\DEVTB_Converter_Factory::get_framework_info()` and derives the count from `count(...)`.
+- **Frameworks admin page → "Translation Matrix" table.** Was a hardcoded `$frameworks` map of 9 + a parallel `$formats` map of 9. Now a single `foreach` over factory data, with the table gaining a "Target CMS" column (was format only).
+- **Frameworks admin page → "Framework Details" card.** Was the string "Translation Pairs: 182 (14 frameworks x 13 targets)" baked in from v4.3.2. Now computed live: `$framework_count * ($framework_count - 1)`.
+- **Settings admin page → "Default Source Framework" `<select>`.** Was 9 hardcoded `<option>` tags. Now loops the factory and honors the saved option via `selected()`.
+- **System Status table → "Supported Frameworks" / "Translation Pairs" rows.** Were the literal strings `9 (Bootstrap, DIVI, ..., Oxygen)` and `<td>72</td>`. Now derived from the factory.
+
+**Also fixed in this commit:**
+
+- **PHP version display + gate.** Both the System Status row and the admin-notice gate still compared against `7.4.0` despite the v4.3.1 PHP floor bump. Bumped both to `8.1.0` so the displayed requirement matches `composer.json`.
+
+**Why the refactor instead of more string edits:** the same 9-framework copy had now resurfaced in five separate admin contexts across two patch passes. The pattern was clearly going to keep biting. Replacing the hardcoded data with a factory call removes the divergence risk for these surfaces entirely — adding a 15th framework later only requires updating the factory, not hunting down admin templates.
+
+**Net effect:** zero hardcoded framework slugs or counts remain in `functions.php`. The Settings select even honors the user's previously-saved choice via `selected()`, which it didn't before.
+
+No behavior changes to user-visible flows beyond accurate counts/labels. PHPUnit suite stays at 284 / 4,133 passing.
