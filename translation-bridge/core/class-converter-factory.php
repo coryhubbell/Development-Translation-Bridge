@@ -13,13 +13,16 @@ namespace DEVTB\TranslationBridge\Core;
 
 use DEVTB\TranslationBridge\Converters\DEVTB_Bootstrap_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_DIVI_Converter;
+use DEVTB\TranslationBridge\Converters\DEVTB_DIVI5_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Elementor_Converter;
+use DEVTB\TranslationBridge\Converters\DEVTB_Elementor4_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Avada_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Bricks_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_WPBakery_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Beaver_Builder_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Gutenberg_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Oxygen_Converter;
+use DEVTB\TranslationBridge\Converters\DEVTB_Oxygen6_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Kadence_Converter;
 use DEVTB\TranslationBridge\Converters\DEVTB_Thrive_Converter;
 
@@ -77,8 +80,17 @@ class DEVTB_Converter_Factory {
 			case 'divi':
 				return new DEVTB_DIVI_Converter();
 
+			case 'divi-5':
+			case 'divi5':
+				return new DEVTB_DIVI5_Converter();
+
 			case 'elementor':
 				return new DEVTB_Elementor_Converter();
+
+			case 'elementor-4':
+			case 'elementor4':
+			case 'elementor-atomic':
+				return new DEVTB_Elementor4_Converter();
 
 			case 'avada':
 			case 'fusion':
@@ -106,6 +118,10 @@ class DEVTB_Converter_Factory {
 			case 'oxygen-builder':
 				return new DEVTB_Oxygen_Converter();
 
+			case 'oxygen-6':
+			case 'oxygen6':
+				return new DEVTB_Oxygen6_Converter();
+
 			case 'kadence':
 			case 'kadence-blocks':
 			case 'kadenceblocks':
@@ -128,7 +144,7 @@ class DEVTB_Converter_Factory {
 	 * @return array<string> Array of framework names.
 	 */
 	public static function get_supported_frameworks(): array {
-		return [ 'bootstrap', 'divi', 'elementor', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen', 'kadence', 'thrive' ];
+		return [ 'bootstrap', 'divi', 'divi-5', 'elementor', 'elementor-4', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen', 'oxygen-6', 'kadence', 'thrive' ];
 	}
 
 	/**

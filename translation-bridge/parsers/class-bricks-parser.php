@@ -76,7 +76,12 @@ class DEVTB_Bricks_Parser implements DEVTB_Parser_Interface {
 	];
 
 	/**
-	 * Parse Bricks JSON into universal components
+	 * Parse Bricks JSON into universal components.
+	 *
+	 * Accepts both the flat Bricks 2.x format (top-level array of elements with
+	 * string `parent` ids and `children` arrays of string ids) and the legacy
+	 * nested format some test fixtures use (`children` is an array of element
+	 * objects). The format is detected per top-level array.
 	 *
 	 * @param string|array $content Bricks JSON content.
 	 * @return DEVTB_Component[] Array of parsed components.
@@ -94,9 +99,13 @@ class DEVTB_Bricks_Parser implements DEVTB_Parser_Interface {
 			return [];
 		}
 
-		$components = [];
+		// Flat format: any element has `children` of string ids, or a non-"0" parent.
+		if ( $this->is_flat_format( $content ) ) {
+			return $this->parse_flat( $content );
+		}
 
-		// Parse each top-level element
+		// Legacy nested format: top-level elements contain child element objects.
+		$components = [];
 		foreach ( $content as $element ) {
 			$component = $this->parse_element( $element );
 			if ( $component ) {
@@ -108,7 +117,99 @@ class DEVTB_Bricks_Parser implements DEVTB_Parser_Interface {
 	}
 
 	/**
-	 * Parse single Bricks element
+	 * Detect the flat Bricks element format.
+	 *
+	 * @param array $content Top-level decoded JSON array.
+	 * @return bool True if any element looks flat (string child ids or non-"0" parent).
+	 */
+	private function is_flat_format( array $content ): bool {
+		foreach ( $content as $element ) {
+			if ( ! is_array( $element ) ) {
+				continue;
+			}
+
+			if ( isset( $element['children'] ) && is_array( $element['children'] ) ) {
+				foreach ( $element['children'] as $child ) {
+					if ( is_string( $child ) ) {
+						return true;
+					}
+				}
+			}
+
+			if ( isset( $element['parent'] ) && (string) $element['parent'] !== '0' && (string) $element['parent'] !== '' ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Parse the flat Bricks element format into a tree of universal components.
+	 *
+	 * Builds an id → element index, then walks roots (parent === "0") and
+	 * recurses by resolving child id strings.
+	 *
+	 * @param array $content Flat array of Bricks elements.
+	 * @return DEVTB_Component[] Root components, with children attached.
+	 */
+	private function parse_flat( array $content ): array {
+		$by_id = [];
+		foreach ( $content as $element ) {
+			if ( is_array( $element ) && isset( $element['id'] ) ) {
+				$by_id[ (string) $element['id'] ] = $element;
+			}
+		}
+
+		$components = [];
+		foreach ( $content as $element ) {
+			if ( ! is_array( $element ) ) {
+				continue;
+			}
+			$parent = isset( $element['parent'] ) ? (string) $element['parent'] : '0';
+			if ( $parent !== '0' ) {
+				continue;
+			}
+			$component = $this->parse_flat_element( $element, $by_id );
+			if ( $component ) {
+				$components[] = $component;
+			}
+		}
+
+		return $components;
+	}
+
+	/**
+	 * Parse a single element from the flat registry, resolving child ids recursively.
+	 *
+	 * @param array $element Element data.
+	 * @param array $by_id   Map of id → element for child resolution.
+	 * @return DEVTB_Component|null
+	 */
+	private function parse_flat_element( array $element, array $by_id ): ?DEVTB_Component {
+		$component = $this->build_component( $element );
+		if ( ! $component ) {
+			return null;
+		}
+
+		if ( isset( $element['children'] ) && is_array( $element['children'] ) ) {
+			foreach ( $element['children'] as $child_ref ) {
+				$child_element = is_string( $child_ref ) ? ( $by_id[ $child_ref ] ?? null ) : ( is_array( $child_ref ) ? $child_ref : null );
+				if ( ! is_array( $child_element ) ) {
+					continue;
+				}
+				$child = $this->parse_flat_element( $child_element, $by_id );
+				if ( $child ) {
+					$component->add_child( $child );
+				}
+			}
+		}
+
+		return $component;
+	}
+
+	/**
+	 * Parse single Bricks element (legacy nested format).
 	 *
 	 * @param array $element Bricks element data.
 	 * @return DEVTB_Component|null Parsed component or null.
@@ -118,20 +219,43 @@ class DEVTB_Bricks_Parser implements DEVTB_Parser_Interface {
 			return null;
 		}
 
-		$element_name = $element['name'] ?? '';
+		$component = $this->build_component( $element );
+		if ( ! $component ) {
+			return null;
+		}
+
+		// Parse nested elements (children) — legacy nested format only.
+		if ( isset( $element['children'] ) && is_array( $element['children'] ) ) {
+			foreach ( $element['children'] as $child_element ) {
+				if ( ! is_array( $child_element ) ) {
+					continue;
+				}
+				$child = $this->parse_element( $child_element );
+				if ( $child ) {
+					$component->add_child( $child );
+				}
+			}
+		}
+
+		return $component;
+	}
+
+	/**
+	 * Build a universal component from a Bricks element without descending into children.
+	 *
+	 * @param array $element Bricks element data.
+	 * @return DEVTB_Component|null
+	 */
+	private function build_component( array $element ): ?DEVTB_Component {
+		$element_name   = $element['name'] ?? '';
 		$universal_type = $this->map_element_type( $element_name );
-		$settings = $element['settings'] ?? [];
+		$settings       = $element['settings'] ?? [];
 
-		// Normalize settings to universal attributes
 		$attributes = $this->normalize_settings( $settings );
+		$content    = $this->extract_element_content( $element_name, $settings );
+		$category   = $this->get_category( $universal_type );
 
-		// Extract content based on element type
-		$content = $this->extract_element_content( $element_name, $settings );
-
-		// Determine category
-		$category = $this->get_category( $universal_type );
-
-		$component = new DEVTB_Component([
+		return new DEVTB_Component([
 			'type'       => $universal_type,
 			'category'   => $category,
 			'attributes' => $attributes,
@@ -143,18 +267,6 @@ class DEVTB_Bricks_Parser implements DEVTB_Parser_Interface {
 				'bricks_settings'  => $settings,
 			],
 		]);
-
-		// Parse nested elements (children)
-		if ( isset( $element['children'] ) && is_array( $element['children'] ) ) {
-			foreach ( $element['children'] as $child_element ) {
-				$child = $this->parse_element( $child_element );
-				if ( $child ) {
-					$component->add_child( $child );
-				}
-			}
-		}
-
-		return $component;
 	}
 
 	/**

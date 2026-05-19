@@ -98,6 +98,13 @@ class DEVTB_DIVI_Parser implements DEVTB_Parser_Interface {
 			return [];
 		}
 
+		// DIVI 5 content is block-comment-delimited (`<!-- wp:divi/* -->`), not
+		// `[et_pb_*]` shortcodes. Route to DEVTB_DIVI5_Parser instead of trying
+		// to parse it as DIVI 4 — would yield nothing useful.
+		if ( self::is_divi5_payload( $content ) ) {
+			return [];
+		}
+
 		// Parse DIVI hierarchy
 		$hierarchy = DEVTB_Shortcode_Helper::parse_divi_hierarchy( $content );
 

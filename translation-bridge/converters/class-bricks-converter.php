@@ -49,39 +49,61 @@ class DEVTB_Bricks_Converter implements DEVTB_Converter_Interface {
 	private int $id_counter = 0;
 
 	/**
+	 * Flat element registry built during conversion.
+	 *
+	 * Bricks Builder 2.x stores pages as a flat array; hierarchy is expressed via
+	 * each element's string `parent` id and a `children` array of string ids
+	 * (not nested element objects).
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $elements = [];
+
+	/**
+	 * Index of element id → position in $this->elements for O(1) child linkage.
+	 *
+	 * @var array<string, int>
+	 */
+	private array $element_index = [];
+
+	/**
 	 * Convert universal component to Bricks JSON
 	 *
 	 * @param DEVTB_Component|array $component Component to convert.
-	 * @return string|array Bricks JSON string or array.
+	 * @return string Bricks JSON string (flat element array).
 	 */
 	public function convert( $component ) {
+		$this->elements      = [];
+		$this->element_index = [];
+		$this->id_counter    = 0;
+
 		if ( is_array( $component ) ) {
 			$components = $component;
 		} else {
 			$components = [ $component ];
 		}
 
-		$elements = [];
-
 		foreach ( $components as $comp ) {
 			if ( $comp instanceof DEVTB_Component ) {
-				$element = $this->convert_component( $comp );
-				if ( $element ) {
-					$elements[] = $element;
-				}
+				$this->convert_component( $comp, '0' );
 			}
 		}
 
-		return wp_json_encode( $elements, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+		return wp_json_encode( $this->elements, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 	}
 
 	/**
-	 * Convert single component to Bricks element
+	 * Convert single component into the flat Bricks element registry.
+	 *
+	 * Registers the produced element in $this->elements, recurses into children
+	 * with this element's id as their parent, and links each child id back into
+	 * this element's `children` array.
 	 *
 	 * @param DEVTB_Component $component Component to convert.
-	 * @return array|null Bricks element array.
+	 * @param string         $parent_id Parent element id (`"0"` for root).
+	 * @return string|null Newly created element id, or null if the type is unmappable.
 	 */
-	public function convert_component( DEVTB_Component $component ): ?array {
+	public function convert_component( DEVTB_Component $component, string $parent_id = '0' ) {
 		$type = $component->type;
 
 		// Map universal type to Bricks element
@@ -101,25 +123,29 @@ class DEVTB_Bricks_Converter implements DEVTB_Converter_Interface {
 			$settings = array_merge( $settings, $this->convert_styles( $component->styles ) );
 		}
 
-		$element = [
-			'id'       => $this->generate_id(),
+		$id    = $this->generate_id();
+		$index = count( $this->elements );
+
+		$this->elements[]            = [
+			'id'       => $id,
 			'name'     => $bricks_type,
-			'parent'   => '0', // Will be set by Bricks
+			'parent'   => $parent_id,
+			'children' => [],
 			'settings' => $settings,
 		];
+		$this->element_index[ $id ] = $index;
 
-		// Handle nested elements (children)
+		// Recurse into children with this element as parent; link child ids back.
 		if ( ! empty( $component->children ) ) {
-			$element['children'] = [];
 			foreach ( $component->children as $child ) {
-				$child_element = $this->convert_component( $child );
-				if ( $child_element ) {
-					$element['children'][] = $child_element;
+				$child_id = $this->convert_component( $child, $id );
+				if ( $child_id !== null ) {
+					$this->elements[ $index ]['children'][] = $child_id;
 				}
 			}
 		}
 
-		return $element;
+		return $id;
 	}
 
 	/**

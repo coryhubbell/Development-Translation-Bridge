@@ -144,6 +144,14 @@ class DEVTB_Elementor_Parser implements DEVTB_Parser_Interface {
 			return [];
 		}
 
+		// Elementor 4 Atomic Editor uses a different element model (`e-div-block`,
+		// `e-flexbox`, etc.) with structured `styles` and `interactions`. The 3.x
+		// parse pipeline (section → column → widget) doesn't apply; route to
+		// DEVTB_Elementor4_Parser instead.
+		if ( self::is_atomic_v4_payload( $content ) ) {
+			return [];
+		}
+
 		$components = [];
 
 		// Parse each top-level element

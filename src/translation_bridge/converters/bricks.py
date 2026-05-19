@@ -103,41 +103,40 @@ class BricksConverter:
         return elements
 
     def _convert_element(self, element: Dict[str, Any], parent: str = "0") -> List[Dict[str, Any]]:
-        """Convert a single element and its children."""
+        """Convert a single element and its children.
+
+        Bricks Builder 2.x stores pages as a flat array; hierarchy is expressed via
+        each element's string ``parent`` id and ``children`` arrays of string ids
+        (not nested element objects). Each child recursion's first element is the
+        direct child of the parent; its id is pushed into ``parent_el["children"]``.
+        """
         el_type = element.get("elType", element.get("type", ""))
         widget_type = element.get("widgetType", "")
-        settings = element.get("settings", element.get("attributes", {}))
         children = element.get("elements", [])
 
-        elements = []
+        elements: List[Dict[str, Any]] = []
 
         if el_type == "section" or el_type == "container":
-            section_el = self._create_section(element, parent)
-            elements.append(section_el)
-
-            # Convert children with section as parent
-            for child in children:
-                elements.extend(self._convert_element(child, section_el["id"]))
-
+            parent_el = self._create_section(element, parent)
         elif el_type == "column":
-            column_el = self._create_container(element, parent)
-            elements.append(column_el)
-
-            # Convert children with column as parent
-            for child in children:
-                elements.extend(self._convert_element(child, column_el["id"]))
-
+            parent_el = self._create_container(element, parent)
         elif el_type == "widget" or widget_type:
-            widget_el = self._create_widget(element, parent)
-            elements.append(widget_el)
-
+            parent_el = self._create_widget(element, parent)
+            elements.append(parent_el)
+            return elements
         else:
-            # Generic element
-            generic_el = self._create_generic(element, parent)
-            elements.append(generic_el)
+            parent_el = self._create_generic(element, parent)
 
-            for child in children:
-                elements.extend(self._convert_element(child, generic_el["id"]))
+        elements.append(parent_el)
+
+        for child in children:
+            child_elements = self._convert_element(child, parent_el["id"])
+            if child_elements:
+                # The first element in the returned list corresponds to the child input,
+                # i.e. the direct child of parent_el. Deeper descendants are linked via
+                # their own parents in the flat array.
+                parent_el["children"].append(child_elements[0]["id"])
+                elements.extend(child_elements)
 
         return elements
 

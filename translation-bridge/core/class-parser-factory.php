@@ -13,13 +13,16 @@ namespace DEVTB\TranslationBridge\Core;
 
 use DEVTB\TranslationBridge\Parsers\DEVTB_Bootstrap_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_DIVI_Parser;
+use DEVTB\TranslationBridge\Parsers\DEVTB_DIVI5_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Elementor_Parser;
+use DEVTB\TranslationBridge\Parsers\DEVTB_Elementor4_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Avada_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Bricks_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_WPBakery_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Beaver_Builder_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Gutenberg_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Oxygen_Parser;
+use DEVTB\TranslationBridge\Parsers\DEVTB_Oxygen6_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Kadence_Parser;
 use DEVTB\TranslationBridge\Parsers\DEVTB_Thrive_Parser;
 
@@ -77,8 +80,17 @@ class DEVTB_Parser_Factory {
 			case 'divi':
 				return new DEVTB_DIVI_Parser();
 
+			case 'divi-5':
+			case 'divi5':
+				return new DEVTB_DIVI5_Parser();
+
 			case 'elementor':
 				return new DEVTB_Elementor_Parser();
+
+			case 'elementor-4':
+			case 'elementor4':
+			case 'elementor-atomic':
+				return new DEVTB_Elementor4_Parser();
 
 			case 'avada':
 			case 'fusion':
@@ -106,6 +118,10 @@ class DEVTB_Parser_Factory {
 			case 'oxygen-builder':
 				return new DEVTB_Oxygen_Parser();
 
+			case 'oxygen-6':
+			case 'oxygen6':
+				return new DEVTB_Oxygen6_Parser();
+
 			case 'kadence':
 			case 'kadence-blocks':
 			case 'kadenceblocks':
@@ -128,7 +144,7 @@ class DEVTB_Parser_Factory {
 	 * @return array<string> Array of framework names.
 	 */
 	public static function get_supported_frameworks(): array {
-		return [ 'bootstrap', 'divi', 'elementor', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen', 'kadence', 'thrive' ];
+		return [ 'bootstrap', 'divi', 'divi-5', 'elementor', 'elementor-4', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen', 'oxygen-6', 'kadence', 'thrive' ];
 	}
 
 	/**

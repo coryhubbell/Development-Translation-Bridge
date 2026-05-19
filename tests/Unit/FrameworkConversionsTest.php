@@ -25,10 +25,13 @@ class FrameworkConversionsTest extends TestCase {
     private static array $frameworks = [
         'bootstrap',
         'elementor',
+        'elementor-4',
         'gutenberg',
         'beaver-builder',
         'oxygen',
+        'oxygen-6',
         'divi',
+        'divi-5',
         'wpbakery',
         'bricks',
         'avada',
@@ -95,7 +98,10 @@ class FrameworkConversionsTest extends TestCase {
         require_once $bridge_path . '/parsers/class-gutenberg-parser.php';
         require_once $bridge_path . '/parsers/class-beaver-builder-parser.php';
         require_once $bridge_path . '/parsers/class-oxygen-parser.php';
+        require_once $bridge_path . '/parsers/class-oxygen6-parser.php';
         require_once $bridge_path . '/parsers/class-divi-parser.php';
+        require_once $bridge_path . '/parsers/class-divi5-parser.php';
+        require_once $bridge_path . '/parsers/class-elementor4-parser.php';
         require_once $bridge_path . '/parsers/class-wpbakery-parser.php';
         require_once $bridge_path . '/parsers/class-bricks-parser.php';
         require_once $bridge_path . '/parsers/class-avada-parser.php';
@@ -109,7 +115,10 @@ class FrameworkConversionsTest extends TestCase {
         require_once $bridge_path . '/converters/class-gutenberg-converter.php';
         require_once $bridge_path . '/converters/class-beaver-builder-converter.php';
         require_once $bridge_path . '/converters/class-oxygen-converter.php';
+        require_once $bridge_path . '/converters/class-oxygen6-converter.php';
         require_once $bridge_path . '/converters/class-divi-converter.php';
+        require_once $bridge_path . '/converters/class-divi5-converter.php';
+        require_once $bridge_path . '/converters/class-elementor4-converter.php';
         require_once $bridge_path . '/converters/class-wpbakery-converter.php';
         require_once $bridge_path . '/converters/class-bricks-converter.php';
         require_once $bridge_path . '/converters/class-avada-converter.php';
@@ -286,6 +295,101 @@ HTML;
                     'url' => '#'
                 ]
             ]
+        ]);
+
+        // Elementor 4 Atomic - atomic element tree (e-* elTypes)
+        self::$sampleInputs['elementor-4'] = json_encode([
+            [
+                'id'              => 'e4root1',
+                'version'         => '0.0',
+                'elType'          => 'e-div-block',
+                'isInner'         => false,
+                'interactions'    => [],
+                'settings'        => (object) [],
+                'editor_settings' => (object) [],
+                'styles'          => (object) [],
+                'elements'        => [
+                    [
+                        'id'              => 'e4hd1',
+                        'version'         => '0.0',
+                        'elType'          => 'e-heading',
+                        'isInner'         => true,
+                        'interactions'    => [],
+                        'settings'        => [ 'title' => 'Welcome', 'tag' => 'h2' ],
+                        'editor_settings' => (object) [],
+                        'styles'          => (object) [],
+                        'elements'        => [],
+                    ],
+                    [
+                        'id'              => 'e4p1',
+                        'version'         => '0.0',
+                        'elType'          => 'e-paragraph',
+                        'isInner'         => true,
+                        'interactions'    => [],
+                        'settings'        => [ 'text' => 'This is sample Elementor 4 Atomic content.' ],
+                        'editor_settings' => (object) [],
+                        'styles'          => (object) [],
+                        'elements'        => [],
+                    ],
+                    [
+                        'id'              => 'e4btn1',
+                        'version'         => '0.0',
+                        'elType'          => 'e-button',
+                        'isInner'         => true,
+                        'interactions'    => [],
+                        'settings'        => [ 'text' => 'Learn More', 'link' => [ 'url' => '#', 'target' => '_self' ] ],
+                        'editor_settings' => (object) [],
+                        'styles'          => (object) [],
+                        'elements'        => [],
+                    ],
+                ],
+            ],
+        ]);
+
+        // DIVI 5 - WordPress block markup with the `divi/*` namespace
+        self::$sampleInputs['divi-5'] = <<<HTML
+<!-- wp:divi/section {"module":{},"builderVersion":"5.0.0"} -->
+<!-- wp:divi/row {"module":{},"builderVersion":"5.0.0"} -->
+<!-- wp:divi/column {"module":{},"builderVersion":"5.0.0"} -->
+<!-- wp:divi/heading {"module":{"content":{"text":{"desktop":{"value":"Welcome"}},"level":{"desktop":{"value":"h2"}}}},"builderVersion":"5.0.0"} /-->
+<!-- wp:divi/text {"module":{"content":{"innerContent":{"desktop":{"value":"This is sample DIVI 5 content."}}}},"builderVersion":"5.0.0"} /-->
+<!-- wp:divi/button {"module":{"content":{"text":{"desktop":{"value":"Learn More"}},"url":{"desktop":{"value":"#"}}}},"builderVersion":"5.0.0"} /-->
+<!-- /wp:divi/column -->
+<!-- /wp:divi/row -->
+<!-- /wp:divi/section -->
+HTML;
+
+        // Oxygen 6 - nested JSON tree (Breakdance-proxy schema, EssentialElements\* namespace)
+        self::$sampleInputs['oxygen-6'] = json_encode([
+            '_version'    => 1,
+            '_nextNodeId' => 5,
+            'tree'        => [
+                [
+                    'id'         => 'n-1',
+                    'type'       => 'EssentialElements\\Section',
+                    'properties' => [],
+                    'children'   => [
+                        [
+                            'id'         => 'n-2',
+                            'type'       => 'EssentialElements\\Heading',
+                            'properties' => [ 'text' => 'Welcome', 'tag' => 'h2' ],
+                            'children'   => [],
+                        ],
+                        [
+                            'id'         => 'n-3',
+                            'type'       => 'EssentialElements\\Text',
+                            'properties' => [ 'text' => 'This is sample Oxygen 6 content.' ],
+                            'children'   => [],
+                        ],
+                        [
+                            'id'         => 'n-4',
+                            'type'       => 'EssentialElements\\Button',
+                            'properties' => [ 'text' => 'Learn More', 'link' => [ 'url' => '#' ] ],
+                            'children'   => [],
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
         // DIVI - Shortcodes
@@ -484,7 +588,9 @@ HTML;
 
         switch ( $target ) {
             case 'elementor':
+            case 'elementor-4':
             case 'oxygen':
+            case 'oxygen-6':
             case 'bricks':
                 // Should be valid JSON
                 if ( is_string( $output ) ) {
@@ -494,11 +600,37 @@ HTML;
                         "{$source} → {$target}: Output is not valid JSON"
                     );
                 } else {
+                    $decoded = $output;
                     $this->assertIsArray(
                         $output,
                         "{$source} → {$target}: Output is not an array"
                     );
                 }
+
+                if ( $target === 'bricks' && is_array( $decoded ) && ! empty( $decoded ) ) {
+                    $this->assertBricksFlatStructure( $decoded, $source );
+                }
+
+                if ( $target === 'oxygen-6' && is_array( $decoded ) ) {
+                    $this->assertOxygen6TreeStructure( $decoded, $source );
+                }
+
+                if ( $target === 'elementor-4' && is_array( $decoded ) ) {
+                    $this->assertElementor4AtomicStructure( $decoded, $source );
+                }
+                break;
+
+            case 'divi-5':
+                $this->assertStringContainsString(
+                    '<!-- wp:divi/',
+                    $outputStr,
+                    "{$source} → {$target}: Missing DIVI 5 block markers (`wp:divi/*`)"
+                );
+                $this->assertMatchesRegularExpression(
+                    '/builderVersion/i',
+                    $outputStr,
+                    "{$source} → {$target}: DIVI 5 blocks must declare builderVersion"
+                );
                 break;
 
             case 'gutenberg':
@@ -567,6 +699,143 @@ HTML;
                     "{$source} → {$target}: Output is not valid HTML"
                 );
                 break;
+        }
+    }
+
+    /**
+     * Assert Bricks output uses the flat 2.x structure.
+     *
+     * Real Bricks pages are a flat top-level array; hierarchy is expressed via
+     * each element's string `parent` id and `children` arrays of string ids
+     * (never nested element objects).
+     *
+     * @param array  $decoded Decoded JSON output.
+     * @param string $source  Source framework, for error messages.
+     */
+    private function assertBricksFlatStructure( array $decoded, string $source ): void {
+        $this->assertArrayNotHasKey(
+            'name',
+            $decoded,
+            "{$source} → bricks: top level must be a flat array of elements, not a single element"
+        );
+
+        $ids = [];
+        foreach ( $decoded as $i => $element ) {
+            $this->assertIsArray( $element, "{$source} → bricks: element [{$i}] is not an array" );
+            $this->assertArrayHasKey( 'id', $element, "{$source} → bricks: element [{$i}] missing id" );
+            $this->assertArrayHasKey( 'name', $element, "{$source} → bricks: element [{$i}] missing name" );
+            $this->assertArrayHasKey( 'parent', $element, "{$source} → bricks: element [{$i}] missing parent" );
+
+            $ids[ (string) $element['id'] ] = true;
+
+            if ( isset( $element['children'] ) ) {
+                $this->assertIsArray( $element['children'], "{$source} → bricks: element [{$i}] children is not an array" );
+                foreach ( $element['children'] as $j => $child ) {
+                    $this->assertIsString(
+                        $child,
+                        "{$source} → bricks: element [{$i}] children[{$j}] must be a string id, not an element object"
+                    );
+                }
+            }
+        }
+
+        // Every non-root parent id must point to a real element.
+        foreach ( $decoded as $i => $element ) {
+            $parent = (string) ( $element['parent'] ?? '0' );
+            if ( $parent === '0' || $parent === '' ) {
+                continue;
+            }
+            $this->assertArrayHasKey(
+                $parent,
+                $ids,
+                "{$source} → bricks: element [{$i}] parent '{$parent}' does not match any element id"
+            );
+        }
+    }
+
+    /**
+     * Assert Oxygen 6 output is a wrapped nested JSON tree (Breakdance-proxy schema).
+     *
+     * Expected shape: `{ "_version": 1, "_nextNodeId": <int>, "tree": [ <node>, ... ] }`
+     * where each node is `{ id, type, properties, children: [<node>, ...] }` and
+     * `type` is a namespaced string containing a backslash.
+     *
+     * @param array  $decoded Decoded JSON output.
+     * @param string $source  Source framework, for error messages.
+     */
+    private function assertOxygen6TreeStructure( array $decoded, string $source ): void {
+        $this->assertArrayHasKey( 'tree', $decoded, "{$source} → oxygen-6: payload must have a 'tree' key" );
+        $this->assertIsArray( $decoded['tree'], "{$source} → oxygen-6: 'tree' must be an array of root nodes" );
+        $this->assertArrayHasKey( '_nextNodeId', $decoded, "{$source} → oxygen-6: payload must carry '_nextNodeId' for collision-free injects" );
+
+        foreach ( $decoded['tree'] as $i => $node ) {
+            $this->walkOxygen6Node( $node, "{$source} → oxygen-6: tree[{$i}]" );
+        }
+    }
+
+    /**
+     * Assert Elementor 4 Atomic output: every element has the v4 atomic shape
+     * (id/version/elType/isInner/interactions/settings/editor_settings/styles/elements)
+     * and elType is prefixed `e-`.
+     *
+     * @param array  $decoded Decoded JSON output.
+     * @param string $source  Source framework, for error messages.
+     */
+    private function assertElementor4AtomicStructure( array $decoded, string $source ): void {
+        $this->assertNotEmpty( $decoded, "{$source} → elementor-4: empty output" );
+
+        foreach ( $decoded as $i => $node ) {
+            $this->walkElementor4Node( $node, "{$source} → elementor-4: [{$i}]" );
+        }
+    }
+
+    /**
+     * Recursively validate a single atomic v4 node.
+     *
+     * @param mixed  $node Candidate node.
+     * @param string $path Human-readable path for error messages.
+     */
+    private function walkElementor4Node( $node, string $path ): void {
+        $this->assertIsArray( $node, "{$path}: node is not an array" );
+        foreach ( [ 'id', 'version', 'elType', 'isInner', 'interactions', 'settings', 'editor_settings', 'styles', 'elements' ] as $key ) {
+            $this->assertArrayHasKey( $key, $node, "{$path}: atomic node missing '{$key}'" );
+        }
+        $this->assertIsString( $node['elType'], "{$path}: elType must be a string" );
+        $this->assertStringStartsWith(
+            'e-',
+            $node['elType'],
+            "{$path}: elType '{$node['elType']}' must use the atomic `e-` prefix"
+        );
+        $this->assertIsArray( $node['elements'], "{$path}: elements must be an array" );
+
+        foreach ( $node['elements'] as $j => $child ) {
+            $this->walkElementor4Node( $child, "{$path}/elements[{$j}]" );
+        }
+    }
+
+    /**
+     * Recursively validate a single Oxygen 6 node.
+     *
+     * @param mixed  $node Candidate node.
+     * @param string $path Human-readable path for error messages.
+     */
+    private function walkOxygen6Node( $node, string $path ): void {
+        $this->assertIsArray( $node, "{$path}: node is not an array" );
+        $this->assertArrayHasKey( 'id', $node, "{$path}: node missing id" );
+        $this->assertArrayHasKey( 'type', $node, "{$path}: node missing type" );
+        $this->assertIsString( $node['type'], "{$path}: type must be a string" );
+        $this->assertStringContainsString(
+            '\\',
+            $node['type'],
+            "{$path}: type '{$node['type']}' must be namespaced (e.g. EssentialElements\\Heading)"
+        );
+        $this->assertArrayHasKey( 'properties', $node, "{$path}: node missing properties" );
+        $this->assertIsArray( $node['properties'], "{$path}: properties must be an array" );
+        $this->assertArrayHasKey( 'children', $node, "{$path}: node missing children" );
+        $this->assertIsArray( $node['children'], "{$path}: children must be an array" );
+
+        foreach ( $node['children'] as $j => $child ) {
+            $this->walkOxygen6Node( $child, "{$path}/children[{$j}]" );
         }
     }
 
@@ -654,5 +923,45 @@ HTML;
         $this->assertArrayHasKey( 'total_components', $stats );
         $this->assertArrayHasKey( 'processing_time', $stats );
         $this->assertGreaterThan( 0, $stats['processing_time'] );
+    }
+
+    /**
+     * Bricks parser must accept the flat 2.x format (`children` of string ids).
+     *
+     * The translator's `bricks_to_*` paths feed the legacy nested fixture through
+     * the parser, so without this test the flat-format branch in
+     * DEVTB_Bricks_Parser::parse_flat() would be uncovered.
+     */
+    public function testBricksParserAcceptsFlatFormat(): void {
+        $bridge_path = dirname( __DIR__, 2 ) . '/translation-bridge';
+        require_once $bridge_path . '/parsers/class-bricks-parser.php';
+
+        $flat = json_encode( [
+            [
+                'id'       => 'brxe00001',
+                'name'     => 'section',
+                'parent'   => '0',
+                'children' => [ 'brxe00002' ],
+                'settings' => [],
+            ],
+            [
+                'id'       => 'brxe00002',
+                'name'     => 'heading',
+                'parent'   => 'brxe00001',
+                'children' => [],
+                'settings' => [ 'text' => 'Hello', 'tag' => 'h2' ],
+            ],
+        ] );
+
+        $parser     = new \DEVTB\TranslationBridge\Parsers\DEVTB_Bricks_Parser();
+        $components = $parser->parse( $flat );
+
+        $this->assertCount( 1, $components, 'flat parse must yield exactly one root component' );
+
+        $root = $components[0];
+        $this->assertSame( 'container', $root->type, 'root section should map to universal container' );
+        $this->assertCount( 1, $root->children, 'root should have one resolved child' );
+        $this->assertSame( 'heading', $root->children[0]->type );
+        $this->assertSame( 'Hello', $root->children[0]->content );
     }
 }

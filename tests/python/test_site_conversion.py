@@ -28,6 +28,9 @@ from translation_bridge.converters.wpbakery import WPBakeryConverter
 from translation_bridge.converters.beaver import BeaverConverter
 from translation_bridge.converters.avada import AvadaConverter
 from translation_bridge.converters.oxygen import OxygenConverter
+from translation_bridge.converters.oxygen6 import Oxygen6Converter
+from translation_bridge.converters.divi5 import Divi5Converter
+from translation_bridge.converters.elementor4 import Elementor4Converter
 from translation_bridge.converters.styles import StylesConverter
 from translation_bridge.converters.templates import TemplateConverter, TemplatePartGenerator
 from translation_bridge.parsers.elementor_site import ElementorSiteParser
@@ -357,6 +360,39 @@ class TestBricksConverter:
             assert "parent" in element
             assert "settings" in element
 
+    def test_flat_structure_with_string_child_ids(self, sample_elementor_data):
+        """Bricks 2.x output must be flat with string child ids (never nested element objects)."""
+        converter = BricksConverter()
+        result = converter.convert_to_dict(sample_elementor_data)
+
+        ids = {el["id"] for el in result}
+
+        for element in result:
+            assert isinstance(element.get("children", []), list)
+            for child in element.get("children", []):
+                assert isinstance(child, str), (
+                    f"children entry must be a string id, got {type(child).__name__}"
+                )
+                assert child in ids, f"child id {child!r} not present in flat array"
+
+            parent = element.get("parent", "0")
+            if parent != "0":
+                assert parent in ids, f"parent id {parent!r} not present in flat array"
+
+    def test_parent_child_linkage(self, sample_elementor_data):
+        """Each child must reference its parent's id, and the parent must list the child id."""
+        converter = BricksConverter()
+        result = converter.convert_to_dict(sample_elementor_data)
+
+        by_id = {el["id"]: el for el in result}
+        for element in result:
+            for child_id in element.get("children", []):
+                assert child_id in by_id
+                assert by_id[child_id]["parent"] == element["id"], (
+                    f"child {child_id} has parent {by_id[child_id]['parent']!r}, "
+                    f"expected {element['id']!r}"
+                )
+
     def test_get_framework(self):
         """Should return correct framework name."""
         converter = BricksConverter()
@@ -522,6 +558,206 @@ class TestOxygenConverter:
         """Should return correct framework name."""
         converter = OxygenConverter()
         assert converter.get_framework() == "oxygen"
+
+
+# =============================================================================
+# Oxygen 6 Converter Tests (Breakdance-proxy schema)
+# =============================================================================
+
+class TestOxygen6Converter:
+    """Test Oxygen6Converter class.
+
+    Oxygen 6 is a ground-up rewrite built on Breakdance — incompatible with
+    classic Oxygen. These tests pin the proxy schema shape so a future fixture
+    update (real Oxygen 6 export) lights up only the schema-specific fields.
+    """
+
+    def test_convert_returns_wrapped_payload(self, sample_elementor_data):
+        """Output must be the wrapped payload with _version/_nextNodeId/tree."""
+        result = json.loads(Oxygen6Converter().convert(sample_elementor_data))
+        assert isinstance(result, dict)
+        assert result.get("_version") == 1
+        assert isinstance(result.get("_nextNodeId"), int)
+        assert isinstance(result.get("tree"), list)
+        assert result["tree"], "tree must not be empty for non-trivial input"
+
+    def test_nodes_are_nested_with_namespaced_types(self, sample_elementor_data):
+        """Every node has id/type/properties/children; type is namespaced; hierarchy nests."""
+        payload = Oxygen6Converter().convert_to_dict(sample_elementor_data)
+
+        def walk(node, path="tree[0]"):
+            assert isinstance(node, dict), f"{path}: not a dict"
+            for key in ("id", "type", "properties", "children"):
+                assert key in node, f"{path}: missing {key!r}"
+            assert isinstance(node["type"], str)
+            assert "\\" in node["type"], (
+                f"{path}: type {node['type']!r} must be namespaced "
+                "(e.g. EssentialElements\\Heading)"
+            )
+            assert isinstance(node["properties"], dict)
+            assert isinstance(node["children"], list)
+            for i, child in enumerate(node["children"]):
+                walk(child, f"{path}/children[{i}]")
+
+        for i, root in enumerate(payload["tree"]):
+            walk(root, f"tree[{i}]")
+
+    def test_node_ids_are_unique_and_match_nextnodeid(self, sample_elementor_data):
+        """Generated ids must be unique; _nextNodeId points one past the max."""
+        payload = Oxygen6Converter().convert_to_dict(sample_elementor_data)
+
+        ids = []
+
+        def collect(node):
+            ids.append(node["id"])
+            for child in node["children"]:
+                collect(child)
+
+        for root in payload["tree"]:
+            collect(root)
+
+        assert len(ids) == len(set(ids)), "node ids must be unique within the payload"
+        # Counter is monotonic 1..N, so _nextNodeId should equal N + 1.
+        assert payload["_nextNodeId"] == len(ids) + 1
+
+    def test_heading_carries_text_and_tag(self, sample_elementor_data):
+        """Heading nodes must surface `text` and `tag` in their properties."""
+        payload = Oxygen6Converter().convert_to_dict(sample_elementor_data)
+
+        def find(node, type_suffix):
+            if node["type"].endswith(type_suffix):
+                return node
+            for child in node["children"]:
+                hit = find(child, type_suffix)
+                if hit:
+                    return hit
+            return None
+
+        heading = None
+        for root in payload["tree"]:
+            heading = find(root, "Heading")
+            if heading:
+                break
+
+        assert heading is not None, "expected at least one Heading node"
+        assert "text" in heading["properties"]
+        assert "tag" in heading["properties"]
+
+    def test_get_framework(self):
+        assert Oxygen6Converter().get_framework() == "oxygen-6"
+
+
+# =============================================================================
+# DIVI 5 Converter Tests
+# =============================================================================
+
+class TestDivi5Converter:
+    """Test Divi5Converter class.
+
+    DIVI 5 uses WordPress block markup under the `divi/*` namespace. These tests
+    pin the block-comment delimiters, the responsive `desktop.value` wrapper,
+    and the `builderVersion` declaration so any future schema drift is caught.
+    """
+
+    def test_emits_divi_block_markup(self, sample_elementor_data):
+        """Output must contain `<!-- wp:divi/...` delimiters."""
+        result = Divi5Converter().convert(sample_elementor_data)
+        assert isinstance(result, str)
+        assert "<!-- wp:divi/" in result
+
+    def test_declares_builder_version_on_blocks(self, sample_elementor_data):
+        """Each block must declare `builderVersion` (used by DIVI 5 for schema dispatch)."""
+        result = Divi5Converter().convert(sample_elementor_data)
+        assert '"builderVersion":"5.0.0"' in result
+
+    def test_text_content_uses_responsive_desktop_wrapper(self, sample_elementor_data):
+        """Content values must be wrapped in `{"desktop":{"value":"..."}}`."""
+        result = Divi5Converter().convert(sample_elementor_data)
+        # The Elementor sample has a heading "Welcome to Our Site"
+        assert '"desktop":{"value":' in result
+        assert "Welcome to Our Site" in result
+
+    def test_container_blocks_have_closing_tags(self, sample_elementor_data):
+        """Container blocks (section, column) emit opening/closing pairs."""
+        result = Divi5Converter().convert(sample_elementor_data)
+        # The Elementor sample is section → column → widgets (no explicit row).
+        for tag in ("section", "column"):
+            assert f"<!-- wp:divi/{tag} " in result, f"missing opening wp:divi/{tag}"
+            assert f"<!-- /wp:divi/{tag} -->" in result, f"missing closing /wp:divi/{tag}"
+
+    def test_leaf_blocks_self_close(self, sample_elementor_data):
+        """Leaf modules like `heading`, `text`, `button` must self-close (`/-->`)."""
+        result = Divi5Converter().convert(sample_elementor_data)
+        # At least one of the leaf module types from the sample must self-close.
+        assert "/-->" in result
+
+    def test_get_framework(self):
+        assert Divi5Converter().get_framework() == "divi-5"
+
+
+# =============================================================================
+# Elementor 4 Atomic Converter Tests
+# =============================================================================
+
+class TestElementor4Converter:
+    """Test Elementor4Converter class.
+
+    v4 atomic schema replaces v3's section/column/widget with semantic atomic
+    elements (`e-div-block`, `e-flexbox`, `e-grid`, `e-heading`, etc.). Tests
+    pin the per-node shape (id/version/elType/isInner/interactions/settings/
+    editor_settings/styles/elements) and the `e-` prefix.
+    """
+
+    ATOMIC_FIELDS = (
+        "id",
+        "version",
+        "elType",
+        "isInner",
+        "interactions",
+        "settings",
+        "editor_settings",
+        "styles",
+        "elements",
+    )
+
+    def test_emits_atomic_e_prefix(self, sample_elementor_data):
+        nodes = Elementor4Converter().convert_to_list(sample_elementor_data)
+        assert nodes, "expected at least one atomic root"
+        for node in nodes:
+            assert isinstance(node, dict)
+            assert node["elType"].startswith("e-"), (
+                f"elType {node['elType']!r} must use the atomic `e-` prefix"
+            )
+
+    def test_every_node_has_atomic_fields(self, sample_elementor_data):
+        nodes = Elementor4Converter().convert_to_list(sample_elementor_data)
+
+        def walk(node, path="root"):
+            for field in self.ATOMIC_FIELDS:
+                assert field in node, f"{path}: missing atomic field {field!r}"
+            assert isinstance(node["elements"], list)
+            assert isinstance(node["interactions"], list)
+            for i, child in enumerate(node["elements"]):
+                walk(child, f"{path}/elements[{i}]")
+
+        for i, root in enumerate(nodes):
+            walk(root, f"[{i}]")
+
+    def test_inner_flag_set_on_children(self, sample_elementor_data):
+        """Root nodes have `isInner: false`; nested children get `isInner: true`."""
+        nodes = Elementor4Converter().convert_to_list(sample_elementor_data)
+        for root in nodes:
+            assert root["isInner"] is False
+            for child in root["elements"]:
+                assert child["isInner"] is True
+
+    def test_version_string_present(self, sample_elementor_data):
+        nodes = Elementor4Converter().convert_to_list(sample_elementor_data)
+        for node in nodes:
+            assert isinstance(node["version"], str)
+
+    def test_get_framework(self):
+        assert Elementor4Converter().get_framework() == "elementor-4"
 
 
 # =============================================================================

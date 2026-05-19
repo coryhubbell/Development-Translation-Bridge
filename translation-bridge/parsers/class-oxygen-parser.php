@@ -86,6 +86,13 @@ class DEVTB_Oxygen_Parser implements DEVTB_Parser_Interface {
 			return [];
 		}
 
+		// Oxygen 6 content is a nested tree with namespaced `type` keys and lives
+		// under `_breakdance_data` post meta — fundamentally incompatible with the
+		// flat `ct_parent` model. Caller should route to DEVTB_Oxygen6_Parser.
+		if ( self::is_oxygen6_payload( $content ) ) {
+			return [];
+		}
+
 		// Oxygen stores elements as flat array with parent-child relationships
 		// We need to build the tree structure
 		$elements_by_id = $this->index_elements_by_id( $content );
@@ -515,5 +522,64 @@ class DEVTB_Oxygen_Parser implements DEVTB_Parser_Interface {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Detect an Oxygen 6 (Breakdance-rewrite) payload.
+	 *
+	 * Oxygen 6 is a ground-up rewrite that abandons the flat `ct_*` element
+	 * vocabulary and `ct_parent` linkage of Classic. It stores designs as a
+	 * nested JSON tree under `_breakdance_data`, where every node carries a
+	 * namespaced `type` (e.g. `EssentialElements\Heading`) and nests children
+	 * inline. This helper looks for those structural markers so callers can
+	 * route to DEVTB_Oxygen6_Parser instead.
+	 *
+	 * @param mixed $content Decoded JSON payload (array or scalar).
+	 * @return bool
+	 */
+	public static function is_oxygen6_payload( $content ): bool {
+		if ( is_string( $content ) ) {
+			$decoded = json_decode( $content, true );
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				return false;
+			}
+			$content = $decoded;
+		}
+
+		if ( ! is_array( $content ) ) {
+			return false;
+		}
+
+		// Wrapped payload: { "tree": ..., "_nextNodeId": ... }
+		if ( isset( $content['_nextNodeId'] ) || ( isset( $content['tree'] ) && is_array( $content['tree'] ) ) ) {
+			return true;
+		}
+
+		// Bare node or list of nodes: namespaced `type` (contains `\`) anywhere in tree.
+		return self::tree_has_namespaced_type( $content );
+	}
+
+	/**
+	 * Recursively scan for a namespaced element `type` string.
+	 *
+	 * @param mixed $data Decoded JSON branch.
+	 * @return bool
+	 */
+	private static function tree_has_namespaced_type( $data ): bool {
+		if ( ! is_array( $data ) ) {
+			return false;
+		}
+
+		if ( isset( $data['type'] ) && is_string( $data['type'] ) && strpos( $data['type'], '\\' ) !== false ) {
+			return true;
+		}
+
+		foreach ( $data as $value ) {
+			if ( is_array( $value ) && self::tree_has_namespaced_type( $value ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
