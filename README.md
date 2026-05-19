@@ -5,8 +5,9 @@ frameworks — Elementor, DIVI, Gutenberg, Bricks, Oxygen, Avada, WPBakery,
 Beaver Builder, Kadence, Thrive, Bootstrap, plus native support for the
 ground-up rewrites (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
-[![Version](https://img.shields.io/badge/version-4.3.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.0)
-[![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg)](#requirements)
+[![Version](https://img.shields.io/badge/version-4.3.3-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3)
+[![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
 [![Frameworks](https://img.shields.io/badge/frameworks-14-brightgreen.svg)](#supported-frameworks)
@@ -69,7 +70,13 @@ for the single-helper locations to patch.
 
 ---
 
-## What's new in v4.3.0
+## Current release: v4.3.3 (production-ready)
+
+**v4.3.3 is staging-verified and production-ready** (plugin activation, admin
+page load, and live translation flow all green on a real WordPress install).
+It's the recommended version for new deployments.
+
+### What 4.3.0 added (framework coverage milestone)
 
 - **3 new frameworks:** `divi-5`, `elementor-4`, `oxygen-6` — native parser +
   converter pairs for the block-based / atomic rewrites.
@@ -80,9 +87,30 @@ for the single-helper locations to patch.
   successor format and route to the new parser instead of attempting an
   incompatible parse.
 - **Framework matrix:** 11 → 14 frameworks, 110 → 182 translation pairs.
-- **Test deltas:** PHP 208 → 284 tests / 447 → 4003 assertions, Python 63 → 109 tests.
 
-Full notes: [GitHub release v4.3.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.0)
+### What 4.3.1 → 4.3.3 added (production-readiness chain)
+
+- **CLI translation fatal fixed** (`v4.3.1`): the inline autoloader mangled
+  namespaced class names — replaced with a shared autoloader used by CLI,
+  PHPUnit, and (defense-in-depth) WordPress.
+- **Matrix consistency across all surfaces** (`v4.3.1`): REST API, CLI,
+  file-handler, config class, admin TypeScript, Monaco language map — all now
+  derive from `DEVTB_Converter_Factory::get_framework_info()`. Stale `claude`
+  pseudo-framework purged from every consumer.
+- **Test suite green** (`v4.3.1`): 41 errors + 3 failures → **0 / 0** (284
+  tests, 4,133 assertions). PHP 8.5 deprecation count → 0.
+- **PHP 8.1+ floor declared** (`v4.3.1`): matches the tested runtime; PHP 7.4
+  EOL'd 2022-11.
+- **Security** (`v4.3.1`): CVE-2026-24765 (unsafe deserialization in PHPT
+  coverage) cleared by phpunit bump to 9.6.34.
+- **User-facing copy synced to 14 / 182** (`v4.3.2`): style.css framework
+  list, ASCII banner, admin help text, CLI help text.
+- **`functions.php` admin pages factory-driven** (`v4.3.3`): five hardcoded
+  9-framework call sites (admin home, Frameworks matrix table, Settings
+  select, System Status rows, Framework Details card) now consume the factory
+  directly. Adding a 15th framework later only requires updating the factory.
+
+Full notes: [v4.3.3 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) — see also [`CODEX_REVIEW.md`](CODEX_REVIEW.md) for file-by-file rationale.
 
 ---
 
@@ -379,15 +407,14 @@ Python (via pytest):
 python3 -m pytest tests/python -q
 ```
 
-As of v4.3.0:
-- PHP: 284 tests / 4003 assertions on the framework matrix.
+As of v4.3.3:
+- PHP: **284 tests / 4,133 assertions / 0 errors / 0 failures / 0 deprecations**.
 - Python: 109 tests across converters, parsers, transforms.
 
-The broader PHP suite has 41 pre-existing errors and 3 failures inherited
-from v4.1.0 (class-autoload mismatches caused by `class-foo.php` filenames
-not matching PSR-4 expectations, plus a few unrelated subsystem tests).
-These are not regressions and are tracked for cleanup; the framework
-matrix itself is green.
+The 41 pre-existing errors and 3 failures that v4.1 / v4.2 / v4.3.0 inherited
+(class-autoload mismatches and missing WP-function mocks) were all resolved in
+v4.3.1 via the shared autoloader + WP function stubs. The full suite is now
+green, including `composer audit`.
 
 ---
 
@@ -432,6 +459,9 @@ Release notes live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
+| [v4.3.3](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) **(production-ready)** | 2026-05-19 | `functions.php` admin pages now factory-driven; eliminates drift surface for framework lists |
+| [v4.3.2](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.2) | 2026-05-19 | User-facing copy errata (style.css, admin help, CLI help); 9 → 14 / 72 → 182 |
+| [v4.3.1](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1) | 2026-05-19 | Production-readiness: CLI fatal fix, matrix consistency, test suite green, PHP 8.1 floor, CVE-2026-24765 cleared |
 | [v4.3.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.0) | 2026-05-19 | DIVI 5, Elementor 4 Atomic, Oxygen 6 native parsers; Bricks flat-output fix |
 | [v4.2.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.2.0) | 2026-05-18 | Kadence + Thrive converters; CMS version re-association; correctness audit |
 | [v4.1.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.1.0) | 2026-01-17 | 8 Python converters; site-level parser; styles & template extraction |
@@ -441,12 +471,11 @@ Release notes live at [`RELEASE_NOTES_V*.md`](.) and in
 
 ## Roadmap
 
-The 4.x line is now feature-complete on framework coverage. Likely 4.x.y work:
+The 4.x line is feature-complete on framework coverage and production-ready
+as of v4.3.3. Remaining 4.x.y work:
 
 - Verify the v4.3.0 proxy schemas (`oxygen-6`, `divi-5`, `elementor-4`)
   against real exports and patch the isolated extractor helpers as needed.
-- Address the pre-existing 41 PHP autoload errors (filename ↔ PSR-4 mismatches
-  flagged by `composer install`).
 - Responsive breakpoint round-tripping for DIVI 5 / Elementor 4 / Oxygen 6
   (v1 reads desktop values only).
 
