@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage WPBakery
- * @version    3.2.0
+ * @version    4.3.0
  */
 
 class DEVTB_WPBakery_Templates {
@@ -503,13 +503,17 @@ class DEVTB_WPBakery_Templates {
 		$frameworks = [
 			'bootstrap'      => 1.0, // High compatibility
 			'divi'           => 0.9,
+			'divi-5'         => 0.9,
 			'elementor'      => 0.85,
+			'elementor-4'    => 0.85,
 			'avada'          => 0.9,
 			'bricks'         => 0.8,
 			'beaver-builder' => 0.85,
 			'gutenberg'      => 0.7,
 			'oxygen'         => 0.75,
-			'claude'         => 0.95,
+			'oxygen-6'       => 0.75,
+			'kadence'        => 0.8,
+			'thrive'         => 0.7,
 		];
 
 		// Adjust scores based on custom elements

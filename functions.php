@@ -108,6 +108,15 @@ add_action('widgets_init', 'devtb_register_sidebars');
  * Initialize Translation Bridge
  */
 function devtb_init_translation_bridge() {
+    // Defense-in-depth: register the shared autoloader so any class missed by the
+    // glob-loaders below still resolves on first use (matches CLI + test behavior).
+    if (file_exists(DEVTB_INCLUDES_DIR . '/class-devtb-autoloader.php')) {
+        if (!defined('DEVTB_INCLUDES'))           { define('DEVTB_INCLUDES', DEVTB_INCLUDES_DIR); }
+        if (!defined('DEVTB_TRANSLATION_BRIDGE')) { define('DEVTB_TRANSLATION_BRIDGE', DEVTB_TRANSLATION_BRIDGE_DIR); }
+        require_once DEVTB_INCLUDES_DIR . '/class-devtb-autoloader.php';
+        devtb_register_autoloader();
+    }
+
     // Load Translation Bridge utils (must load first)
     foreach (glob(DEVTB_TRANSLATION_BRIDGE_DIR . '/utils/*.php') as $util_file) {
         require_once $util_file;

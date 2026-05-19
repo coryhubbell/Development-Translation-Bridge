@@ -30,15 +30,19 @@ function MonacoEditor({
   const getLanguage = (fw: Framework): string => {
     const languageMap: Record<Framework, string> = {
       bootstrap: 'html',
+      divi: 'html',
+      'divi-5': 'html',
       elementor: 'json',
+      'elementor-4': 'json',
+      avada: 'html',
       bricks: 'json',
-      oxygen: 'json',
       wpbakery: 'html',
-      divi: 'json',
       'beaver-builder': 'html',
       gutenberg: 'html',
-      avada: 'html',
-      claude: 'html',
+      oxygen: 'json',
+      'oxygen-6': 'json',
+      kadence: 'html',
+      thrive: 'html',
     };
 
     return languageMap[fw] || 'html';

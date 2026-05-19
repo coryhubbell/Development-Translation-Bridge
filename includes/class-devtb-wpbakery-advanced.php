@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage WPBakery
- * @version    3.2.0
+ * @version    4.3.0
  */
 
 class DEVTB_WPBakery_Advanced {

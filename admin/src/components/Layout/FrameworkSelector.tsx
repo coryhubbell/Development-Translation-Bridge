@@ -11,17 +11,22 @@ interface FrameworkSelectorProps {
   onChange: (framework: Framework) => void;
 }
 
+// TODO: source from /wp-json/devtb/v2/frameworks so the UI auto-syncs with the backend.
 const frameworks: Array<{ id: Framework; name: string; icon: string }> = [
   { id: 'bootstrap', name: 'Bootstrap', icon: '🅱️' },
-  { id: 'elementor', name: 'Elementor', icon: '🎨' },
-  { id: 'bricks', name: 'Bricks Builder', icon: '🧱' },
-  { id: 'oxygen', name: 'Oxygen Builder', icon: '⚛️' },
-  { id: 'wpbakery', name: 'WPBakery', icon: '🏗️' },
   { id: 'divi', name: 'Divi Builder', icon: '💫' },
+  { id: 'divi-5', name: 'Divi 5', icon: '💜' },
+  { id: 'elementor', name: 'Elementor', icon: '🎨' },
+  { id: 'elementor-4', name: 'Elementor 4 Atomic', icon: '🧬' },
+  { id: 'avada', name: 'Avada Fusion', icon: '🔥' },
+  { id: 'bricks', name: 'Bricks Builder', icon: '🧱' },
+  { id: 'wpbakery', name: 'WPBakery', icon: '🏗️' },
   { id: 'beaver-builder', name: 'Beaver Builder', icon: '🦫' },
   { id: 'gutenberg', name: 'Gutenberg', icon: '📝' },
-  { id: 'avada', name: 'Avada Fusion', icon: '🔥' },
-  { id: 'claude', name: 'Claude AI', icon: '🤖' },
+  { id: 'oxygen', name: 'Oxygen Builder', icon: '⚛️' },
+  { id: 'oxygen-6', name: 'Oxygen 6 / Breakdance', icon: '⚡' },
+  { id: 'kadence', name: 'Kadence Blocks', icon: '🎯' },
+  { id: 'thrive', name: 'Thrive Architect', icon: '🌱' },
 ];
 
 function FrameworkSelector({

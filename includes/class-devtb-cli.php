@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    3.2.1
+ * @version    4.3.0
  */
 
 class DEVTB_CLI {
@@ -40,23 +40,14 @@ class DEVTB_CLI {
 	private array $params = array();
 
 	/**
-	 * Supported frameworks
+	 * Supported frameworks (slug => display label).
 	 *
-	 * Uses DEVTB_Config if available, otherwise falls back to local array.
+	 * Populated in the constructor from DEVTB_Converter_Factory so the CLI
+	 * stays in lockstep with the REST API and admin UI.
 	 *
-	 * @var array
+	 * @var array<string,string>
 	 */
-	private array $frameworks = array(
-		'bootstrap'      => 'Bootstrap 5.3.3',
-		'divi'           => 'DIVI Builder',
-		'elementor'      => 'Elementor',
-		'avada'          => 'Avada Fusion Builder',
-		'bricks'         => 'Bricks Builder',
-		'wpbakery'       => 'WPBakery Page Builder',
-		'beaver-builder' => 'Beaver Builder',
-		'gutenberg'      => 'Gutenberg Block Editor',
-		'oxygen'         => 'Oxygen Builder',
-	);
+	private array $frameworks = array();
 
 	/**
 	 * Logger instance
@@ -81,7 +72,21 @@ class DEVTB_CLI {
 		$this->args         = $args;
 		$this->logger       = new DEVTB_Logger();
 		$this->file_handler = new DEVTB_File_Handler();
+		$this->frameworks   = self::build_framework_labels();
 		$this->parse_arguments();
+	}
+
+	/**
+	 * Build the slug => display label map from the converter factory.
+	 *
+	 * @return array<string,string>
+	 */
+	private static function build_framework_labels(): array {
+		$labels = array();
+		foreach ( \DEVTB\TranslationBridge\Core\DEVTB_Converter_Factory::get_framework_info() as $slug => $meta ) {
+			$labels[ $slug ] = trim( $meta['name'] . ' ' . $meta['cms_version'] );
+		}
+		return $labels;
 	}
 
 	/**
@@ -164,8 +169,13 @@ class DEVTB_CLI {
 					$this->options[ $key ] = $value;
 				} else {
 					$key = substr( $arg, 2 );
-					// Check if next arg is a value or another option.
-					if ( $i + 1 < $count && 0 !== strpos( $this->args[ $i + 1 ], '-' ) ) {
+					// Boolean flags never consume the next argument as a value;
+					// they're declared in self::BOOLEAN_FLAGS / BOOLEAN_SHORT_FLAGS.
+					if (
+						! in_array( $key, self::BOOLEAN_FLAGS, true )
+						&& $i + 1 < $count
+						&& 0 !== strpos( $this->args[ $i + 1 ], '-' )
+					) {
 						$this->options[ $key ] = $this->args[ $i + 1 ];
 						$i++;
 					} else {
@@ -174,6 +184,8 @@ class DEVTB_CLI {
 				}
 			} elseif ( 0 === strpos( $arg, '-' ) && 2 === strlen( $arg ) ) {
 				// Short option (-o or -o value).
+				// NB: short flags stay greedy to preserve `-d <dir>` (output-dir) usage;
+				// disambiguating short flags requires per-command schemas and is out of scope here.
 				$key = substr( $arg, 1 );
 				if ( $i + 1 < $count && 0 !== strpos( $this->args[ $i + 1 ], '-' ) ) {
 					$this->options[ $key ] = $this->args[ $i + 1 ];
@@ -193,6 +205,26 @@ class DEVTB_CLI {
 		$this->command = ! empty( $positional ) ? array_shift( $positional ) : 'help';
 		$this->params  = $positional;
 	}
+
+	/**
+	 * Long flags that never take a value (must be true/false only).
+	 *
+	 * Without this list the parser would greedily consume the next positional
+	 * argument as the flag's value (e.g. `--dry-run divi` becoming
+	 * `dry-run=divi`), breaking the mixed positional+options case.
+	 */
+	private const BOOLEAN_FLAGS = array(
+		'dry-run',
+		'debug',
+		'verbose',
+		'ai-ready',
+		'force',
+		'help',
+		'version',
+		'quiet',
+		'no-color',
+		'json-output',
+	);
 
 	/**
 	 * Execute the CLI command

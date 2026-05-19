@@ -8,7 +8,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage Claude_Integration
- * @version    3.1.0
+ * @version    4.3.0
  */
 
 class DEVTB_Claude_API {

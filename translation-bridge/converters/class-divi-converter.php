@@ -504,24 +504,25 @@ class DEVTB_DIVI_Converter implements DEVTB_Converter_Interface {
 		// Remove % sign and convert to float
 		$width_value = (float) str_replace( '%', '', $width );
 
-		// Map to closest DIVI column type
+		// Map to closest DIVI column type. Keys are stringified floats because PHP
+		// silently casts float array keys to int (deprecated in 8.5).
 		$type_map = [
-			100   => '4_4',
-			75    => '3_4',
-			66.66 => '2_3',
-			50    => '1_2',
-			33.33 => '1_3',
-			25    => '1_4',
-			20    => '1_5',
-			16.66 => '1_6',
+			'100'   => '4_4',
+			'75'    => '3_4',
+			'66.66' => '2_3',
+			'50'    => '1_2',
+			'33.33' => '1_3',
+			'25'    => '1_4',
+			'20'    => '1_5',
+			'16.66' => '1_6',
 		];
 
 		// Find closest match
-		$closest_diff = 999;
+		$closest_diff = 999.0;
 		$closest_type = '4_4';
 
 		foreach ( $type_map as $percent => $type ) {
-			$diff = abs( $width_value - $percent );
+			$diff = abs( $width_value - (float) $percent );
 			if ( $diff < $closest_diff ) {
 				$closest_diff = $diff;
 				$closest_type = $type;

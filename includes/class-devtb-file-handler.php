@@ -6,27 +6,31 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    3.2.1
+ * @version    4.3.0
  */
 
 class DEVTB_File_Handler {
 
 	/**
-	 * Framework file extensions
+	 * Framework file extensions (canonical).
 	 *
-	 * @var array
+	 * @var array<string,string>
 	 */
 	private array $extensions = array(
 		'bootstrap'      => 'html',
-		'divi'           => 'txt',  // DIVI uses shortcodes in text files.
+		'divi'           => 'txt',  // Shortcodes in text files.
+		'divi-5'         => 'html', // Block markup.
 		'elementor'      => 'json',
+		'elementor-4'    => 'json',
 		'avada'          => 'html',
 		'bricks'         => 'json',
-		'wpbakery'       => 'txt',  // WPBakery uses shortcodes.
-		'beaver-builder' => 'txt',  // Beaver Builder uses serialized PHP.
-		'gutenberg'      => 'html', // Gutenberg uses HTML comments.
-		'oxygen'         => 'json', // Oxygen uses JSON.
-		'claude'         => 'html',
+		'wpbakery'       => 'txt',  // Shortcodes.
+		'beaver-builder' => 'txt',  // Serialized PHP.
+		'gutenberg'      => 'html', // HTML comments.
+		'oxygen'         => 'json',
+		'oxygen-6'       => 'json',
+		'kadence'        => 'html', // Block markup.
+		'thrive'         => 'html',
 	);
 
 	/**
@@ -144,13 +148,64 @@ class DEVTB_File_Handler {
 	}
 
 	/**
-	 * Get file extension for a framework
+	 * Get the canonical output extension for a framework slug.
 	 *
-	 * @param string $framework Framework name.
-	 * @return string File extension.
+	 * Used by output filename generation (e.g. divi -> txt, oxygen -> json).
+	 * For filesystem extension extraction from a path, use {@see get_file_extension}.
+	 *
+	 * @param string $framework Framework slug.
+	 * @return string File extension (without leading dot).
 	 */
 	public function get_extension( string $framework ): string {
 		return $this->extensions[ $framework ] ?? 'html';
+	}
+
+	/**
+	 * Extract the filesystem extension from a filename.
+	 *
+	 * @param string $filename Filename or path.
+	 * @return string Extension without dot, or empty string if none.
+	 */
+	public function get_file_extension( string $filename ): string {
+		$ext = pathinfo( $filename, PATHINFO_EXTENSION );
+		return is_string( $ext ) ? strtolower( $ext ) : '';
+	}
+
+	/**
+	 * Format a byte count as a human-readable size string.
+	 *
+	 * @param int $bytes Number of bytes (>= 0).
+	 * @return string e.g. "0 B", "1 KB", "1.5 KB", "1 MB".
+	 */
+	public function format_file_size( int $bytes ): string {
+		if ( $bytes <= 0 ) {
+			return '0 B';
+		}
+		$units = array( 'B', 'KB', 'MB', 'GB', 'TB' );
+		$power = (int) floor( log( $bytes, 1024 ) );
+		$power = min( $power, count( $units ) - 1 );
+		$value = $bytes / pow( 1024, $power );
+
+		if ( fmod( $value, 1.0 ) === 0.0 ) {
+			$formatted = (string) (int) $value;
+		} else {
+			// Trim trailing zeros and the dot if needed (1.50 -> 1.5, 2.00 -> 2).
+			$formatted = rtrim( rtrim( number_format( $value, 2, '.', '' ), '0' ), '.' );
+		}
+		return $formatted . ' ' . $units[ $power ];
+	}
+
+	/**
+	 * Find files in a directory matching a glob pattern.
+	 *
+	 * Thin alias of {@see list_files} for clearer call-site intent.
+	 *
+	 * @param string $dir     Directory path.
+	 * @param string $pattern Glob pattern (e.g. "*.txt").
+	 * @return array<string> Matching file paths.
+	 */
+	public function find_files( string $dir, string $pattern = '*' ): array {
+		return $this->list_files( $dir, $pattern );
 	}
 
 	/**
@@ -192,8 +247,8 @@ class DEVTB_File_Handler {
 			return 'avada';
 		}
 
-		if ( preg_match( '/data-claude-editable/', $content ) ) {
-			return 'claude';
+		if ( preg_match( '/wp:kadence\//', $content ) ) {
+			return 'kadence';
 		}
 
 		if ( preg_match( '/<div class="[^"]*\bcontainer\b[^"]*"/', $content ) ) {

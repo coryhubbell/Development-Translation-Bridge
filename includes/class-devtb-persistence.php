@@ -7,7 +7,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage Core
- * @version    3.3.0
+ * @version    4.3.0
  */
 
 // Prevent direct access.

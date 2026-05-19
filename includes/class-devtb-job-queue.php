@@ -7,7 +7,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage API
- * @version    3.2.0
+ * @version    4.3.0
  */
 
 class DEVTB_Job_Queue {

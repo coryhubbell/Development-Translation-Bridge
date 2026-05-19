@@ -3,18 +3,22 @@
  * DevelopmentTranslation Bridge - Visual Interface
  */
 
-// Framework Types
+// Framework Types — must stay in sync with DEVTB_Converter_Factory (14 entries).
 export type Framework =
   | 'bootstrap'
-  | 'elementor'
-  | 'bricks'
-  | 'oxygen'
-  | 'wpbakery'
   | 'divi'
+  | 'divi-5'
+  | 'elementor'
+  | 'elementor-4'
+  | 'avada'
+  | 'bricks'
+  | 'wpbakery'
   | 'beaver-builder'
   | 'gutenberg'
-  | 'avada'
-  | 'claude';
+  | 'oxygen'
+  | 'oxygen-6'
+  | 'kadence'
+  | 'thrive';
 
 export interface FrameworkInfo {
   id: Framework;

@@ -7,7 +7,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage API
- * @version    3.2.0
+ * @version    4.3.0
  */
 
 class DEVTB_API_V2 {
@@ -19,21 +19,11 @@ class DEVTB_API_V2 {
     private $namespace = 'devtb/v2';
 
     /**
-     * Supported frameworks
+     * Supported frameworks (sourced from the converter factory).
      *
      * @var array
      */
-    private $frameworks = [
-        'bootstrap',
-        'divi',
-        'elementor',
-        'avada',
-        'bricks',
-        'wpbakery',
-        'beaver-builder',
-        'gutenberg',
-        'oxygen',
-    ];
+    private $frameworks;
 
     /**
      * Logger instance
@@ -63,6 +53,7 @@ class DEVTB_API_V2 {
         $this->logger = new DEVTB_Logger();
         $this->auth = new DEVTB_Auth();
         $this->rate_limiter = new DEVTB_Rate_Limiter();
+        $this->frameworks = \DEVTB\TranslationBridge\Core\DEVTB_Converter_Factory::get_supported_frameworks();
 
         add_action('rest_api_init', [$this, 'register_routes']);
     }
@@ -549,7 +540,7 @@ class DEVTB_API_V2 {
 
         if (!$job) {
             return new WP_Error(
-                'job_not_found',
+                'devtb_job_not_found',
                 'Job not found: ' . $job_id,
                 ['status' => 404]
             );
@@ -614,67 +605,26 @@ class DEVTB_API_V2 {
      * @return WP_REST_Response
      */
     public function list_frameworks() {
-        $frameworks_info = [
-            'bootstrap' => [
-                'name'        => 'Bootstrap 5.3.3',
-                'type'        => 'HTML/CSS',
-                'extension'   => 'html',
-                'description' => 'Clean HTML/CSS framework, ideal for AI assistance',
-            ],
-            'divi' => [
-                'name'        => 'DIVI Builder',
-                'type'        => 'Shortcodes',
-                'extension'   => 'txt',
-                'description' => 'Visual page builder with 100+ modules',
-            ],
-            'elementor' => [
-                'name'        => 'Elementor',
-                'type'        => 'JSON',
-                'extension'   => 'json',
-                'description' => 'Popular page builder with 90+ widgets',
-            ],
-            'avada' => [
-                'name'        => 'Avada Fusion Builder',
-                'type'        => 'HTML',
-                'extension'   => 'html',
-                'description' => 'Premium builder with 150+ elements',
-            ],
-            'bricks' => [
-                'name'        => 'Bricks Builder',
-                'type'        => 'JSON',
-                'extension'   => 'json',
-                'description' => 'Performance-focused builder',
-            ],
-            'wpbakery' => [
-                'name'        => 'WPBakery Page Builder',
-                'type'        => 'Shortcodes',
-                'extension'   => 'txt',
-                'description' => 'Visual Composer, 50+ elements',
-            ],
-            'beaver-builder' => [
-                'name'        => 'Beaver Builder',
-                'type'        => 'Serialized PHP',
-                'extension'   => 'txt',
-                'description' => 'Flexible page builder with 30+ modules',
-            ],
-            'gutenberg' => [
-                'name'        => 'Gutenberg Block Editor',
-                'type'        => 'HTML Comments',
-                'extension'   => 'html',
-                'description' => 'WordPress native block editor with 50+ core blocks',
-            ],
-            'oxygen' => [
-                'name'        => 'Oxygen Builder',
-                'type'        => 'JSON',
-                'extension'   => 'json',
-                'description' => 'Visual site builder with 30+ elements',
-            ],
-        ];
+        $info = \DEVTB\TranslationBridge\Core\DEVTB_Converter_Factory::get_framework_info();
 
+        $frameworks_info = [];
+        foreach ($info as $slug => $meta) {
+            $name = trim($meta['name'] . ' ' . $meta['cms_version']);
+            $frameworks_info[$slug] = [
+                'name'            => $name,
+                'description'     => $name,
+                'format'          => $meta['format'],
+                'extension'       => $meta['extension'],
+                'file_extensions' => $meta['file_extensions'],
+                'cms_version'     => $meta['cms_version'],
+            ];
+        }
+
+        $count = count($frameworks_info);
         return new WP_REST_Response([
             'success'           => true,
-            'total_frameworks'  => count($frameworks_info),
-            'translation_pairs' => count($frameworks_info) * (count($frameworks_info) - 1),
+            'total_frameworks'  => $count,
+            'translation_pairs' => $count * ($count - 1),
             'frameworks'        => $frameworks_info,
             'ai_ready_option'   => 'Use ai_ready:true parameter to add AI-friendly attributes to any conversion output',
         ], 200);
@@ -692,6 +642,10 @@ class DEVTB_API_V2 {
             'success'  => true,
             'version'  => '2.0',
             'status'   => 'operational',
+            'api'      => [
+                'name'    => 'devtb',
+                'version' => 'v2',
+            ],
             'features' => [
                 'single_translation' => true,
                 'batch_translation'  => true,

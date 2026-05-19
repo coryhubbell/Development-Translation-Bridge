@@ -153,9 +153,10 @@ class ApiClient {
     switch (response.status) {
       case 401:
         throw new AuthenticationError(message);
-      case 429:
+      case 429: {
         const retryAfter = parseInt(response.headers.get('Retry-After') || '60', 10);
         throw new RateLimitError(retryAfter, message);
+      }
       case 400:
         throw new ValidationError(message, errorData.data as Record<string, string>);
       default:

@@ -26,18 +26,21 @@ class AuthTest extends TestCase {
      * Test API key generation
      */
     public function test_generate_api_key_returns_valid_key() {
-        $key = $this->auth->generate_api_key('test_user');
+        $result = $this->auth->generate_api_key(1);
 
-        $this->assertIsString($key);
-        $this->assertGreaterThan(20, strlen($key));
-        $this->assertStringStartsWith('devtb_', $key);
+        // generate_api_key returns metadata array with the key under 'key'.
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('key', $result);
+        $this->assertIsString($result['key']);
+        $this->assertGreaterThan(20, strlen($result['key']));
+        $this->assertStringStartsWith('devtb_', $result['key']);
     }
 
     public function test_generate_api_key_creates_unique_keys() {
-        $key1 = $this->auth->generate_api_key('user1');
-        $key2 = $this->auth->generate_api_key('user2');
+        $key1 = $this->auth->generate_api_key(1);
+        $key2 = $this->auth->generate_api_key(2);
 
-        $this->assertNotEquals($key1, $key2, 'Generated keys should be unique');
+        $this->assertNotEquals($key1['key'] ?? $key1, $key2['key'] ?? $key2, 'Generated keys should be unique');
     }
 
     /**
@@ -49,7 +52,6 @@ class AuthTest extends TestCase {
 
         $reflection = new \ReflectionClass($this->auth);
         $method = $reflection->getMethod('get_api_key_from_request');
-        $method->setAccessible(true);
 
         $result = $method->invoke($this->auth, $request);
 
@@ -61,7 +63,6 @@ class AuthTest extends TestCase {
 
         $reflection = new \ReflectionClass($this->auth);
         $method = $reflection->getMethod('get_api_key_from_request');
-        $method->setAccessible(true);
 
         $result = $method->invoke($this->auth, $request);
 
@@ -75,7 +76,6 @@ class AuthTest extends TestCase {
 
         $reflection = new \ReflectionClass($this->auth);
         $method = $reflection->getMethod('get_api_key_from_request');
-        $method->setAccessible(true);
 
         $result = $method->invoke($this->auth, $request);
 
@@ -114,7 +114,7 @@ class AuthTest extends TestCase {
      */
     public function test_get_key_info_structure() {
         // Generate a key first to have data
-        $this->auth->generate_api_key('test_structure_user');
+        $this->auth->generate_api_key(42);
 
         // Get stats and verify structure
         $stats = $this->auth->get_stats();

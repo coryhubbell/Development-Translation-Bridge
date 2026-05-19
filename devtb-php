@@ -4,11 +4,11 @@
  * DEVTB - DevelopmentTranslation Bridge CLI
  *
  * Command-line interface for the Translation Bridge™
- * Converts between 10 page builder frameworks with AI optimization
+ * Converts between 14 page builder frameworks with AI optimization
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    4.0.0
+ * @version    4.3.0
  * @author     DevelopmentTranslation Bridge
  * @license    GPL-2.0+
  */
@@ -19,10 +19,10 @@ if (php_sapi_name() !== 'cli') {
 }
 
 // Define constants
-define('DEVTB_VERSION', '4.0.0');
-define('DEVTB_ROOT', __DIR__);
-define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes');
-define('DEVTB_TRANSLATION_BRIDGE', DEVTB_ROOT . '/translation-bridge');
+if (!defined('DEVTB_VERSION'))             { define('DEVTB_VERSION', '4.3.0'); }
+if (!defined('DEVTB_ROOT'))                { define('DEVTB_ROOT', __DIR__); }
+if (!defined('DEVTB_INCLUDES'))            { define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes'); }
+if (!defined('DEVTB_TRANSLATION_BRIDGE'))  { define('DEVTB_TRANSLATION_BRIDGE', DEVTB_ROOT . '/translation-bridge'); }
 
 // Check PHP version
 if (version_compare(PHP_VERSION, '7.4.0', '<')) {
@@ -30,31 +30,14 @@ if (version_compare(PHP_VERSION, '7.4.0', '<')) {
     exit(1);
 }
 
-// Autoloader for project classes
-spl_autoload_register(function ($class) {
-    // Convert class name to file path
-    $class = str_replace('_', '-', strtolower($class));
-    $class = str_replace('\\', '/', $class);
+// Shared autoloader (resolves DEVTB\TranslationBridge\... and global DEVTB_* classes).
+require_once DEVTB_INCLUDES . '/class-devtb-autoloader.php';
+devtb_register_autoloader();
 
-    // Possible locations
-    $locations = [
-        DEVTB_INCLUDES . '/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/core/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/parsers/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/converters/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/models/class-' . $class . '.php',
-        DEVTB_TRANSLATION_BRIDGE . '/utils/class-' . $class . '.php',
-    ];
+// WordPress function stubs for CLI mode (esc_attr, get_option, etc.). No-op under WP.
+require_once DEVTB_INCLUDES . '/wp-function-stubs.php';
 
-    foreach ($locations as $file) {
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
-    }
-});
-
-// Include required files
+// Pre-load the CLI bootstrap classes (cheaper than autoloader cold-start; no functional dependency).
 require_once DEVTB_INCLUDES . '/class-devtb-cli.php';
 require_once DEVTB_INCLUDES . '/class-devtb-file-handler.php';
 require_once DEVTB_INCLUDES . '/class-devtb-logger.php';

@@ -22,7 +22,6 @@ class CLITest extends TestCase {
         // Use reflection to check parsed command
         $reflection = new \ReflectionClass($cli);
         $commandProperty = $reflection->getProperty('command');
-        $commandProperty->setAccessible(true);
 
         $this->assertEquals('translate', $commandProperty->getValue($cli));
     }
@@ -36,7 +35,6 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $optionsProperty = $reflection->getProperty('options');
-        $optionsProperty->setAccessible(true);
         $options = $optionsProperty->getValue($cli);
 
         $this->assertTrue($options['dry-run']);
@@ -52,7 +50,6 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $optionsProperty = $reflection->getProperty('options');
-        $optionsProperty->setAccessible(true);
         $options = $optionsProperty->getValue($cli);
 
         $this->assertTrue($options['n']);
@@ -68,7 +65,6 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $optionsProperty = $reflection->getProperty('options');
-        $optionsProperty->setAccessible(true);
         $options = $optionsProperty->getValue($cli);
 
         $this->assertEquals('/path/to/file.html', $options['output']);
@@ -83,13 +79,12 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $commandProperty = $reflection->getProperty('command');
-        $commandProperty->setAccessible(true);
 
         $this->assertEquals('help', $commandProperty->getValue($cli));
     }
 
     /**
-     * Test frameworks array contains all 9 frameworks
+     * Test frameworks array contains all 14 frameworks (v4.3.0 matrix)
      */
     public function test_frameworks_array_contains_all_frameworks() {
         require_once DEVTB_INCLUDES . '/class-devtb-cli.php';
@@ -97,19 +92,19 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $frameworksProperty = $reflection->getProperty('frameworks');
-        $frameworksProperty->setAccessible(true);
         $frameworks = $frameworksProperty->getValue($cli);
 
         $expected_frameworks = [
-            'bootstrap', 'divi', 'elementor', 'avada', 'bricks',
-            'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen'
+            'bootstrap', 'divi', 'divi-5', 'elementor', 'elementor-4',
+            'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg',
+            'oxygen', 'oxygen-6', 'kadence', 'thrive',
         ];
 
         foreach ($expected_frameworks as $framework) {
             $this->assertArrayHasKey($framework, $frameworks);
         }
 
-        $this->assertCount(9, $frameworks);
+        $this->assertCount(14, $frameworks);
     }
 
     /**
@@ -121,7 +116,6 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $paramsProperty = $reflection->getProperty('params');
-        $paramsProperty->setAccessible(true);
         $params = $paramsProperty->getValue($cli);
 
         $this->assertEquals('bootstrap', $params[0]);
@@ -138,7 +132,6 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $paramsProperty = $reflection->getProperty('params');
-        $paramsProperty->setAccessible(true);
         $params = $paramsProperty->getValue($cli);
 
         $this->assertEquals('bootstrap', $params[0]);
@@ -154,9 +147,7 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $commandProperty = $reflection->getProperty('command');
-        $commandProperty->setAccessible(true);
         $paramsProperty = $reflection->getProperty('params');
-        $paramsProperty->setAccessible(true);
 
         $this->assertEquals('validate', $commandProperty->getValue($cli));
         $params = $paramsProperty->getValue($cli);
@@ -173,7 +164,6 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $optionsProperty = $reflection->getProperty('options');
-        $optionsProperty->setAccessible(true);
         $options = $optionsProperty->getValue($cli);
 
         $this->assertEquals('elementor', $options['target']);
@@ -188,9 +178,7 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $paramsProperty = $reflection->getProperty('params');
-        $paramsProperty->setAccessible(true);
         $optionsProperty = $reflection->getProperty('options');
-        $optionsProperty->setAccessible(true);
 
         $params = $paramsProperty->getValue($cli);
         $options = $optionsProperty->getValue($cli);
@@ -209,7 +197,6 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $commandProperty = $reflection->getProperty('command');
-        $commandProperty->setAccessible(true);
 
         $this->assertEquals('list-frameworks', $commandProperty->getValue($cli));
     }
@@ -223,9 +210,7 @@ class CLITest extends TestCase {
 
         $reflection = new \ReflectionClass($cli);
         $commandProperty = $reflection->getProperty('command');
-        $commandProperty->setAccessible(true);
         $paramsProperty = $reflection->getProperty('params');
-        $paramsProperty->setAccessible(true);
 
         $this->assertEquals('help', $commandProperty->getValue($cli));
         $params = $paramsProperty->getValue($cli);

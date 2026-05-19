@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage API
- * @version    3.2.1
+ * @version    4.3.0
  */
 
 class DEVTB_Rate_Limiter {
@@ -156,7 +156,7 @@ class DEVTB_Rate_Limiter {
 	 * @param int    $duration   Window duration in seconds.
 	 * @return array Window status.
 	 */
-	private function check_window( string $identifier, string $window, int $limit, int $duration = null ): array {
+	private function check_window( string $identifier, string $window, int $limit, ?int $duration = null ): array {
 		// Determine window duration
 		if ( $duration === null ) {
 			$duration = $this->get_window_duration( $window );

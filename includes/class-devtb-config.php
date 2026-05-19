@@ -7,20 +7,23 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage Core
- * @version    3.2.1
+ * @version    4.3.0
  */
 
 /**
  * DEVTB Configuration class
  *
  * Contains all shared configuration constants used across the plugin.
+ *
+ * NOTE: FRAMEWORKS / FRAMEWORK_NAMES mirror DEVTB_Converter_Factory but stay
+ * defined here for the legacy procedural call sites. Keep both in lockstep.
  */
 class DEVTB_Config {
 
 	/**
 	 * Plugin version
 	 */
-	public const VERSION = '3.2.1';
+	public const VERSION = '4.3.0';
 
 	/**
 	 * API namespace
@@ -28,21 +31,25 @@ class DEVTB_Config {
 	public const API_NAMESPACE = 'devtb/v2';
 
 	/**
-	 * Supported frameworks for translation
+	 * Supported frameworks for translation (14 frameworks as of v4.3.0).
 	 *
 	 * @var array
 	 */
 	public const FRAMEWORKS = array(
 		'bootstrap',
 		'divi',
+		'divi-5',
 		'elementor',
+		'elementor-4',
 		'avada',
 		'bricks',
 		'wpbakery',
 		'beaver-builder',
 		'gutenberg',
 		'oxygen',
-		'claude',
+		'oxygen-6',
+		'kadence',
+		'thrive',
 	);
 
 	/**
@@ -52,15 +59,19 @@ class DEVTB_Config {
 	 */
 	public const FRAMEWORK_NAMES = array(
 		'bootstrap'      => 'Bootstrap',
-		'divi'           => 'Divi',
+		'divi'           => 'DIVI Builder',
+		'divi-5'         => 'DIVI 5',
 		'elementor'      => 'Elementor',
+		'elementor-4'    => 'Elementor 4 Atomic',
 		'avada'          => 'Avada / Fusion Builder',
 		'bricks'         => 'Bricks Builder',
 		'wpbakery'       => 'WPBakery Page Builder',
 		'beaver-builder' => 'Beaver Builder',
 		'gutenberg'      => 'Gutenberg / Block Editor',
 		'oxygen'         => 'Oxygen Builder',
-		'claude'         => 'Claude AI Format',
+		'oxygen-6'       => 'Oxygen 6 / Breakdance',
+		'kadence'        => 'Kadence Blocks',
+		'thrive'         => 'Thrive Architect',
 	);
 
 	/**

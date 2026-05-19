@@ -41,6 +41,72 @@ class DEVTB_Converter_Factory {
 	private static array $converters = [];
 
 	/**
+	 * Human-readable framework display names keyed by slug.
+	 *
+	 * @var array<string,string>
+	 */
+	public const FRAMEWORK_DISPLAY_NAMES = [
+		'bootstrap'      => 'Bootstrap',
+		'divi'           => 'DIVI Builder',
+		'divi-5'         => 'DIVI 5',
+		'elementor'      => 'Elementor',
+		'elementor-4'    => 'Elementor 4 Atomic',
+		'avada'          => 'Avada Fusion',
+		'bricks'         => 'Bricks Builder',
+		'wpbakery'       => 'WPBakery Page Builder',
+		'beaver-builder' => 'Beaver Builder',
+		'gutenberg'      => 'Gutenberg',
+		'oxygen'         => 'Oxygen Builder',
+		'oxygen-6'       => 'Oxygen 6 / Breakdance',
+		'kadence'        => 'Kadence Blocks',
+		'thrive'         => 'Thrive Architect',
+	];
+
+	/**
+	 * Output content format per framework. One of: html, json, shortcodes, block.
+	 *
+	 * @var array<string,string>
+	 */
+	public const FRAMEWORK_FORMATS = [
+		'bootstrap'      => 'html',
+		'divi'           => 'shortcodes',
+		'divi-5'         => 'block',
+		'elementor'      => 'json',
+		'elementor-4'    => 'json',
+		'avada'          => 'shortcodes',
+		'bricks'         => 'json',
+		'wpbakery'       => 'shortcodes',
+		'beaver-builder' => 'json',
+		'gutenberg'      => 'block',
+		'oxygen'         => 'json',
+		'oxygen-6'       => 'json',
+		'kadence'        => 'block',
+		'thrive'         => 'html',
+	];
+
+	/**
+	 * Output file extension per framework (single canonical extension).
+	 *
+	 * @var array<string,string>
+	 */
+	public const FRAMEWORK_FILE_EXTENSIONS = [
+		'bootstrap'      => 'html',
+		'divi'           => 'txt',
+		'divi-5'         => 'html',
+		'elementor'      => 'json',
+		'elementor-4'    => 'json',
+		'avada'          => 'html',
+		'bricks'         => 'json',
+		'wpbakery'       => 'txt',
+		'beaver-builder' => 'txt',
+		'gutenberg'      => 'html',
+		'oxygen'         => 'json',
+		'oxygen-6'       => 'json',
+		'kadence'        => 'html',
+		'thrive'         => 'html',
+	];
+
+	/**
 	 * Create converter for specified framework
 	 *
 	 * @param string $framework Framework name (bootstrap, divi, elementor, avada, bricks, wpbakery, beaver-builder, gutenberg, oxygen).
@@ -155,6 +221,37 @@ class DEVTB_Converter_Factory {
 	 */
 	public static function is_supported( string $framework ): bool {
 		return in_array( strtolower( trim( $framework ) ), self::get_supported_frameworks(), true );
+	}
+
+	/**
+	 * Get framework metadata (name, CMS version, format, file extension).
+	 *
+	 * Single source of truth for REST API, CLI, and admin UI consumers.
+	 *
+	 * @return array<string, array{name:string, cms_version:string, format:string, file_extensions:array<string>, extension:string}>
+	 */
+	public static function get_framework_info(): array {
+		$info = [];
+		foreach ( self::get_supported_frameworks() as $slug ) {
+			$cms_version = '';
+			try {
+				$converter   = self::create( $slug );
+				$cms_version = $converter ? $converter->get_target_cms_version() : '';
+			} catch ( \Throwable $e ) {
+				$cms_version = '';
+			}
+
+			$extension = self::FRAMEWORK_FILE_EXTENSIONS[ $slug ] ?? 'html';
+
+			$info[ $slug ] = [
+				'name'            => self::FRAMEWORK_DISPLAY_NAMES[ $slug ] ?? ucfirst( $slug ),
+				'cms_version'     => $cms_version,
+				'format'          => self::FRAMEWORK_FORMATS[ $slug ] ?? 'html',
+				'extension'       => $extension,
+				'file_extensions' => [ $extension ],
+			];
+		}
+		return $info;
 	}
 
 	/**

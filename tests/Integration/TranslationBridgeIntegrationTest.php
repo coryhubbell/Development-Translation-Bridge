@@ -71,9 +71,9 @@ class TranslationBridgeIntegrationTest extends TestCase {
     public function test_round_trip_translation_preserves_content() {
         $original_content = '<section class="hero"><div class="container"><h1>Welcome to Our Site</h1></div></section>';
 
-        // Bootstrap -> Claude -> Bootstrap
-        $to_claude = $this->translator->translate($original_content, 'bootstrap', 'claude');
-        $back_to_bootstrap = $this->translator->translate($to_claude, 'claude', 'bootstrap');
+        // Bootstrap -> Gutenberg -> Bootstrap (HTML-friendly intermediate).
+        $to_gutenberg      = $this->translator->translate($original_content, 'bootstrap', 'gutenberg');
+        $back_to_bootstrap = $this->translator->translate($to_gutenberg, 'gutenberg', 'bootstrap');
 
         $this->assertNotEmpty($back_to_bootstrap);
         // Content should be preserved (text content)
@@ -106,8 +106,9 @@ class TranslationBridgeIntegrationTest extends TestCase {
         $stats = $this->translator->get_stats();
 
         $this->assertIsArray($stats);
-        $this->assertArrayHasKey('components_parsed', $stats);
-        $this->assertArrayHasKey('components_converted', $stats);
+        $this->assertArrayHasKey('total_components', $stats);
+        $this->assertArrayHasKey('successful', $stats);
+        $this->assertArrayHasKey('processing_time', $stats);
     }
 
     /**
@@ -138,10 +139,10 @@ class TranslationBridgeIntegrationTest extends TestCase {
         }
 
         $content = file_get_contents($fixture_path);
-        $result = $this->translator->translate($content, 'bootstrap', 'claude');
+        $result = $this->translator->translate($content, 'bootstrap', 'gutenberg');
 
         $this->assertNotEmpty($result);
-        $this->assertStringContainsString('data-claude-editable', $result);
+        $this->assertStringContainsString('wp:', $result);
     }
 
     /**
@@ -163,11 +164,15 @@ class TranslationBridgeIntegrationTest extends TestCase {
     }
 
     /**
-     * Test all supported frameworks can be translated to
+     * Test all supported frameworks can be translated to (v4.3.0: 14 targets).
      */
     public function test_all_frameworks_as_targets() {
-        $source = '<div class="container"><h1>Test</h1></div>';
-        $frameworks = ['divi', 'elementor', 'avada', 'bricks', 'wpbakery', 'beaver-builder', 'gutenberg', 'oxygen', 'claude'];
+        $source     = '<div class="container"><h1>Test</h1></div>';
+        $frameworks = [
+            'divi', 'divi-5', 'elementor', 'elementor-4', 'avada',
+            'bricks', 'wpbakery', 'beaver-builder', 'gutenberg',
+            'oxygen', 'oxygen-6', 'kadence', 'thrive',
+        ];
 
         foreach ($frameworks as $target) {
             $result = $this->translator->translate($source, 'bootstrap', $target);

@@ -500,35 +500,36 @@ class DEVTB_WPBakery_Converter implements DEVTB_Converter_Interface {
 		$width = str_replace( '%', '', $width );
 		$width_float = (float) $width;
 
-		// Map to closest WPBakery width
+		// Map to closest WPBakery width. Keys are stringified floats because PHP
+		// silently casts float array keys to int (deprecated in 8.5).
 		$width_map = [
-			100    => '1/1',
-			50     => '1/2',
-			33.33  => '1/3',
-			66.66  => '2/3',
-			25     => '1/4',
-			75     => '3/4',
-			20     => '1/5',
-			40     => '2/5',
-			60     => '3/5',
-			80     => '4/5',
-			16.66  => '1/6',
-			83.33  => '5/6',
-			8.33   => '1/12',
-			41.66  => '5/12',
-			58.33  => '7/12',
-			91.66  => '11/12',
+			'100'   => '1/1',
+			'50'    => '1/2',
+			'33.33' => '1/3',
+			'66.66' => '2/3',
+			'25'    => '1/4',
+			'75'    => '3/4',
+			'20'    => '1/5',
+			'40'    => '2/5',
+			'60'    => '3/5',
+			'80'    => '4/5',
+			'16.66' => '1/6',
+			'83.33' => '5/6',
+			'8.33'  => '1/12',
+			'41.66' => '5/12',
+			'58.33' => '7/12',
+			'91.66' => '11/12',
 		];
 
 		// Find closest match
-		$closest = '1/1';
-		$min_diff = 999;
+		$closest  = '1/1';
+		$min_diff = 999.0;
 
 		foreach ( $width_map as $percentage => $vc_width ) {
-			$diff = abs( $percentage - $width_float );
+			$diff = abs( (float) $percentage - $width_float );
 			if ( $diff < $min_diff ) {
 				$min_diff = $diff;
-				$closest = $vc_width;
+				$closest  = $vc_width;
 			}
 		}
 

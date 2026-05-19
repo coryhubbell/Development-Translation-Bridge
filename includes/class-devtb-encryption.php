@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage Security
- * @version    3.2.1
+ * @version    4.3.0
  */
 
 class DEVTB_Encryption {

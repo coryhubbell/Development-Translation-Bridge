@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage Core
- * @version    3.3.0
+ * @version    4.3.0
  */
 
 // Prevent direct access.
@@ -519,7 +519,7 @@ class DEVTB_Corrections {
 		string $message,
 		string $suggestion,
 		bool $ai_generated,
-		array $auto_fix = null
+		?array $auto_fix = null
 	): array {
 		$correction = array(
 			'id'          => 'corr_' . wp_generate_uuid4(),

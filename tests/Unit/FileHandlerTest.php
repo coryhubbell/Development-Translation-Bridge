@@ -105,7 +105,7 @@ class FileHandlerTest extends TestCase {
     }
 
     /**
-     * Test file extension validation
+     * Test filesystem extension extraction (filename-based, not framework-based).
      */
     public function test_get_extension_returns_correct_extension() {
         $test_files = [
@@ -117,7 +117,7 @@ class FileHandlerTest extends TestCase {
         ];
 
         foreach ($test_files as $filename => $expected) {
-            $result = $this->file_handler->get_extension($filename);
+            $result = $this->file_handler->get_file_extension($filename);
             $this->assertEquals($expected, $result, "Extension mismatch for $filename");
         }
     }

@@ -451,31 +451,32 @@ class DEVTB_Avada_Converter implements DEVTB_Converter_Interface {
 		$width = str_replace( '%', '', $width );
 		$width_float = (float) $width;
 
-		// Map to closest Avada spacing
+		// Map to closest Avada spacing. Keys are stringified floats because PHP
+		// silently casts float array keys to int (deprecated in 8.5).
 		$spacing_map = [
-			100    => '1_1',
-			50     => '1_2',
-			33.33  => '1_3',
-			66.66  => '2_3',
-			25     => '1_4',
-			75     => '3_4',
-			20     => '1_5',
-			40     => '2_5',
-			60     => '3_5',
-			80     => '4_5',
-			16.66  => '1_6',
-			83.33  => '5_6',
+			'100'   => '1_1',
+			'50'    => '1_2',
+			'33.33' => '1_3',
+			'66.66' => '2_3',
+			'25'    => '1_4',
+			'75'    => '3_4',
+			'20'    => '1_5',
+			'40'    => '2_5',
+			'60'    => '3_5',
+			'80'    => '4_5',
+			'16.66' => '1_6',
+			'83.33' => '5_6',
 		];
 
 		// Find closest match
-		$closest = '1_1';
-		$min_diff = 999;
+		$closest  = '1_1';
+		$min_diff = 999.0;
 
 		foreach ( $spacing_map as $percentage => $spacing ) {
-			$diff = abs( $percentage - $width_float );
+			$diff = abs( (float) $percentage - $width_float );
 			if ( $diff < $min_diff ) {
 				$min_diff = $diff;
-				$closest = $spacing;
+				$closest  = $spacing;
 			}
 		}
 

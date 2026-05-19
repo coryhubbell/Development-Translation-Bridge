@@ -14,17 +14,23 @@ import FrameworkSelector from './Layout/FrameworkSelector';
 import { useEditorStore } from '@/store/editorStore';
 
 function SideBySideEditor() {
-  const { editor, translateCode, isTranslating } = useEditorStore();
+  const { editor, isTranslating } = useEditorStore();
 
-  // Auto-translate on framework change or code change (debounced)
+  // Auto-translate on framework change or code change (debounced).
+  // `translateCode` + the in-flight guard are read from the store at fire time
+  // via getState() so the effect doesn't depend on (or re-fire from) them.
   useEffect(() => {
-    if (editor.sourceCode && !isTranslating) {
-      const timer = setTimeout(() => {
-        translateCode();
-      }, 1000); // 1 second debounce
-
-      return () => clearTimeout(timer);
+    if (!editor.sourceCode) {
+      return;
     }
+    const timer = setTimeout(() => {
+      const state = useEditorStore.getState();
+      if (!state.isTranslating) {
+        void state.translateCode();
+      }
+    }, 1000); // 1 second debounce
+
+    return () => clearTimeout(timer);
   }, [editor.sourceCode, editor.sourceFramework, editor.targetFramework]);
 
   return (
