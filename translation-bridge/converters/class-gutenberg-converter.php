@@ -72,14 +72,46 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	public function convert_component( DEVTB_Component $component ): string {
 		$type = $component->type;
 
-		// Convert based on component type
-		if ( $type === 'container' || $type === 'row' ) {
+		if ( $type === 'container' || $type === 'row' || $type === 'section' ) {
 			return $this->convert_container( $component );
-		} elseif ( $type === 'column' ) {
-			return $this->convert_column( $component );
-		} else {
-			return $this->convert_block( $component );
 		}
+
+		if ( $type === 'column' ) {
+			return $this->convert_column( $component );
+		}
+
+		if ( $this->is_compound_type( $type ) ) {
+			return $this->convert_compound( $component );
+		}
+
+		if ( $this->is_marker_type( $type ) ) {
+			return $this->convert_as_marker( $component );
+		}
+
+		return $this->convert_block( $component );
+	}
+
+	/**
+	 * Compound widget types produce multiple Gutenberg blocks (e.g. tabs → headings + groups).
+	 */
+	private function is_compound_type( string $type ): bool {
+		return in_array(
+			$type,
+			[ 'tabs', 'accordion', 'card', 'cta', 'counter', 'testimonial', 'pricing-table', 'alert' ],
+			true
+		);
+	}
+
+	/**
+	 * Marker widget types have no clean Gutenberg equivalent and are preserved as
+	 * core/html with a devtb annotation comment so editors can still see and edit them.
+	 */
+	private function is_marker_type( string $type ): bool {
+		return in_array(
+			$type,
+			[ 'slider', 'form', 'countdown', 'portfolio', 'toc', 'map', 'progress', 'rating', 'unknown' ],
+			true
+		);
 	}
 
 	/**
@@ -193,8 +225,9 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 		$block_name = $this->map_to_block_type( $component->type );
 
 		if ( ! $block_name ) {
-			// Fallback to paragraph for unknown types
-			$block_name = 'core/paragraph';
+			// Unknown types are preserved as core/html with a visible devtb marker
+			// rather than silently collapsing to an empty paragraph.
+			return $this->convert_as_marker( $component );
 		}
 
 		$attributes = $this->denormalize_attributes( $component->attributes );
@@ -221,11 +254,13 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	private function map_to_block_type( string $universal_type ): ?string {
 		$type_map = [
 			'text'          => 'core/paragraph',
+			'paragraph'     => 'core/paragraph',
 			'heading'       => 'core/heading',
 			'image'         => 'core/image',
 			'gallery'       => 'core/gallery',
 			'list'          => 'core/list',
 			'quote'         => 'core/quote',
+			'blockquote'    => 'core/quote',
 			'code'          => 'core/code',
 			'table'         => 'core/table',
 			'button'        => 'core/button',
@@ -237,11 +272,16 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 			'audio'         => 'core/audio',
 			'file'          => 'core/file',
 			'embed'         => 'core/embed',
+			// Parser produces 'social-icons' for social-icons / share-buttons widgets.
+			'social-icons'  => 'core/social-links',
 			'social-links'  => 'core/social-links',
 			'social-link'   => 'core/social-link',
 			'search'        => 'core/search',
+			// Parser produces 'nav' for nav-menu widget.
+			'nav'           => 'core/navigation',
 			'menu'          => 'core/navigation',
 			'menu-item'     => 'core/navigation-link',
+			'icon'          => 'core/html',
 		];
 
 		return $type_map[ $universal_type ] ?? null;
@@ -256,36 +296,116 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	 * @return array Updated attributes.
 	 */
 	private function add_block_content( string $block_name, array $attributes, DEVTB_Component $component ): array {
-		// Extract heading level
+		$attrs = $component->attributes;
+
 		if ( $block_name === 'core/heading' ) {
-			$level = $component->attributes['level'] ?? 2;
-			$attributes['level'] = intval( $level );
+			$level = $this->parse_heading_level( $attrs['level'] ?? ( $attrs['header_size'] ?? 2 ) );
+			$attributes['level'] = $level;
 		}
 
-		// Image URL
-		if ( $block_name === 'core/image' && ! empty( $component->attributes['src'] ) ) {
-			$attributes['url'] = $component->attributes['src'];
-
-			if ( ! empty( $component->attributes['alt'] ) ) {
-				$attributes['alt'] = $component->attributes['alt'];
+		if ( $block_name === 'core/image' ) {
+			$url = $attrs['image_url'] ?? ( $attrs['src'] ?? ( $attrs['url'] ?? '' ) );
+			if ( ! empty( $url ) ) {
+				$attributes['url'] = $url;
+			}
+			$alt = $attrs['alt_text'] ?? ( $attrs['alt'] ?? '' );
+			if ( ! empty( $alt ) ) {
+				$attributes['alt'] = $alt;
+			}
+			if ( ! empty( $attrs['caption'] ) ) {
+				$attributes['caption'] = $attrs['caption'];
 			}
 		}
 
-		// Button link
-		if ( $block_name === 'core/button' && ! empty( $component->attributes['href'] ) ) {
-			$attributes['url'] = $component->attributes['href'];
-
-			if ( ! empty( $component->attributes['target'] ) ) {
-				$attributes['linkTarget'] = $component->attributes['target'];
+		if ( $block_name === 'core/button' ) {
+			$url = $attrs['url'] ?? ( $attrs['href'] ?? '' );
+			if ( ! empty( $url ) ) {
+				$attributes['url'] = $url;
+			}
+			if ( ! empty( $attrs['target'] ) ) {
+				$attributes['linkTarget'] = $attrs['target'];
+			}
+			if ( ! empty( $attrs['rel'] ) ) {
+				$attributes['rel'] = $attrs['rel'];
 			}
 		}
 
-		// Video/Audio URL
-		if ( in_array( $block_name, ['core/video', 'core/audio'] ) && ! empty( $component->attributes['src'] ) ) {
-			$attributes['src'] = $component->attributes['src'];
+		if ( in_array( $block_name, [ 'core/video', 'core/audio' ], true ) ) {
+			$src = $attrs['src'] ?? ( $attrs['url'] ?? ( $attrs['video_url'] ?? '' ) );
+			if ( ! empty( $src ) ) {
+				$attributes['src'] = $src;
+			}
+		}
+
+		if ( $block_name === 'core/gallery' ) {
+			$ids = $this->extract_gallery_ids( $component );
+			if ( ! empty( $ids ) ) {
+				$attributes['ids'] = $ids;
+			}
+			$attributes['linkTo'] = $attrs['link_to'] ?? 'none';
+		}
+
+		if ( $block_name === 'core/list' ) {
+			if ( ! empty( $attrs['list_style'] ) && in_array( $attrs['list_style'], [ 'ordered', 'numbered' ], true ) ) {
+				$attributes['ordered'] = true;
+			}
+		}
+
+		if ( $block_name === 'core/embed' ) {
+			$url = $attrs['url'] ?? ( $attrs['youtube_url'] ?? ( $attrs['video_url'] ?? '' ) );
+			if ( ! empty( $url ) ) {
+				$attributes['url'] = $url;
+				$attributes['type'] = 'video';
+				if ( strpos( $url, 'vimeo' ) !== false ) {
+					$attributes['providerNameSlug'] = 'vimeo';
+				} elseif ( strpos( $url, 'youtube' ) !== false || strpos( $url, 'youtu.be' ) !== false ) {
+					$attributes['providerNameSlug'] = 'youtube';
+				}
+			}
 		}
 
 		return $attributes;
+	}
+
+	/**
+	 * Parse a heading level from either a number, "h2"-style string, or other input.
+	 */
+	private function parse_heading_level( $value ): int {
+		if ( is_int( $value ) ) {
+			return max( 1, min( 6, $value ) );
+		}
+		if ( is_string( $value ) && preg_match( '/^h([1-6])$/i', $value, $m ) ) {
+			return (int) $m[1];
+		}
+		if ( is_numeric( $value ) ) {
+			return max( 1, min( 6, (int) $value ) );
+		}
+		return 2;
+	}
+
+	/**
+	 * Extract attachment ids from a gallery component's image array.
+	 */
+	private function extract_gallery_ids( DEVTB_Component $component ): array {
+		$images = $component->attributes['images']
+			?? ( $component->attributes['gallery']
+			?? ( $component->attributes['wp_gallery'] ?? [] ) );
+		if ( is_string( $images ) ) {
+			$decoded = json_decode( $images, true );
+			if ( is_array( $decoded ) ) {
+				$images = $decoded;
+			}
+		}
+		if ( ! is_array( $images ) ) {
+			return [];
+		}
+		$ids = [];
+		foreach ( $images as $img ) {
+			if ( is_array( $img ) && ! empty( $img['id'] ) ) {
+				$ids[] = (int) $img['id'];
+			}
+		}
+		return $ids;
 	}
 
 	/**
@@ -296,55 +416,221 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	 * @return string Inner HTML.
 	 */
 	private function generate_inner_html( string $block_name, DEVTB_Component $component ): string {
-		$content = $component->content;
+		$content = (string) ( $component->content ?? '' );
+		$attrs   = $component->attributes;
 
 		switch ( $block_name ) {
 			case 'core/paragraph':
-				return '<p>' . esc_html( $content ) . '</p>';
+				// If editor-style HTML is already present, preserve it; otherwise escape.
+				$rendered = $this->looks_like_html( $content ) ? $content : esc_html( $content );
+				return '<p>' . $rendered . '</p>';
 
 			case 'core/heading':
-				$level = $component->attributes['level'] ?? 2;
+				$level = $this->parse_heading_level( $attrs['level'] ?? ( $attrs['header_size'] ?? 2 ) );
 				// `wp-block-heading` class is canonical since WP 6.3; without it 6.7+ marks the block invalid.
 				return '<h' . $level . ' class="wp-block-heading">' . esc_html( $content ) . '</h' . $level . '>';
 
 			case 'core/button':
-				$url = $component->attributes['href'] ?? '#';
+				$url    = $attrs['url'] ?? ( $attrs['href'] ?? '#' );
+				$target = ! empty( $attrs['target'] ) ? ' target="' . esc_attr( $attrs['target'] ) . '"' : '';
+				$rel    = ! empty( $attrs['rel'] ) ? ' rel="' . esc_attr( $attrs['rel'] ) . '"' : '';
 				// `wp-element-button` is required by theme.json element-styling pipeline since WP 6.1.
-				return '<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="' . esc_url( $url ) . '">' . esc_html( $content ) . '</a></div>';
+				return '<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="' . esc_url( $url ) . '"' . $target . $rel . '>' . esc_html( $content ) . '</a></div>';
 
 			case 'core/quote':
-				return '<blockquote class="wp-block-quote"><p>' . esc_html( $content ) . '</p></blockquote>';
+				$cite = $attrs['cite'] ?? ( $attrs['citation'] ?? ( $attrs['testimonial_name'] ?? '' ) );
+				$cite_html = ! empty( $cite ) ? '<cite>' . esc_html( $cite ) . '</cite>' : '';
+				$body = $this->looks_like_html( $content ) ? $content : '<p>' . esc_html( $content ) . '</p>';
+				return '<blockquote class="wp-block-quote">' . $body . $cite_html . '</blockquote>';
 
 			case 'core/code':
 				return '<pre class="wp-block-code"><code>' . esc_html( $content ) . '</code></pre>';
 
 			case 'core/image':
-				$url = $component->attributes['src'] ?? '';
-				$alt = $component->attributes['alt'] ?? '';
-				return '<figure class="wp-block-image"><img src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '"/></figure>';
+				$url = $attrs['image_url'] ?? ( $attrs['src'] ?? ( $attrs['url'] ?? '' ) );
+				$alt = $attrs['alt_text'] ?? ( $attrs['alt'] ?? '' );
+				$caption = ! empty( $attrs['caption'] ) ? '<figcaption class="wp-element-caption">' . esc_html( $attrs['caption'] ) . '</figcaption>' : '';
+				return '<figure class="wp-block-image"><img src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '"/>' . $caption . '</figure>';
 
 			case 'core/video':
-				$url = $component->attributes['src'] ?? '';
-				return '<figure class="wp-block-video"><video controls src="' . esc_url( $url ) . '"></video></figure>';
+				$src = $attrs['src'] ?? ( $attrs['url'] ?? ( $attrs['video_url'] ?? '' ) );
+				return '<figure class="wp-block-video"><video controls src="' . esc_url( $src ) . '"></video></figure>';
 
 			case 'core/audio':
-				$url = $component->attributes['src'] ?? '';
-				return '<figure class="wp-block-audio"><audio controls src="' . esc_url( $url ) . '"></audio></figure>';
+				$src = $attrs['src'] ?? ( $attrs['url'] ?? '' );
+				return '<figure class="wp-block-audio"><audio controls src="' . esc_url( $src ) . '"></audio></figure>';
+
+			case 'core/embed':
+				$url = $attrs['url'] ?? ( $attrs['youtube_url'] ?? ( $attrs['video_url'] ?? '' ) );
+				$provider = strpos( $url, 'vimeo' ) !== false ? 'vimeo' : 'youtube';
+				return '<figure class="wp-block-embed is-type-video is-provider-' . esc_attr( $provider ) . '"><div class="wp-block-embed__wrapper">' . esc_url( $url ) . '</div></figure>';
 
 			case 'core/separator':
 				// `has-alpha-channel-opacity` is canonical since WP 6.5; without it the separator re-renders and loses opacity.
 				return '<hr class="wp-block-separator has-alpha-channel-opacity"/>';
 
 			case 'core/spacer':
-				$height = $component->attributes['height'] ?? '100px';
+				$height = $attrs['height'] ?? '100px';
 				return '<div style="height:' . esc_attr( $height ) . '" aria-hidden="true" class="wp-block-spacer"></div>';
 
+			case 'core/list':
+				$ordered = ! empty( $attrs['ordered'] );
+				$tag = $ordered ? 'ol' : 'ul';
+				$items = $this->extract_list_items( $component );
+				if ( empty( $items ) ) {
+					$items = [ $content ];
+				}
+				// WP 6.0+ canonical: core/list-item innerBlocks rather than a flat <ul><li>.
+				$item_blocks = '';
+				foreach ( $items as $item ) {
+					$text = is_array( $item ) ? ( $item['text'] ?? '' ) : (string) $item;
+					$inner = '<li>' . esc_html( $text ) . '</li>';
+					$item_blocks .= "\n" . $this->create_block_delimiter( 'core/list-item', [] ) . "\n" . $inner . "\n" . $this->create_closing_delimiter( 'core/list-item' );
+				}
+				return '<' . $tag . ' class="wp-block-list">' . $item_blocks . "\n</" . $tag . '>';
+
+			case 'core/gallery':
+				$images = $attrs['images'] ?? ( $attrs['gallery'] ?? ( $attrs['wp_gallery'] ?? [] ) );
+				if ( is_string( $images ) ) {
+					$decoded = json_decode( $images, true );
+					if ( is_array( $decoded ) ) {
+						$images = $decoded;
+					}
+				}
+				$figures = [];
+				if ( is_array( $images ) ) {
+					foreach ( $images as $img ) {
+						if ( ! is_array( $img ) ) {
+							continue;
+						}
+						$src = $img['url'] ?? '';
+						$alt = $img['alt'] ?? '';
+						$figures[] = '<figure class="wp-block-image"><img src="' . esc_url( $src ) . '" alt="' . esc_attr( $alt ) . '"/></figure>';
+					}
+				}
+				return '<figure class="wp-block-gallery has-nested-images columns-default">' . implode( '', $figures ) . '</figure>';
+
+			case 'core/table':
+				return $this->build_table_inner_html( $component );
+
+			case 'core/social-links':
+				return '<ul class="wp-block-social-links">' . $this->build_social_link_items( $component ) . '</ul>';
+
+			case 'core/navigation':
+				return '';
+
+			case 'core/file':
+				$url = $attrs['url'] ?? ( $attrs['file_url'] ?? '#' );
+				$name = $content ?: ( $attrs['filename'] ?? basename( $url ) );
+				return '<div class="wp-block-file"><a href="' . esc_url( $url ) . '">' . esc_html( $name ) . '</a></div>';
+
 			case 'core/html':
+				if ( $component->type === 'icon' ) {
+					return $this->render_icon_html( $component );
+				}
 				return $content;
 
 			default:
 				return $content;
 		}
+	}
+
+	/**
+	 * Heuristic: does this content already look like rendered HTML?
+	 */
+	private function looks_like_html( string $content ): bool {
+		return strpos( $content, '<' ) !== false && strpos( $content, '>' ) !== false;
+	}
+
+	/**
+	 * Pull list items from a list component's attributes (icon_list, items[], etc.).
+	 */
+	private function extract_list_items( DEVTB_Component $component ): array {
+		foreach ( [ 'items', 'icon_list', 'list_items' ] as $key ) {
+			$items = $component->attributes[ $key ] ?? null;
+			if ( is_string( $items ) ) {
+				$decoded = json_decode( $items, true );
+				if ( is_array( $decoded ) ) {
+					$items = $decoded;
+				}
+			}
+			if ( is_array( $items ) && ! empty( $items ) ) {
+				return $items;
+			}
+		}
+		return [];
+	}
+
+	/**
+	 * Build a core/table inner HTML body from rows/cells in attributes.
+	 */
+	private function build_table_inner_html( DEVTB_Component $component ): string {
+		$rows = $component->attributes['rows'] ?? ( $component->attributes['body'] ?? [] );
+		if ( is_string( $rows ) ) {
+			$decoded = json_decode( $rows, true );
+			if ( is_array( $decoded ) ) {
+				$rows = $decoded;
+			}
+		}
+		if ( ! is_array( $rows ) || empty( $rows ) ) {
+			return '<figure class="wp-block-table"><table><tbody></tbody></table></figure>';
+		}
+		$tbody = '';
+		foreach ( $rows as $row ) {
+			$cells = is_array( $row ) ? ( $row['cells'] ?? $row ) : [];
+			$tr = '';
+			foreach ( (array) $cells as $cell ) {
+				$value = is_array( $cell ) ? ( $cell['content'] ?? '' ) : (string) $cell;
+				$tr .= '<td>' . esc_html( $value ) . '</td>';
+			}
+			$tbody .= '<tr>' . $tr . '</tr>';
+		}
+		return '<figure class="wp-block-table"><table><tbody>' . $tbody . '</tbody></table></figure>';
+	}
+
+	/**
+	 * Build nested social link list items as self-closing wp:social-link block stubs.
+	 */
+	private function build_social_link_items( DEVTB_Component $component ): string {
+		$items = $component->attributes['icons'] ?? ( $component->attributes['social_icon_list'] ?? [] );
+		if ( is_string( $items ) ) {
+			$decoded = json_decode( $items, true );
+			if ( is_array( $decoded ) ) {
+				$items = $decoded;
+			}
+		}
+		if ( ! is_array( $items ) ) {
+			return '';
+		}
+		$out = '';
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+			$service = $item['service'] ?? ( $item['social'] ?? 'link' );
+			$url = $item['url'] ?? ( $item['link']['url'] ?? '#' );
+			$attrs_json = wp_json_encode( [ 'url' => $url, 'service' => $service ], JSON_UNESCAPED_SLASHES );
+			$out .= '<!-- wp:social-link ' . $attrs_json . ' /-->';
+		}
+		return $out;
+	}
+
+	/**
+	 * Render an icon widget as inline HTML, preserving SVG or font-icon markup.
+	 */
+	private function render_icon_html( DEVTB_Component $component ): string {
+		$attrs = $component->attributes;
+		if ( ! empty( $attrs['svg'] ) ) {
+			return (string) $attrs['svg'];
+		}
+		$icon_class = $attrs['icon'] ?? ( $attrs['selected_icon']['value'] ?? '' );
+		if ( is_array( $icon_class ) ) {
+			$icon_class = $icon_class['value'] ?? '';
+		}
+		if ( ! empty( $icon_class ) ) {
+			return '<i class="' . esc_attr( $icon_class ) . '" aria-hidden="true"></i>';
+		}
+		return $component->content ?? '';
 	}
 
 	/**
@@ -510,6 +796,312 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	}
 
 	/**
+	 * Convert a compound widget (tabs, accordion, card, cta, counter, testimonial, pricing-table, alert)
+	 * into a small group of native Gutenberg blocks. Source content is preserved as editable blocks
+	 * rather than collapsed into inert markup.
+	 */
+	private function convert_compound( DEVTB_Component $component ): string {
+		switch ( $component->type ) {
+			case 'tabs':
+			case 'accordion':
+				return $this->convert_tabs_or_accordion( $component );
+
+			case 'card':
+				return $this->convert_card( $component );
+
+			case 'cta':
+				return $this->convert_cta( $component );
+
+			case 'counter':
+				return $this->convert_counter( $component );
+
+			case 'testimonial':
+				return $this->convert_testimonial( $component );
+
+			case 'pricing-table':
+				return $this->convert_pricing_table( $component );
+
+			case 'alert':
+				return $this->convert_alert( $component );
+		}
+
+		return $this->convert_as_marker( $component );
+	}
+
+	/**
+	 * Tabs/accordion -> stacked core/heading (h3 per item) + nested content as core/group.
+	 * Native Gutenberg has no tabs primitive; this is the agreed downgrade that keeps content editable.
+	 */
+	private function convert_tabs_or_accordion( DEVTB_Component $component ): string {
+		$items = $component->attributes['tabs'] ?? ( $component->attributes['items'] ?? [] );
+		if ( is_string( $items ) ) {
+			$decoded = json_decode( $items, true );
+			if ( is_array( $decoded ) ) {
+				$items = $decoded;
+			}
+		}
+
+		$blocks = [];
+		if ( is_array( $items ) && ! empty( $items ) ) {
+			foreach ( $items as $item ) {
+				if ( ! is_array( $item ) ) {
+					continue;
+				}
+				$title = $item['tab_title'] ?? ( $item['title'] ?? '' );
+				$body = $item['tab_content'] ?? ( $item['content'] ?? '' );
+				$blocks[] = $this->build_heading_block( $title, 3 );
+				$blocks[] = $this->build_paragraph_block( $body );
+			}
+		} elseif ( ! empty( $component->children ) ) {
+			foreach ( $component->children as $child ) {
+				$blocks[] = $this->convert_component( $child );
+			}
+		}
+
+		$inner = implode( "\n", $blocks );
+		$class = $component->type === 'accordion' ? 'devtb-accordion-converted' : 'devtb-tabs-converted';
+		return $this->wrap_in_group( $inner, [ 'className' => $class ] );
+	}
+
+	/**
+	 * Card / icon-box / image-box / flip-box -> group of optional image + heading + paragraph + button.
+	 */
+	private function convert_card( DEVTB_Component $component ): string {
+		$attrs = $component->attributes;
+		$blocks = [];
+
+		$image_url = $attrs['image_url'] ?? ( $attrs['image']['url'] ?? '' );
+		if ( ! empty( $image_url ) ) {
+			$blocks[] = $this->build_image_block( $image_url, $attrs['alt_text'] ?? '' );
+		}
+
+		$title = $attrs['heading'] ?? ( $attrs['title_text'] ?? ( $attrs['title'] ?? '' ) );
+		if ( ! empty( $title ) ) {
+			$blocks[] = $this->build_heading_block( $title, 3 );
+		}
+
+		$description = $attrs['description'] ?? ( $attrs['description_text'] ?? $component->content );
+		if ( ! empty( $description ) ) {
+			$blocks[] = $this->build_paragraph_block( $description );
+		}
+
+		$button_url = $attrs['url'] ?? ( $attrs['link']['url'] ?? '' );
+		$button_text = $attrs['button_text'] ?? ( $attrs['link_text'] ?? '' );
+		if ( ! empty( $button_url ) || ! empty( $button_text ) ) {
+			$blocks[] = $this->build_buttons_block( $button_text, $button_url );
+		}
+
+		return $this->wrap_in_group( implode( "\n", $blocks ), [ 'className' => 'devtb-card-converted' ] );
+	}
+
+	/**
+	 * Call-to-action -> heading + paragraph + button.
+	 */
+	private function convert_cta( DEVTB_Component $component ): string {
+		$attrs = $component->attributes;
+		$blocks = [];
+
+		$title = $attrs['heading'] ?? ( $attrs['title'] ?? '' );
+		if ( ! empty( $title ) ) {
+			$blocks[] = $this->build_heading_block( $title, 2 );
+		}
+		$description = $attrs['description'] ?? $component->content;
+		if ( ! empty( $description ) ) {
+			$blocks[] = $this->build_paragraph_block( $description );
+		}
+		$url = $attrs['url'] ?? ( $attrs['link']['url'] ?? '' );
+		$btn_text = $attrs['button_text'] ?? ( $attrs['cta_text'] ?? 'Learn more' );
+		if ( ! empty( $url ) ) {
+			$blocks[] = $this->build_buttons_block( $btn_text, $url );
+		}
+
+		return $this->wrap_in_group( implode( "\n", $blocks ), [ 'className' => 'devtb-cta-converted' ] );
+	}
+
+	/**
+	 * Counter -> big heading with the ending number + a description paragraph.
+	 */
+	private function convert_counter( DEVTB_Component $component ): string {
+		$attrs = $component->attributes;
+		$ending = $attrs['ending_number'] ?? ( $attrs['ending'] ?? ( $attrs['number'] ?? '' ) );
+		$prefix = $attrs['prefix'] ?? '';
+		$suffix = $attrs['suffix'] ?? '';
+		$title = $attrs['title'] ?? $component->content;
+
+		$display = trim( (string) $prefix . (string) $ending . (string) $suffix );
+
+		$blocks = [];
+		if ( $display !== '' ) {
+			$blocks[] = $this->build_heading_block( $display, 2 );
+		}
+		if ( ! empty( $title ) ) {
+			$blocks[] = $this->build_paragraph_block( $title );
+		}
+
+		return $this->wrap_in_group( implode( "\n", $blocks ), [ 'className' => 'devtb-counter-converted' ] );
+	}
+
+	/**
+	 * Testimonial -> core/quote with citation.
+	 */
+	private function convert_testimonial( DEVTB_Component $component ): string {
+		$attrs = $component->attributes;
+		$content = $attrs['testimonial_content'] ?? $component->content;
+		$author = $attrs['testimonial_name'] ?? ( $attrs['name'] ?? '' );
+		$job = $attrs['testimonial_job'] ?? ( $attrs['title'] ?? '' );
+		$cite = trim( $author . ( $author && $job ? ', ' : '' ) . $job );
+
+		$inner = '<blockquote class="wp-block-quote"><p>' . esc_html( $content ) . '</p>';
+		if ( ! empty( $cite ) ) {
+			$inner .= '<cite>' . esc_html( $cite ) . '</cite>';
+		}
+		$inner .= '</blockquote>';
+
+		$opening = $this->create_block_delimiter( 'core/quote', [] );
+		$closing = $this->create_closing_delimiter( 'core/quote' );
+		return $opening . "\n" . $inner . "\n" . $closing . "\n\n";
+	}
+
+	/**
+	 * Pricing table -> heading + price + list + button.
+	 */
+	private function convert_pricing_table( DEVTB_Component $component ): string {
+		$attrs = $component->attributes;
+		$blocks = [];
+
+		$title = $attrs['heading'] ?? ( $attrs['title'] ?? '' );
+		if ( ! empty( $title ) ) {
+			$blocks[] = $this->build_heading_block( $title, 3 );
+		}
+
+		$price = $attrs['price'] ?? '';
+		$currency = $attrs['currency_symbol'] ?? '';
+		$period = $attrs['period'] ?? '';
+		$price_display = trim( (string) $currency . (string) $price . ( $period ? ' / ' . $period : '' ) );
+		if ( $price_display !== '' ) {
+			$blocks[] = $this->build_heading_block( $price_display, 2 );
+		}
+
+		$features = $attrs['features'] ?? ( $attrs['items'] ?? [] );
+		if ( is_string( $features ) ) {
+			$decoded = json_decode( $features, true );
+			if ( is_array( $decoded ) ) {
+				$features = $decoded;
+			}
+		}
+		if ( is_array( $features ) && ! empty( $features ) ) {
+			$item_blocks = '';
+			foreach ( $features as $f ) {
+				$text = is_array( $f ) ? ( $f['item_text'] ?? ( $f['text'] ?? '' ) ) : (string) $f;
+				$item_blocks .= "\n" . $this->create_block_delimiter( 'core/list-item', [] ) . "\n<li>" . esc_html( $text ) . '</li>' . "\n" . $this->create_closing_delimiter( 'core/list-item' );
+			}
+			$list_opening = $this->create_block_delimiter( 'core/list', [] );
+			$list_closing = $this->create_closing_delimiter( 'core/list' );
+			$blocks[] = $list_opening . "\n" . '<ul class="wp-block-list">' . $item_blocks . "\n</ul>\n" . $list_closing;
+		}
+
+		$button_url = $attrs['button_url'] ?? ( $attrs['url'] ?? '' );
+		$button_text = $attrs['button_text'] ?? 'Get started';
+		if ( ! empty( $button_url ) ) {
+			$blocks[] = $this->build_buttons_block( $button_text, $button_url );
+		}
+
+		return $this->wrap_in_group( implode( "\n", $blocks ), [ 'className' => 'devtb-pricing-converted' ] );
+	}
+
+	/**
+	 * Alert -> core/group with status className and an inner paragraph.
+	 */
+	private function convert_alert( DEVTB_Component $component ): string {
+		$attrs = $component->attributes;
+		$type = $attrs['alert_type'] ?? ( $attrs['type'] ?? 'info' );
+		$title = $attrs['alert_title'] ?? '';
+		$body = $attrs['alert_description'] ?? $component->content;
+
+		$blocks = [];
+		if ( ! empty( $title ) ) {
+			$blocks[] = $this->build_heading_block( $title, 4 );
+		}
+		if ( ! empty( $body ) ) {
+			$blocks[] = $this->build_paragraph_block( $body );
+		}
+
+		return $this->wrap_in_group(
+			implode( "\n", $blocks ),
+			[ 'className' => 'devtb-alert is-style-' . preg_replace( '/[^a-z0-9_-]/i', '', $type ) ]
+		);
+	}
+
+	/**
+	 * Marker fallback: preserve the original widget as core/html with a visible devtb annotation
+	 * comment plus the widget's title/content as inline HTML, so editors can see and edit what was there.
+	 */
+	private function convert_as_marker( DEVTB_Component $component ): string {
+		$source = $component->metadata['original_type'] ?? $component->type;
+		$framework = $component->metadata['source_framework'] ?? 'unknown';
+		$attrs = $component->attributes;
+
+		$title = $attrs['heading'] ?? ( $attrs['title'] ?? ( $attrs['title_text'] ?? '' ) );
+		$body = $component->content ?? '';
+
+		$inner = '<div class="devtb-unconverted" data-devtb-source="' . esc_attr( $framework . ':' . $source ) . '">';
+		if ( ! empty( $title ) ) {
+			$inner .= '<strong>' . esc_html( $title ) . '</strong>';
+		}
+		if ( ! empty( $body ) ) {
+			$inner .= '<p>' . esc_html( $body ) . '</p>';
+		}
+		$inner .= '</div>';
+
+		$comment = '<!-- devtb: unconverted ' . esc_html( $framework ) . ' widget "' . esc_html( $source ) . '" -->';
+
+		$opening = $this->create_block_delimiter( 'core/html', [] );
+		$closing = $this->create_closing_delimiter( 'core/html' );
+		return $opening . "\n" . $comment . "\n" . $inner . "\n" . $closing . "\n\n";
+	}
+
+	/**
+	 * Helpers for compound block construction.
+	 */
+	private function build_heading_block( string $text, int $level = 2 ): string {
+		$level = max( 1, min( 6, $level ) );
+		$opening = $this->create_block_delimiter( 'core/heading', [ 'level' => $level ] );
+		$closing = $this->create_closing_delimiter( 'core/heading' );
+		return $opening . "\n" . '<h' . $level . ' class="wp-block-heading">' . esc_html( $text ) . '</h' . $level . '>' . "\n" . $closing;
+	}
+
+	private function build_paragraph_block( string $text ): string {
+		$opening = $this->create_block_delimiter( 'core/paragraph', [] );
+		$closing = $this->create_closing_delimiter( 'core/paragraph' );
+		$rendered = $this->looks_like_html( $text ) ? $text : esc_html( $text );
+		return $opening . "\n" . '<p>' . $rendered . '</p>' . "\n" . $closing;
+	}
+
+	private function build_image_block( string $url, string $alt = '' ): string {
+		$opening = $this->create_block_delimiter( 'core/image', [] );
+		$closing = $this->create_closing_delimiter( 'core/image' );
+		return $opening . "\n" . '<figure class="wp-block-image"><img src="' . esc_url( $url ) . '" alt="' . esc_attr( $alt ) . '"/></figure>' . "\n" . $closing;
+	}
+
+	private function build_buttons_block( string $text, string $url ): string {
+		$btn_attrs = ! empty( $url ) ? [ 'url' => $url ] : [];
+		$btn_opening = $this->create_block_delimiter( 'core/button', $btn_attrs );
+		$btn_closing = $this->create_closing_delimiter( 'core/button' );
+		$btn_inner = '<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="' . esc_url( $url ) . '">' . esc_html( $text ) . '</a></div>';
+		$btn = $btn_opening . "\n" . $btn_inner . "\n" . $btn_closing;
+
+		$opening = $this->create_block_delimiter( 'core/buttons', [] );
+		$closing = $this->create_closing_delimiter( 'core/buttons' );
+		return $opening . "\n" . '<div class="wp-block-buttons">' . "\n" . $btn . "\n" . '</div>' . "\n" . $closing;
+	}
+
+	private function wrap_in_group( string $inner_blocks, array $attrs = [] ): string {
+		$opening = $this->create_block_delimiter( 'core/group', $attrs );
+		$closing = $this->create_closing_delimiter( 'core/group' );
+		return $opening . "\n" . '<div class="wp-block-group">' . "\n" . $inner_blocks . "\n" . '</div>' . "\n" . $closing . "\n\n";
+	}
+
+	/**
 	 * Validate that content can be converted
 	 *
 	 * @param DEVTB_Component|array $component Component to validate.
@@ -539,7 +1131,19 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	 * Get supported types
 	 */
 	public function get_supported_types(): array {
-		return [ 'paragraph', 'heading', 'button', 'image', 'list', 'quote', 'code', 'separator', 'spacer', 'columns', 'group' ];
+		return [
+			// Layout
+			'container', 'row', 'section', 'column',
+			// Simple 1:1 blocks
+			'text', 'paragraph', 'heading', 'image', 'gallery', 'list', 'quote', 'blockquote',
+			'code', 'table', 'button', 'button-group', 'divider', 'spacer', 'html',
+			'video', 'audio', 'file', 'embed', 'icon',
+			'social-icons', 'social-links', 'social-link', 'search', 'nav', 'menu', 'menu-item',
+			// Compound widgets (emit a group of native blocks)
+			'tabs', 'accordion', 'card', 'cta', 'counter', 'testimonial', 'pricing-table', 'alert',
+			// Marker fallback (preserved as annotated core/html)
+			'slider', 'form', 'countdown', 'portfolio', 'toc', 'map', 'progress', 'rating', 'unknown',
+		];
 	}
 
 	/**
@@ -553,6 +1157,6 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	 * Get fallback conversion
 	 */
 	public function get_fallback( DEVTB_Component $component ) {
-		return '<!-- wp:html -->' . "\n" . ( $component->content ?? '' ) . "\n" . '<!-- /wp:html -->';
+		return $this->convert_as_marker( $component );
 	}
 }

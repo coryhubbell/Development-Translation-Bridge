@@ -247,3 +247,55 @@ def bootstrap_to_elementor(data: Any) -> Any:
     # This would parse Bootstrap HTML and generate Elementor JSON
     # Placeholder for actual implementation
     return data
+
+
+@TransformRegistry.register(
+    name="elementor_to_gutenberg",
+    source_framework="elementor",
+    target_framework="gutenberg",
+    description="Transform Elementor JSON to WordPress Gutenberg block markup",
+    version="4.3.4",
+)
+def elementor_to_gutenberg(data: Any) -> str:
+    """Transform Elementor JSON to Gutenberg block markup."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="html_to_gutenberg",
+    source_framework="html",
+    target_framework="gutenberg",
+    description="Transform generic HTML / scraped content to Gutenberg block markup",
+    version="4.3.4",
+)
+def html_to_gutenberg(data: Any) -> str:
+    """Transform generic HTML to Gutenberg block markup."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="divi_to_gutenberg",
+    source_framework="divi",
+    target_framework="gutenberg",
+    description="Transform Divi shortcode / JSON to Gutenberg block markup",
+    version="4.3.4",
+)
+def divi_to_gutenberg(data: Any) -> str:
+    """Transform Divi data to Gutenberg block markup."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="bricks_to_gutenberg",
+    source_framework="bricks",
+    target_framework="gutenberg",
+    description="Transform Bricks JSON to Gutenberg block markup",
+    version="4.3.4",
+)
+def bricks_to_gutenberg(data: Any) -> str:
+    """Transform Bricks JSON to Gutenberg block markup."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)

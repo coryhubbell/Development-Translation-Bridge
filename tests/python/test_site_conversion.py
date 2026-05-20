@@ -327,6 +327,271 @@ class TestGutenbergConverter:
         converter = GutenbergConverter()
         assert converter.get_framework() == "gutenberg"
 
+    # -------------------------------------------------------------------------
+    # Widget coverage tests (v4.3.4) - mirror the PHP suite to keep both
+    # engines in sync. Each test guards against the regression of widgets
+    # silently collapsing to empty paragraphs. Assertions use canonical
+    # `<!-- wp:X -->` form (no `core/` namespace), as the converter emits
+    # canonical Gutenberg serialization since v4.2.0.
+    # -------------------------------------------------------------------------
+
+    def test_icon_list_renders_canonical_list_items(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "icon-list",
+            "settings": {
+                "icon_list": [
+                    {"text": "Feature A"},
+                    {"text": "Feature B"},
+                ],
+            },
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:list" in out
+        # WP 6.0+ canonical shape: list contains list-item innerBlocks.
+        assert "<!-- wp:list-item" in out
+        assert "<li>Feature A</li>" in out
+        assert "<li>Feature B</li>" in out
+
+    def test_tabs_renders_stacked_group(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "tabs",
+            "settings": {
+                "tabs": [
+                    {"tab_title": "One", "tab_content": "Body one."},
+                    {"tab_title": "Two", "tab_content": "Body two."},
+                ],
+            },
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:group" in out
+        assert "devtb-tabs-converted" in out
+        assert "One" in out and "Body one." in out
+        assert "Two" in out and "Body two." in out
+
+    def test_accordion_uses_accordion_classname(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "accordion",
+            "settings": {
+                "tabs": [{"tab_title": "Q?", "tab_content": "A."}],
+            },
+        }]
+        out = converter.convert(data)
+        assert "devtb-accordion-converted" in out
+        assert "Q?" in out and "A." in out
+
+    def test_icon_box_renders_card_compound(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "icon-box",
+            "settings": {
+                "title_text": "Card title",
+                "description_text": "Card description.",
+                "link": {"url": "https://example.com/learn"},
+                "button_text": "Learn more",
+            },
+        }]
+        out = converter.convert(data)
+        assert "devtb-card-converted" in out
+        assert "Card title" in out
+        assert "Card description." in out
+        assert "<!-- wp:buttons" in out
+        assert "Learn more" in out
+        assert "https://example.com/learn" in out
+        # Canonical theme.json class required since WP 6.1.
+        assert "wp-element-button" in out
+
+    def test_counter_renders_heading_with_number(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "counter",
+            "settings": {
+                "ending_number": 250,
+                "prefix": "$",
+                "suffix": "+",
+                "title": "Happy customers",
+            },
+        }]
+        out = converter.convert(data)
+        assert "devtb-counter-converted" in out
+        assert "$250+" in out
+        assert "Happy customers" in out
+
+    def test_testimonial_renders_quote_with_cite(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "testimonial",
+            "settings": {
+                "testimonial_content": "The best decision we ever made.",
+                "testimonial_name": "Jane Doe",
+                "testimonial_job": "CTO, Acme",
+            },
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:quote" in out
+        assert "The best decision we ever made." in out
+        assert "Jane Doe" in out
+        assert "CTO, Acme" in out
+        assert "<cite>" in out
+
+    def test_pricing_table_renders_full_group(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "price-table",
+            "settings": {
+                "heading": "Pro",
+                "currency_symbol": "$",
+                "price": "49",
+                "period": "mo",
+                "features": [
+                    {"item_text": "Unlimited projects"},
+                    {"item_text": "Priority support"},
+                ],
+                "button_text": "Sign up",
+                "button_url": "https://example.com/signup",
+            },
+        }]
+        out = converter.convert(data)
+        assert "devtb-pricing-converted" in out
+        assert "Pro" in out
+        assert "$49 / mo" in out
+        assert "Unlimited projects" in out
+        assert "Priority support" in out
+        assert "Sign up" in out
+        # Pricing features rendered as a canonical list with list-item innerBlocks.
+        assert "<!-- wp:list-item" in out
+
+    def test_alert_renders_styled_group(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "alert",
+            "settings": {
+                "alert_type": "success",
+                "alert_title": "Great!",
+                "alert_description": "It worked.",
+            },
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:group" in out
+        assert "devtb-alert" in out
+        assert "is-style-success" in out
+        assert "Great!" in out
+        assert "It worked." in out
+
+    def test_cta_renders_heading_paragraph_button(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "call-to-action",
+            "settings": {
+                "title": "Ready to start?",
+                "description": "Sign up in seconds.",
+                "link": {"url": "https://example.com/start"},
+                "button_text": "Get started",
+            },
+        }]
+        out = converter.convert(data)
+        assert "devtb-cta-converted" in out
+        assert "Ready to start?" in out
+        assert "<!-- wp:buttons" in out
+        assert "Get started" in out
+
+    def test_form_widget_falls_back_to_marker(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "form",
+            "settings": {
+                "title": "Contact us",
+                "form_name": "Contact",
+            },
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:html" in out
+        assert 'devtb: unconverted elementor widget "form"' in out
+        assert 'data-devtb-source="elementor:form"' in out
+        assert "Contact us" in out
+        # Critical: no silent collapse to empty paragraph
+        assert "<!-- wp:paragraph -->\n<p></p>" not in out
+
+    def test_unknown_widget_emits_marker(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "some-third-party-widget",
+            "settings": {"title": "Custom"},
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:html" in out
+        assert 'devtb: unconverted elementor widget "some-third-party-widget"' in out
+
+    def test_gallery_renders_with_ids(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "image-gallery",
+            "settings": {
+                "wp_gallery": [
+                    {"id": 11, "url": "https://example.com/1.jpg", "alt": "One"},
+                    {"id": 22, "url": "https://example.com/2.jpg", "alt": "Two"},
+                ],
+            },
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:gallery" in out
+        assert '"ids":[11,22]' in out
+        assert "https://example.com/1.jpg" in out
+
+    def test_social_icons_maps_to_social_links(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "social-icons",
+            "settings": {
+                "social_icon_list": [
+                    {"social": "twitter", "link": {"url": "https://twitter.com/x"}},
+                    {"social": "github", "link": {"url": "https://github.com/x"}},
+                ],
+            },
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:social-links" in out
+        assert "twitter" in out
+        assert "github" in out
+
+    def test_text_widget_still_maps_to_paragraph(self):
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1", "elType": "widget", "widgetType": "text-editor",
+            "settings": {"editor": "Hello world."},
+        }]
+        out = converter.convert(data)
+        assert "<!-- wp:paragraph" in out
+        assert "Hello world." in out
+
+    def test_get_supported_widgets_includes_new_set(self):
+        converter = GutenbergConverter()
+        widgets = converter.get_supported_widgets()
+        for name in [
+            "tabs", "accordion", "icon-box", "call-to-action", "counter",
+            "testimonial", "price-table", "alert",
+            "form", "slider", "countdown", "portfolio", "google_maps",
+            "progress", "star-rating",
+            "social-icons", "nav-menu",
+        ]:
+            assert name in widgets, f"missing widget {name}"
+
+    def test_elementor_to_gutenberg_transform_is_registered(self):
+        """Critical: the v4 CLI route must be discoverable through the transform registry."""
+        from translation_bridge.transforms.registry import TransformRegistry
+        import translation_bridge.transforms.registry  # noqa: F401  triggers decorator registrations
+
+        fn = TransformRegistry.get_transform("elementor", "gutenberg")
+        assert fn is not None, "elementor->gutenberg transform not registered"
+        out = fn([{
+            "id": "1", "elType": "widget", "widgetType": "heading",
+            "settings": {"title": "Hello", "header_size": "h2"},
+        }])
+        assert "<!-- wp:heading" in out
+        assert "Hello" in out
+
 
 # =============================================================================
 # Bricks Converter Tests
