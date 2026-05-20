@@ -73,7 +73,7 @@ Example result:
  * Text Domain: wp-products-manager
  * Domain Path: /languages
  * Requires at least: 5.9
- * Requires PHP: 7.4
+ * Requires PHP: 8.1
  */
 
 // Prevent direct access
@@ -417,7 +417,7 @@ class Plugin_Bootstrap_Manager {
 - [ ] Test activation on clean install
 - [ ] Test with different themes
 - [ ] Check Bootstrap conflicts
-- [ ] Test on different PHP versions (7.4+)
+- [ ] Test on different PHP versions (8.1+)
 - [ ] Test on different WordPress versions
 - [ ] Check for JavaScript errors
 - [ ] Validate HTML output

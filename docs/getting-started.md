@@ -18,7 +18,7 @@ Welcome to DevelopmentTranslation Bridge! This guide will walk you through every
 Before you begin, ensure you have:
 
 ### Required
-- **PHP 7.4+** (8.0+ recommended)
+- **PHP 8.1+** (matches the platform pin in `composer.json` and the runtime gate in `devtb-php`)
 - **WordPress 5.8** or higher
 - **MySQL 5.7+** or MariaDB 10.3+
 - **Web Server**: Apache or Nginx
