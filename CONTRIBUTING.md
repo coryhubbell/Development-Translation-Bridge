@@ -26,7 +26,7 @@ That's it! You're ready to contribute.
 ## Prerequisites
 
 ### Required
-- **PHP 7.4+** (8.0+ recommended)
+- **PHP 8.1+** (matches the platform pin in `composer.json` and the runtime gate in `devtb-php`)
   ```bash
   php --version
   ```
@@ -176,7 +176,7 @@ development-translation-bridge/
 - Follow [WordPress PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/)
 - Use PSR-4 autoloading with namespaces
 - Add PHPDoc blocks to all methods
-- Use type hints (PHP 7.4+)
+- Use type hints, including return types and `readonly` properties where appropriate (PHP 8.1+ floor)
 
 ### JavaScript/TypeScript (Admin)
 - Use TypeScript for new code
@@ -263,9 +263,10 @@ Tests use [Brain Monkey](https://brain-wp.github.io/BrainMonkey/) for WordPress 
 
 All pull requests are automatically tested:
 
-- **PHP Matrix**: 7.4, 8.0, 8.1, 8.2
+- **PHP Matrix**: 8.1, 8.2, 8.3, 8.4, 8.5
 - **Node.js Matrix**: 18, 20 (for admin builds)
-- **Code Coverage**: Generated on PHP 8.2
+- **Code Coverage**: Generated on PHP 8.4
+- **Security**: `composer audit` runs on every job (advisories fail CI)
 
 Ensure your PR passes all CI checks before requesting review.
 
