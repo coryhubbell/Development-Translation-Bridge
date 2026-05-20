@@ -50,7 +50,8 @@ jobs:
           mkdir -p release/development-translation-bridge
           cp -r includes release/development-translation-bridge/
           cp -r translation-bridge release/development-translation-bridge/
-          cp -r admin/dist release/development-translation-bridge/admin-dist/
+          mkdir -p release/development-translation-bridge/admin
+          cp -r admin/dist release/development-translation-bridge/admin/dist
           cp functions.php style.css index.php release/development-translation-bridge/
           cp README.md LICENSE release/development-translation-bridge/ 2>/dev/null || true
           cd release && zip -r ../development-translation-bridge-${{ steps.version.outputs.version }}.zip development-translation-bridge/
@@ -80,7 +81,7 @@ jobs:
 
             ### Requirements
             - WordPress 5.8+
-            - PHP 7.4+
+            - PHP 8.1+
           files: development-translation-bridge-${{ steps.version.outputs.version }}.zip
           draft: false
           prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}

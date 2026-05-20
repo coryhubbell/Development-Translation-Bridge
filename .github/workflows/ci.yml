@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0', '8.1', '8.2']
+        php: ['8.1', '8.2', '8.3', '8.4', '8.5']
 
     steps:
       - name: Checkout code
@@ -43,38 +43,49 @@ jobs:
         run: composer validate --no-check-all
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
+        run: composer install --prefer-dist --no-progress
 
       - name: Run PHP Syntax Check
         run: |
-          find includes translation-bridge -name "*.php" -print0 | xargs -0 -n1 php -l | grep -v "No syntax errors detected"
-          if [ ${PIPESTATUS[1]} -ne 0 ]; then exit 1; fi
+          find . \
+            -path ./vendor -prune -o \
+            -path ./admin/node_modules -prune -o \
+            -path ./admin/dist -prune -o \
+            -path ./release -prune -o \
+            -name "*.php" -print0 | xargs -0 -n1 php -l
 
       - name: Security audit
-        run: composer audit --no-dev || true
+        # Audit production + dev dependencies. Dev deps run in CI and locally,
+        # so they're still attack surface — and CVE-2026-24765 (cleared in v4.3.1)
+        # lived in phpunit (a dev dep), which `--no-dev` would have hidden.
+        # Composer respects `config.platform.php` (8.1.0) when evaluating advisories.
+        run: composer audit
 
       - name: Install PHPCS and WordPress Standards
-        if: matrix.php == '8.2'
+        if: matrix.php == '8.4'
+        continue-on-error: true
         run: |
+          composer config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
           composer require --dev wp-coding-standards/wpcs dealerdirect/phpcodesniffer-composer-installer --no-interaction
 
       - name: Run PHPCS
-        if: matrix.php == '8.2'
-        run: vendor/bin/phpcs --standard=phpcs.xml.dist --report=summary || true
+        if: matrix.php == '8.4'
+        continue-on-error: true
+        run: vendor/bin/phpcs --standard=phpcs.xml.dist --report=summary
 
       - name: Run PHPUnit
         run: vendor/bin/phpunit --testdox
 
       - name: Create coverage directory
-        if: matrix.php == '8.2'
+        if: matrix.php == '8.4'
         run: mkdir -p coverage
 
       - name: Run PHPUnit with Coverage
-        if: matrix.php == '8.2'
+        if: matrix.php == '8.4'
         run: vendor/bin/phpunit --coverage-clover coverage/clover.xml --coverage-text
 
       - name: Upload coverage to Codecov
-        if: matrix.php == '8.2'
+        if: matrix.php == '8.4'
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage/clover.xml
