@@ -5,8 +5,8 @@ frameworks — Elementor, DIVI, Gutenberg, Bricks, Oxygen, Avada, WPBakery,
 Beaver Builder, Kadence, Thrive, Bootstrap, plus native support for the
 ground-up rewrites (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
-[![Version](https://img.shields.io/badge/version-4.3.3-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3)
+[![Version](https://img.shields.io/badge/version-4.3.4-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -70,11 +70,39 @@ for the single-helper locations to patch.
 
 ---
 
-## Current release: v4.3.3 (production-ready)
+## Current release: v4.3.4 (production-ready)
 
-**v4.3.3 is staging-verified and production-ready** (plugin activation, admin
-page load, and live translation flow all green on a real WordPress install).
-It's the recommended version for new deployments.
+**v4.3.4 is the current production release.** It closes a critical fidelity
+gap in the Elementor → Gutenberg path that was breaking agentic content-
+migration pipelines, and wires an end-to-end smoke harness into CI so
+similar gaps can't ship silently again.
+
+### What 4.3.4 added (Elementor → Gutenberg widget coverage)
+
+- **Widget coverage on both engines.** ~70 of the 90+ universal widget types
+  the Elementor parser produces were previously silently collapsing onto
+  `core/paragraph` with empty content. Compound widgets (`tabs`, `accordion`,
+  `card`, `cta`, `counter`, `testimonial`, `pricing-table`, `alert`) now
+  expand into native block groups with a `devtb-<type>-converted` className.
+  Widgets with no native Gutenberg equivalent (`form`, `slider`, `countdown`,
+  `portfolio`, `toc`, `map`, `progress`, `rating`, unknown widgets) are
+  preserved as `core/html` with a visible `data-devtb-source` annotation —
+  no silent data loss.
+- **Type-map expansion** for 1:1 mappings the parser produced but the
+  converter was missing (`social-icons`, `nav`, `blockquote`, `icon`).
+- **Settings denormalization** (typography, color, spacing, border,
+  className, anchor) restored on the Python side — these were silently
+  dropped before.
+- **Four new transforms registered:** `elementor_to_gutenberg`,
+  `html_to_gutenberg`, `divi_to_gutenberg`, `bricks_to_gutenberg`.
+- **CI gate:** kitchen-sink fixture (30 widget types, every dispatch class)
+  now runs through both engines on every push and PR via the new
+  `Python tests + Gutenberg e2e smoke` job. The smoke caught two real
+  fidelity bugs (counter title, blockquote author) that the targeted unit
+  tests didn't reach — both fixed before tagging.
+
+Full notes: [v4.3.4 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4)
+and [`RELEASE_NOTES_V4.3.4.md`](RELEASE_NOTES_V4.3.4.md).
 
 ### What 4.3.0 added (framework coverage milestone)
 
@@ -110,7 +138,7 @@ It's the recommended version for new deployments.
   select, System Status rows, Framework Details card) now consume the factory
   directly. Adding a 15th framework later only requires updating the factory.
 
-Full notes: [v4.3.3 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) — see also [`CODEX_REVIEW.md`](CODEX_REVIEW.md) for file-by-file rationale.
+v4.3.1 → v4.3.3 notes: [v4.3.3 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) — see also [`CODEX_REVIEW.md`](CODEX_REVIEW.md) for file-by-file rationale.
 
 ---
 
@@ -407,9 +435,13 @@ Python (via pytest):
 python3 -m pytest tests/python -q
 ```
 
-As of v4.3.3:
-- PHP: **284 tests / 4,133 assertions / 0 errors / 0 failures / 0 deprecations**.
-- Python: 109 tests across converters, parsers, transforms.
+As of v4.3.4:
+- PHP: **284 tests / 4,133 assertions / 0 errors / 0 failures / 0 deprecations**,
+  plus 16 new widget-coverage tests added in v4.3.4 (`tests/Unit/GutenbergWidgetCoverageTest.php`).
+- Python: 125 tests across converters, parsers, transforms (was 109 in v4.3.3;
+  `TestGutenbergConverter` grew 5 → 21 in v4.3.4).
+- End-to-end smoke (`tests/smoke_gutenberg_e2e.py`): kitchen-sink Elementor
+  fixture through both engines, now a CI gate on every push and PR.
 
 The 41 pre-existing errors and 3 failures that v4.1 / v4.2 / v4.3.0 inherited
 (class-autoload mismatches and missing WP-function mocks) were all resolved in
@@ -459,7 +491,8 @@ Release notes live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.3.3](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) **(production-ready)** | 2026-05-19 | `functions.php` admin pages now factory-driven; eliminates drift surface for framework lists |
+| [v4.3.4](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4) **(latest)** | 2026-05-20 | Elementor → Gutenberg widget coverage hotfix (compound widgets, marker fallback, settings denormalization); e2e smoke harness now a CI gate |
+| [v4.3.3](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) | 2026-05-19 | `functions.php` admin pages now factory-driven; eliminates drift surface for framework lists |
 | [v4.3.2](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.2) | 2026-05-19 | User-facing copy errata (style.css, admin help, CLI help); 9 → 14 / 72 → 182 |
 | [v4.3.1](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1) | 2026-05-19 | Production-readiness: CLI fatal fix, matrix consistency, test suite green, PHP 8.1 floor, CVE-2026-24765 cleared |
 | [v4.3.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.0) | 2026-05-19 | DIVI 5, Elementor 4 Atomic, Oxygen 6 native parsers; Bricks flat-output fix |
@@ -472,7 +505,7 @@ Release notes live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.3.3. Remaining 4.x.y work:
+as of v4.3.4. Remaining 4.x.y work:
 
 - Verify the v4.3.0 proxy schemas (`oxygen-6`, `divi-5`, `elementor-4`)
   against real exports and patch the isolated extractor helpers as needed.
