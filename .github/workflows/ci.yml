@@ -93,6 +93,58 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  gutenberg-smoke:
+    name: Python tests + Gutenberg e2e smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, xml, curl, json
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        # Smoke harness shells out to PHP to exercise the v3 Gutenberg converter
+        # against the same fixture the Python engine processes.
+        run: composer install --prefer-dist --no-progress
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python package + dev extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Python test suite
+        run: pytest tests/python
+
+      - name: Run Gutenberg e2e smoke (kitchen-sink fixture, both engines)
+        # Exercises every Elementor widget category the parser produces, end-to-end
+        # through Python v4 AND PHP v3. Catches fidelity gaps that targeted unit
+        # tests don't reach (see PR #11 for two such bugs caught after 4.3.4 merged).
+        run: python tests/smoke_gutenberg_e2e.py
+
   admin-build:
     name: Admin Build (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
