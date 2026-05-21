@@ -15,6 +15,13 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
 
+    # softprops/action-gh-release needs `contents: write` to publish a release.
+    # Without this, the default GITHUB_TOKEN is read-only and the action fails
+    # with HTTP 403 (which is what happened on v4.3.3 and v4.3.4 before the
+    # releases had to be cut by hand).
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
