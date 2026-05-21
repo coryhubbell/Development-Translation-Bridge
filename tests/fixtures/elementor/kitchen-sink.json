@@ -1,0 +1,275 @@
+[
+  {
+    "id": "sec_hero",
+    "elType": "section",
+    "settings": {
+      "layout": "boxed",
+      "background_color": "#0f172a",
+      "padding": {"unit": "px", "top": "80", "right": "0", "bottom": "80", "left": "0"}
+    },
+    "elements": [
+      {
+        "id": "col_hero",
+        "elType": "column",
+        "settings": {"_column_size": 100},
+        "elements": [
+          {
+            "id": "w_h1",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {"title": "Kitchen Sink Hero", "header_size": "h1", "align": "center", "title_color": "#ffffff"}
+          },
+          {
+            "id": "w_p1",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {"editor": "<p>Everything below was previously dropped or collapsed.</p>", "align": "center"}
+          },
+          {
+            "id": "w_btn1",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {"text": "Get started", "link": {"url": "https://example.com/start", "is_external": true, "nofollow": true}}
+          },
+          {"id": "w_div1", "elType": "widget", "widgetType": "divider", "settings": {}}
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sec_features",
+    "elType": "section",
+    "settings": {},
+    "elements": [
+      {
+        "id": "col_a",
+        "elType": "column",
+        "settings": {"_column_size": 33.33},
+        "elements": [
+          {
+            "id": "w_iconbox",
+            "elType": "widget",
+            "widgetType": "icon-box",
+            "settings": {
+              "title_text": "Fast",
+              "description_text": "Edge-cached responses in milliseconds.",
+              "link": {"url": "https://example.com/perf"},
+              "button_text": "Read more",
+              "image": {"url": "https://example.com/icons/fast.png", "alt": "Speed icon"}
+            }
+          }
+        ]
+      },
+      {
+        "id": "col_b",
+        "elType": "column",
+        "settings": {"_column_size": 33.33},
+        "elements": [
+          {
+            "id": "w_iconlist",
+            "elType": "widget",
+            "widgetType": "icon-list",
+            "settings": {
+              "icon_list": [
+                {"text": "Zero downtime deploys"},
+                {"text": "Per-tenant isolation"},
+                {"text": "Audit log retention 365 days"}
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "col_c",
+        "elType": "column",
+        "settings": {"_column_size": 33.34},
+        "elements": [
+          {
+            "id": "w_counter",
+            "elType": "widget",
+            "widgetType": "counter",
+            "settings": {"ending_number": 99, "prefix": "", "suffix": ".9%", "title": "Uptime SLA"}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sec_compound",
+    "elType": "section",
+    "settings": {},
+    "elements": [
+      {
+        "id": "col_compound",
+        "elType": "column",
+        "settings": {"_column_size": 100},
+        "elements": [
+          {
+            "id": "w_tabs",
+            "elType": "widget",
+            "widgetType": "tabs",
+            "settings": {
+              "tabs": [
+                {"tab_title": "Overview", "tab_content": "<p>Tab one body.</p>"},
+                {"tab_title": "Pricing", "tab_content": "<p>Tab two body.</p>"},
+                {"tab_title": "FAQ", "tab_content": "<p>Tab three body.</p>"}
+              ]
+            }
+          },
+          {
+            "id": "w_accordion",
+            "elType": "widget",
+            "widgetType": "accordion",
+            "settings": {
+              "tabs": [
+                {"tab_title": "What is the SLA?", "tab_content": "99.9% with sub-second recovery."},
+                {"tab_title": "Can I cancel anytime?", "tab_content": "Yes, monthly billing."}
+              ]
+            }
+          },
+          {
+            "id": "w_cta",
+            "elType": "widget",
+            "widgetType": "call-to-action",
+            "settings": {
+              "title": "Ready to ship?",
+              "description": "Sign up in seconds.",
+              "button_text": "Create account",
+              "link": {"url": "https://example.com/signup"}
+            }
+          },
+          {
+            "id": "w_pricing",
+            "elType": "widget",
+            "widgetType": "price-table",
+            "settings": {
+              "heading": "Pro",
+              "currency_symbol": "$",
+              "price": "49",
+              "period": "mo",
+              "features": [
+                {"item_text": "Unlimited projects"},
+                {"item_text": "Priority support"},
+                {"item_text": "Audit logs"}
+              ],
+              "button_text": "Subscribe",
+              "button_url": "https://example.com/subscribe"
+            }
+          },
+          {
+            "id": "w_testimonial",
+            "elType": "widget",
+            "widgetType": "testimonial",
+            "settings": {
+              "testimonial_content": "We cut migration time by 80%.",
+              "testimonial_name": "Jane Doe",
+              "testimonial_job": "CTO, Acme"
+            }
+          },
+          {
+            "id": "w_alert",
+            "elType": "widget",
+            "widgetType": "alert",
+            "settings": {
+              "alert_type": "success",
+              "alert_title": "Migrations complete",
+              "alert_description": "All 142 pages converted."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sec_media",
+    "elType": "section",
+    "settings": {},
+    "elements": [
+      {
+        "id": "col_media",
+        "elType": "column",
+        "settings": {"_column_size": 100},
+        "elements": [
+          {
+            "id": "w_gallery",
+            "elType": "widget",
+            "widgetType": "image-gallery",
+            "settings": {
+              "wp_gallery": [
+                {"id": 101, "url": "https://example.com/img/1.jpg", "alt": "One"},
+                {"id": 102, "url": "https://example.com/img/2.jpg", "alt": "Two"},
+                {"id": 103, "url": "https://example.com/img/3.jpg", "alt": "Three"}
+              ]
+            }
+          },
+          {
+            "id": "w_video",
+            "elType": "widget",
+            "widgetType": "video",
+            "settings": {"youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}
+          },
+          {
+            "id": "w_audio",
+            "elType": "widget",
+            "widgetType": "audio",
+            "settings": {"link": {"url": "https://example.com/podcast/ep1.mp3"}}
+          },
+          {
+            "id": "w_social",
+            "elType": "widget",
+            "widgetType": "social-icons",
+            "settings": {
+              "social_icon_list": [
+                {"social": "twitter", "link": {"url": "https://twitter.com/example"}},
+                {"social": "github",  "link": {"url": "https://github.com/example"}},
+                {"social": "linkedin","link": {"url": "https://linkedin.com/company/example"}}
+              ]
+            }
+          },
+          {
+            "id": "w_nav",
+            "elType": "widget",
+            "widgetType": "nav-menu",
+            "settings": {"menu": "primary"}
+          },
+          {"id": "w_spacer", "elType": "widget", "widgetType": "spacer", "settings": {"space": {"size": 80, "unit": "px"}}},
+          {
+            "id": "w_blockquote",
+            "elType": "widget",
+            "widgetType": "blockquote",
+            "settings": {"blockquote_content": "The future is already here.", "author": "William Gibson"}
+          },
+          {
+            "id": "w_icon",
+            "elType": "widget",
+            "widgetType": "icon",
+            "settings": {"selected_icon": {"value": "fas fa-star"}}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sec_markers",
+    "elType": "section",
+    "settings": {},
+    "elements": [
+      {
+        "id": "col_markers",
+        "elType": "column",
+        "settings": {"_column_size": 100},
+        "elements": [
+          {"id": "w_form", "elType": "widget", "widgetType": "form", "settings": {"title": "Contact us", "form_name": "Contact"}},
+          {"id": "w_slider", "elType": "widget", "widgetType": "slider", "settings": {"title": "Customer logos"}},
+          {"id": "w_countdown", "elType": "widget", "widgetType": "countdown", "settings": {"title": "Launch", "due_date": "2026-12-31"}},
+          {"id": "w_map", "elType": "widget", "widgetType": "google_maps", "settings": {"address": "1 Infinite Loop"}},
+          {"id": "w_progress", "elType": "widget", "widgetType": "progress", "settings": {"title": "Completion", "percent": {"size": 75}}},
+          {"id": "w_portfolio", "elType": "widget", "widgetType": "portfolio", "settings": {"title": "Case studies"}},
+          {"id": "w_rating", "elType": "widget", "widgetType": "star-rating", "settings": {"title": "Reviews", "rating": 4.5}},
+          {"id": "w_toc", "elType": "widget", "widgetType": "table-of-contents", "settings": {"title": "On this page"}},
+          {"id": "w_unknown", "elType": "widget", "widgetType": "some-third-party-mystery-widget", "settings": {"title": "Unknown widget", "editor": "Body text"}}
+        ]
+      }
+    ]
+  }
+]

@@ -64,3 +64,12 @@ All exposed via `GutenbergConverter` which is now exported from `src/translation
 ## Migration
 
 None required. Existing transforms are unchanged. New transforms are additive. Output format upgrade (canonical `core/` stripping, `wp-block-heading`/`wp-element-button` classes, `core/list-item` innerBlocks) was already in place from v4.2.0.
+
+## Post-merge fidelity follow-up
+
+A kitchen-sink end-to-end smoke (`tests/smoke_gutenberg_e2e.py` against `tests/fixtures/elementor/kitchen-sink.json`) running the full set of widget categories through both engines caught two fidelity bugs in the initial PHP cut that the targeted unit tests didn't reach:
+
+- **Counter title was dropped** in `convert_counter()` because the Elementor parser normalizes the widget's `title` setting to the universal `heading` attribute. The compound handler was only reading `attributes['title']`. Fixed by also reading `attributes['heading']`.
+- **Blockquote author was dropped** in `generate_inner_html()` for `core/quote` because the cite-fallback chain didn't include `attributes['author']` (which the parser passes through unmapped from the blockquote widget). Fixed by adding `author` to the fallback chain.
+
+The smoke harness has been kept in-tree so this widget matrix is exercised end-to-end against any future converter change, not just unit-tested in isolation. After the fixes: both engines produce balanced delimiters, zero empty-paragraph collapses, the expected 9 marker fallbacks for no-equivalent widgets, and every fixture title/body/cite survives the round-trip.
