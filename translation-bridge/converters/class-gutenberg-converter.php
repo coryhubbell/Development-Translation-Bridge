@@ -438,7 +438,13 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 				return '<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="' . esc_url( $url ) . '"' . $target . $rel . '>' . esc_html( $content ) . '</a></div>';
 
 			case 'core/quote':
-				$cite = $attrs['cite'] ?? ( $attrs['citation'] ?? ( $attrs['testimonial_name'] ?? '' ) );
+				// `author` is the Elementor blockquote widget's citation field (parser passes through
+				// unmapped). `cite` / `citation` cover generic universal sources; `testimonial_name`
+				// covers the testimonial → quote downgrade path.
+				$cite = $attrs['cite']
+					?? ( $attrs['citation']
+					?? ( $attrs['author']
+					?? ( $attrs['testimonial_name'] ?? '' ) ) );
 				$cite_html = ! empty( $cite ) ? '<cite>' . esc_html( $cite ) . '</cite>' : '';
 				$body = $this->looks_like_html( $content ) ? $content : '<p>' . esc_html( $content ) . '</p>';
 				return '<blockquote class="wp-block-quote">' . $body . $cite_html . '</blockquote>';
@@ -926,7 +932,11 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 		$ending = $attrs['ending_number'] ?? ( $attrs['ending'] ?? ( $attrs['number'] ?? '' ) );
 		$prefix = $attrs['prefix'] ?? '';
 		$suffix = $attrs['suffix'] ?? '';
-		$title = $attrs['title'] ?? $component->content;
+		// Elementor parser's normalize_settings maps the widget `title` setting to the
+		// universal `heading` attribute, so a counter widget's title arrives as `heading`,
+		// not `title`. Read both so we work whether the converter is fed normalized
+		// universal components or raw passthrough.
+		$title = $attrs['heading'] ?? ( $attrs['title'] ?? $component->content );
 
 		$display = trim( (string) $prefix . (string) $ending . (string) $suffix );
 
