@@ -315,6 +315,9 @@ class GutenbergConverter:
 
     def _build_paragraph_block(self, settings: Dict[str, Any], content: str = "") -> str:
         text = content or settings.get("editor", settings.get("text", ""))
+        if self._should_preserve_rich_text_as_html_block(text):
+            return self._build_block("core/html", {}, str(text).strip())
+
         attrs = self._denormalize_settings(settings)
         align = settings.get("align") or settings.get("text_align")
         if align:
@@ -817,6 +820,24 @@ class GutenbergConverter:
         if not isinstance(content, str):
             return False
         return bool(re.fullmatch(r"<p(?:\s[^>]*)?>[\s\S]*</p>", content.strip(), re.IGNORECASE))
+
+    def _should_preserve_rich_text_as_html_block(self, content: Any) -> bool:
+        if not isinstance(content, str) or not self._looks_like_html(content):
+            return False
+
+        stripped = content.strip()
+        if len(re.findall(r"<p(?:\s[^>]*)?>", stripped, re.IGNORECASE)) > 1:
+            return True
+
+        return bool(
+            re.search(
+                r"</?(?:address|article|aside|blockquote|div|dl|figure|figcaption|footer|form|"
+                r"h[1-6]|header|hr|li|main|nav|ol|pre|section|table|tbody|td|tfoot|th|thead|"
+                r"tr|ul)\b",
+                stripped,
+                re.IGNORECASE,
+            )
+        )
 
     def _render_paragraph_html(self, content: Any) -> str:
         text = "" if content is None else str(content)

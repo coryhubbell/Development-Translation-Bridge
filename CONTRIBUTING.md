@@ -15,7 +15,7 @@ cd development-translation-bridge
 make setup
 
 # Verify everything works
-make test
+make verify
 
 # Try a translation
 ./devtb translate bootstrap divi examples/hero-bootstrap.html
@@ -32,12 +32,13 @@ That's it! You're ready to contribute.
   ```
 - **Composer 2.0+**
   ```bash
-  composer --version
+  php composer.phar --version || composer --version
   ```
 
 ### Optional (for full development)
 - **Docker & Docker Compose** - For running WordPress locally
-- **Node.js 20.19+** - For Visual Interface development
+- **Python 3.11** - Recommended local verification runtime; the package still supports Python 3.9+
+- **Node.js 20.19.0, 22.13.0+, or 24+** - For Visual Interface development
 - **Make** - For standardized commands (included on macOS/Linux)
 
 ## Development Setup Options
@@ -73,7 +74,7 @@ Complete the WordPress installation wizard, then activate the theme.
 
 ```bash
 # Install PHP dependencies
-composer install
+make composer-install
 
 # Copy environment file
 cp .env.example .env
@@ -82,7 +83,7 @@ cp .env.example .env
 chmod +x devtb
 
 # Run tests
-composer test
+make test-php
 ```
 
 ## Running Tests
@@ -91,7 +92,7 @@ composer test
 ```bash
 make test
 # or
-composer test
+make test-php
 ```
 
 ### With Coverage Report
@@ -161,12 +162,15 @@ development-translation-bridge/
 | Command | Description |
 |---------|-------------|
 | `make setup` | Run initial setup script |
-| `make test` | Run PHPUnit tests |
+| `make verify` | Run the full local release verification suite |
+| `make test` | Run PHP and Python tests |
 | `make test-coverage` | Run tests with coverage report |
+| `make gutenberg-smoke` | Run the Elementor to Gutenberg e2e smoke |
 | `make docker-up` | Start Docker containers |
 | `make docker-down` | Stop Docker containers |
 | `make admin-dev` | Start Vite dev server for admin UI |
 | `make admin-build` | Build admin interface for production |
+| `make release-package-smoke` | Build and inspect a local release zip |
 | `make clean` | Remove generated files |
 | `make help` | Show all available commands |
 
@@ -174,7 +178,7 @@ development-translation-bridge/
 
 ### PHP
 - Follow [WordPress PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/)
-- Use PSR-4 autoloading with namespaces
+- Keep namespaced production classes in the existing WordPress-style classmap autoload layout
 - Add PHPDoc blocks to all methods
 - Use type hints, including return types and `readonly` properties where appropriate (PHP 8.1+ floor)
 
@@ -264,9 +268,10 @@ Tests use [Brain Monkey](https://brain-wp.github.io/BrainMonkey/) for WordPress 
 All pull requests are automatically tested:
 
 - **PHP Matrix**: 8.1, 8.2, 8.3, 8.4, 8.5
-- **Node.js Matrix**: 20.19, 22, 24 (for admin builds)
+- **Node.js Matrix**: 20.19.0, 22.13.0+, 24 (for admin builds)
 - **Code Coverage**: Generated on PHP 8.4
 - **Security**: `composer audit` runs on every job (advisories fail CI)
+- **Release smoke**: CI builds and inspects the WordPress release zip on every PR
 
 Ensure your PR passes all CI checks before requesting review.
 

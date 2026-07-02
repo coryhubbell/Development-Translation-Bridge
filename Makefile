@@ -5,7 +5,12 @@
 # Run 'make help' to see available targets
 # =============================================================================
 
-.PHONY: setup test test-coverage docker-up docker-down docker-logs admin-dev admin-build clean help
+.PHONY: setup install verify composer-validate composer-install composer-audit python-install test test-php test-coverage test-watch test-unit test-integration test-python gutenberg-smoke lint-php docker-up docker-down docker-logs docker-restart docker-clean admin-dev admin-install admin-build admin-lint admin-typecheck admin-audit release-package-smoke whitespace-check clean clean-all version help
+
+COMPOSER ?= $(if $(wildcard composer.phar),php composer.phar,composer)
+NPM ?= npm
+PYTHON ?= python3.11
+PYTEST ?= $(PYTHON) -m pytest
 
 # Default target
 .DEFAULT_GOAL := help
@@ -18,8 +23,22 @@ setup: ## Run initial setup script
 	@./setup.sh
 
 install: ## Install all dependencies (PHP + Node)
-	@composer install
-	@if [ -d "admin" ]; then cd admin && npm install; fi
+	@$(COMPOSER) install --prefer-dist --no-progress
+	@if [ -d "admin" ]; then cd admin && $(NPM) ci; fi
+
+verify: composer-validate composer-install composer-audit test-php python-install test-python gutenberg-smoke admin-install admin-lint admin-typecheck admin-build admin-audit release-package-smoke whitespace-check ## Run the full local release verification suite
+
+composer-validate: ## Validate Composer metadata
+	@$(COMPOSER) validate --no-check-all
+
+composer-install: ## Install PHP dependencies
+	@$(COMPOSER) install --prefer-dist --no-progress
+
+composer-audit: ## Audit PHP dependencies
+	@$(COMPOSER) audit
+
+python-install: ## Install Python package and development test extras
+	@$(PYTHON) -m pip install -e ".[dev]"
 
 # -----------------------------------------------------------------------------
 # Testing
@@ -28,25 +47,28 @@ install: ## Install all dependencies (PHP + Node)
 test: test-unit test-integration test-python ## Run all tests (PHP + Python)
 
 test-php: ## Run PHPUnit tests
-	@composer test
+	@$(COMPOSER) test
 
 test-coverage: ## Run tests with coverage report
 	@mkdir -p coverage
-	@composer test:coverage
+	@$(COMPOSER) test:coverage
 	@echo "Coverage report: coverage/index.html"
 
 test-watch: ## Run tests in watch mode
-	@composer test:watch 2>/dev/null || vendor/bin/phpunit --testdox
+	@$(COMPOSER) test:watch 2>/dev/null || vendor/bin/phpunit --no-coverage --testdox
 
 test-unit: ## Run unit tests only
-	@vendor/bin/phpunit --testsuite Unit --testdox
+	@vendor/bin/phpunit --no-coverage --testsuite Unit --testdox
 
 test-integration: ## Run integration tests only
-	@vendor/bin/phpunit --testsuite Integration --testdox
+	@vendor/bin/phpunit --no-coverage --testsuite Integration --testdox
 
 test-python: ## Run Python tests (v4 transform engine)
 	@echo "Running Python tests..."
-	@PYTHONPATH=src python -m pytest tests/python/ -v
+	@PYTHONPATH=src $(PYTEST) tests/python/ -v
+
+gutenberg-smoke: ## Run Elementor to Gutenberg e2e smoke
+	@PYTHONPATH=src $(PYTHON) tests/smoke_gutenberg_e2e.py
 
 lint-php: ## Check PHP syntax
 	@find includes translation-bridge -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
@@ -82,11 +104,26 @@ docker-clean: ## Remove Docker volumes (WARNING: deletes database)
 admin-dev: ## Start Vite dev server for admin UI
 	@cd admin && npm run dev
 
-admin-build: ## Build admin interface for production
-	@cd admin && npm install && npm run build
+admin-build: admin-install ## Build admin interface for production
+	@cd admin && $(NPM) run build
+
+admin-install: ## Install admin dependencies from package-lock
+	@cd admin && $(NPM) ci
 
 admin-lint: ## Lint admin TypeScript/React code
-	@cd admin && npm run lint
+	@cd admin && $(NPM) run lint
+
+admin-typecheck: ## Type-check admin TypeScript
+	@cd admin && npx tsc -b --noEmit
+
+admin-audit: ## Audit production admin dependencies
+	@cd admin && $(NPM) audit --omit=dev
+
+release-package-smoke: admin-build ## Build a local release package and verify its zip contents
+	@./scripts/build-release-package.sh smoke
+
+whitespace-check: ## Verify staged and unstaged diffs have no whitespace errors
+	@git diff --check
 
 # -----------------------------------------------------------------------------
 # CLI Tool

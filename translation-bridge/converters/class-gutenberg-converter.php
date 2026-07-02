@@ -232,6 +232,11 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 
 		$attributes = $this->denormalize_attributes( $component->attributes );
 
+		if ( $block_name === 'core/paragraph' && $this->should_preserve_rich_text_as_html_block( (string) ( $component->content ?? '' ) ) ) {
+			$block_name  = 'core/html';
+			$attributes = [];
+		}
+
 		// Add content to attributes if needed
 		$attributes = $this->add_block_content( $block_name, $attributes, $component );
 
@@ -563,6 +568,26 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 		}
 		$rendered = $this->looks_like_html( $trimmed ) ? $trimmed : esc_html( $content );
 		return '<p>' . $rendered . '</p>';
+	}
+
+	/**
+	 * Block-level rich text is invalid inside core/paragraph, so preserve it as core/html.
+	 */
+	private function should_preserve_rich_text_as_html_block( string $content ): bool {
+		$trimmed = trim( $content );
+		if ( ! $this->looks_like_html( $trimmed ) ) {
+			return false;
+		}
+
+		$paragraph_count = preg_match_all( '/<p(?:\s[^>]*)?>/i', $trimmed, $matches );
+		if ( $paragraph_count > 1 ) {
+			return true;
+		}
+
+		return (bool) preg_match(
+			'/<\/?(?:address|article|aside|blockquote|div|dl|figure|figcaption|footer|form|h[1-6]|header|hr|li|main|nav|ol|pre|section|table|tbody|td|tfoot|th|thead|tr|ul)\b/i',
+			$trimmed
+		);
 	}
 
 	/**
@@ -1098,6 +1123,12 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	}
 
 	private function build_paragraph_block( string $text ): string {
+		if ( $this->should_preserve_rich_text_as_html_block( $text ) ) {
+			$opening = $this->create_block_delimiter( 'core/html', [] );
+			$closing = $this->create_closing_delimiter( 'core/html' );
+			return $opening . "\n" . trim( $text ) . "\n" . $closing;
+		}
+
 		$opening = $this->create_block_delimiter( 'core/paragraph', [] );
 		$closing = $this->create_closing_delimiter( 'core/paragraph' );
 		return $opening . "\n" . $this->render_paragraph_html( $text ) . "\n" . $closing;

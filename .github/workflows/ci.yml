@@ -150,7 +150,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['20.19.0', '22', '24']
+        node: ['20.19.0', '22.13.0', '24']
 
     defaults:
       run:
@@ -191,4 +191,37 @@ jobs:
         with:
           name: admin-dist
           path: admin/dist/
+          retention-days: 7
+
+  release-package-smoke:
+    name: Release package smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.0'
+          cache: 'npm'
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install admin dependencies
+        working-directory: admin
+        run: npm ci
+
+      - name: Build admin for production
+        working-directory: admin
+        run: npm run build
+
+      - name: Build and inspect release zip
+        run: ./scripts/build-release-package.sh pr-smoke
+
+      - name: Upload release smoke artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: development-translation-bridge-pr-smoke
+          path: development-translation-bridge-pr-smoke.zip
           retention-days: 7

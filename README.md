@@ -148,8 +148,8 @@ v4.3.1 → v4.3.3 notes: [v4.3.3 release](https://github.com/coryhubbell/Develop
 ### Requirements
 
 - PHP **8.1+** (for the `translate` path, theme install, and REST API)
-- Python **3.9+** (for the `transform` path and CLI)
-- Node **20.19+** + npm (only to rebuild the React admin UI from source)
+- Python **3.9+** (for the `transform` path and CLI); local verification is pinned to **3.11** via `.python-version`
+- Node **20.19.0**, **22.13.0+**, or **24+** + npm (only to rebuild the React admin UI from source)
 - Composer 2.0+ and pip (only if installing from source)
 
 ### Install
@@ -159,7 +159,7 @@ git clone https://github.com/coryhubbell/Development-Translation-Bridge.git
 cd Development-Translation-Bridge
 
 # PHP dependencies
-composer install
+make composer-install
 
 # Python package
 pip install -e .
@@ -180,6 +180,12 @@ chmod +x devtb
 Release assets named `development-translation-bridge-*.zip` are packaged for
 WordPress theme installation. Clone the repository when you need the standalone
 CLI, Python package, tests, or development tooling.
+
+To run the full local release gate before opening or updating a PR:
+
+```bash
+make verify
+```
 
 ### Translate a file
 
@@ -430,7 +436,7 @@ Detailed architecture notes live in [`docs/TRANSLATION_BRIDGE.md`](docs/TRANSLAT
 PHP (via PHPUnit):
 
 ```bash
-composer test                  # full suite
+make test-php                  # full suite
 vendor/bin/phpunit --filter FrameworkConversionsTest  # 182-pair matrix
 ```
 
@@ -440,11 +446,16 @@ Python (via pytest):
 python3 -m pytest tests/python -q
 ```
 
-As of v4.3.4:
-- PHP: **301 tests / 4,246 assertions / 0 errors / 0 failures / 0 deprecations**,
-  including 17 widget-coverage tests added in v4.3.4 (`tests/Unit/GutenbergWidgetCoverageTest.php`).
-- Python: 130 tests across converters, parsers, transforms (was 109 in v4.3.3;
-  `TestGutenbergConverter` grew 5 → 22 in v4.3.4).
+Full local release gate:
+
+```bash
+make verify
+```
+
+Current branch:
+- PHP: **302 tests / 4,250 assertions / 0 errors / 0 failures / 0 deprecations**,
+  including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`).
+- Python: 133 tests across converters, parsers, transforms, and project alignment checks.
 - End-to-end smoke (`tests/smoke_gutenberg_e2e.py`): kitchen-sink Elementor
   fixture through both engines, now a CI gate on every push and PR.
 

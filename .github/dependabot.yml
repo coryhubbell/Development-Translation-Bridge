@@ -7,6 +7,15 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    groups:
+      php-test-tooling:
+        patterns:
+          - "brain/monkey"
+          - "mockery/mockery"
+          - "phpunit/phpunit"
+      wordpress-compatibility:
+        patterns:
+          - "php-stubs/wordpress-stubs"
     labels:
       - "dependencies"
       - "php"
@@ -18,6 +27,36 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    groups:
+      admin-toolchain:
+        patterns:
+          - "@eslint/js"
+          - "@tailwindcss/postcss"
+          - "@vitejs/*"
+          - "autoprefixer"
+          - "eslint"
+          - "eslint-*"
+          - "globals"
+          - "postcss"
+          - "tailwindcss"
+          - "typescript"
+          - "typescript-eslint"
+          - "vite"
+      admin-react-runtime:
+        patterns:
+          - "@types/react"
+          - "@types/react-dom"
+          - "react"
+          - "react-dom"
+          - "zustand"
+      admin-runtime:
+        patterns:
+          - "@monaco-editor/react"
+          - "@tanstack/react-query"
+          - "allotment"
+          - "axios"
+          - "framer-motion"
+          - "monaco-editor"
     labels:
       - "dependencies"
       - "javascript"
@@ -29,6 +68,13 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    groups:
+      python-tooling:
+        patterns:
+          - "build"
+          - "pytest*"
+          - "ruff"
+          - "twine"
     labels:
       - "dependencies"
       - "python"
@@ -39,6 +85,24 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 3
+    groups:
+      ci-actions:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "ci"
+
+  # Docker Compose local development stack
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      local-dev-containers:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "docker"

@@ -364,6 +364,21 @@ class GutenbergWidgetCoverageTest extends TestCase {
 		$this->assertStringNotContainsString( '<p><p>Already wrapped.</p></p>', $out );
 	}
 
+	public function test_text_widget_preserves_block_level_rich_html_as_html_block(): void {
+		$rich_text = '<p>First paragraph.</p><p>Second paragraph.</p><ul><li>Feature</li></ul>';
+		$c = new DEVTB_Component([
+			'type'    => 'text',
+			'content' => $rich_text,
+		]);
+
+		$out = $this->converter->convert( $c );
+
+		$this->assertStringContainsString( '<!-- wp:html -->', $out );
+		$this->assertStringContainsString( $rich_text, $out );
+		$this->assertStringNotContainsString( '<!-- wp:paragraph', $out );
+		$this->assertStringNotContainsString( '<p><p>First paragraph.</p>', $out );
+	}
+
 	public function test_get_supported_types_includes_new_widgets(): void {
 		$types = $this->converter->get_supported_types();
 

@@ -327,6 +327,24 @@ class TestGutenbergConverter:
         assert "<p>Already wrapped.</p>" in result
         assert "<p><p>Already wrapped.</p></p>" not in result
 
+    def test_convert_rich_text_block_html_preserves_markup_as_html_block(self):
+        """Should preserve multiple paragraphs and lists as valid core/html."""
+        converter = GutenbergConverter()
+        rich_text = "<p>First paragraph.</p><p>Second paragraph.</p><ul><li>Feature</li></ul>"
+        data = [{
+            "id": "1",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {"editor": rich_text},
+        }]
+
+        result = converter.convert(data)
+
+        assert "<!-- wp:html -->" in result
+        assert rich_text in result
+        assert "<!-- wp:paragraph" not in result
+        assert "<p><p>First paragraph.</p>" not in result
+
     def test_convert_button(self, sample_elementor_data):
         """Should convert button to wp:button block."""
         converter = GutenbergConverter()

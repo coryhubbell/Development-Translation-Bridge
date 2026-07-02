@@ -92,10 +92,15 @@ def test_public_docs_do_not_restore_old_framework_matrix():
 
 def test_release_workflow_requires_license_and_drops_macos_artifacts():
     workflow = read_text(".github/workflows/release.yml")
+    package_script = read_text("scripts/build-release-package.sh")
 
-    assert "test -f LICENSE" in workflow
-    assert "find release -name '.DS_Store' -delete" in workflow
-    assert "-x '*/.DS_Store'" in workflow
+    assert "./scripts/build-release-package.sh" in workflow
+    assert "test -f LICENSE" in package_script
+    assert "find release -name '.DS_Store' -delete" in package_script
+    assert "-x '*/.DS_Store'" in package_script
+    assert "admin/dist" in package_script
+    assert "manifest" in package_script
+    assert "admin/node_modules" in package_script
     assert "This asset is the WordPress theme package." in workflow
 
 
@@ -103,17 +108,18 @@ def test_admin_node_floor_matches_ci_and_docs():
     admin_package = json_file("admin/package.json")
     ci = read_text(".github/workflows/ci.yml")
     release = read_text(".github/workflows/release.yml")
+    node_floor = "^20.19.0 || ^22.13.0 || >=24"
 
-    assert admin_package["engines"]["node"] == ">=20.19.0"
-    assert "node: ['20.19.0', '22', '24']" in ci
+    assert admin_package["engines"]["node"] == node_floor
+    assert "node: ['20.19.0', '22.13.0', '24']" in ci
     assert "node-version: '20.19.0'" in release
     assert "node: ['18'" not in ci
-    assert "Node **20.19+**" in read_text("README.md")
-    assert "Node.js 20.19+" in read_text("CONTRIBUTING.md")
+    assert "Node **20.19.0**, **22.13.0+**, or **24+**" in read_text("README.md")
+    assert "Node.js 20.19.0, 22.13.0+, or 24+" in read_text("CONTRIBUTING.md")
 
 
 def test_dependabot_covers_all_package_ecosystems():
     config = read_text(".github/dependabot.yml")
 
-    for ecosystem in ("composer", "npm", "pip", "github-actions"):
+    for ecosystem in ("composer", "npm", "pip", "github-actions", "docker-compose"):
         assert f'package-ecosystem: "{ecosystem}"' in config
