@@ -352,6 +352,18 @@ class GutenbergWidgetCoverageTest extends TestCase {
 		$this->assertStringContainsString( 'Hello world.', $out );
 	}
 
+	public function test_text_widget_preserves_existing_paragraph_html(): void {
+		$c = new DEVTB_Component([
+			'type'    => 'text',
+			'content' => '<p>Already wrapped.</p>',
+		]);
+
+		$out = $this->converter->convert( $c );
+
+		$this->assertStringContainsString( '<p>Already wrapped.</p>', $out );
+		$this->assertStringNotContainsString( '<p><p>Already wrapped.</p></p>', $out );
+	}
+
 	public function test_get_supported_types_includes_new_widgets(): void {
 		$types = $this->converter->get_supported_types();
 

@@ -7,7 +7,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage WPBakery
- * @version    4.3.3
+ * @version    4.3.4
  */
 
 class DEVTB_Element_Registry {

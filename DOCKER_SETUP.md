@@ -9,7 +9,7 @@ This setup provides a complete local WordPress development environment using Doc
 ## Prerequisites
 
 - **Docker Desktop** installed and running
-- **Node.js** 18+ (for the React visual interface)
+- **Node.js** 20.19+ (for the React visual interface)
 - **Git** (already have this)
 
 ---

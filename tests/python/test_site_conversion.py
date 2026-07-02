@@ -314,6 +314,19 @@ class TestGutenbergConverter:
         assert "wp:core/paragraph" in result or "wp:paragraph" in result
         assert "Test paragraph" in result
 
+    def test_convert_paragraph_preserves_existing_paragraph_html(self):
+        """Should not nest paragraph tags from Elementor rich text."""
+        converter = GutenbergConverter()
+        data = [{
+            "id": "1",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {"editor": "<p>Already wrapped.</p>"},
+        }]
+        result = converter.convert(data)
+        assert "<p>Already wrapped.</p>" in result
+        assert "<p><p>Already wrapped.</p></p>" not in result
+
     def test_convert_button(self, sample_elementor_data):
         """Should convert button to wp:button block."""
         converter = GutenbergConverter()

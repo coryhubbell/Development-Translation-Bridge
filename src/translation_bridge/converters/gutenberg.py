@@ -321,10 +321,7 @@ class GutenbergConverter:
             # core/paragraph uses `textAlign` for text alignment (block-level `align` means
             # full/wide alignment in canonical 6.5+ schema).
             attrs["textAlign"] = align
-        if self._looks_like_html(text):
-            html = f"<p>{text}</p>"
-        else:
-            html = f"<p>{escape(str(text))}</p>"
+        html = self._render_paragraph_html(text)
         return self._build_block("core/paragraph", attrs, html)
 
     def _build_image_block_from_settings(self, settings: Dict[str, Any]) -> str:
@@ -815,6 +812,20 @@ class GutenbergConverter:
         if not isinstance(content, str):
             return False
         return "<" in content and ">" in content
+
+    def _is_paragraph_html(self, content: Any) -> bool:
+        if not isinstance(content, str):
+            return False
+        return bool(re.fullmatch(r"<p(?:\s[^>]*)?>[\s\S]*</p>", content.strip(), re.IGNORECASE))
+
+    def _render_paragraph_html(self, content: Any) -> str:
+        text = "" if content is None else str(content)
+        stripped = text.strip()
+        if self._is_paragraph_html(stripped):
+            return stripped
+        if self._looks_like_html(stripped):
+            return f"<p>{stripped}</p>"
+        return f"<p>{escape(text)}</p>"
 
     def _denormalize_settings(self, settings: Dict[str, Any]) -> Dict[str, Any]:
         """Mirror PHP denormalize_attributes: project Elementor settings onto Gutenberg block attrs."""

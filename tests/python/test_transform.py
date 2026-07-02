@@ -116,8 +116,8 @@ class TestVersion:
     """Test version information."""
 
     def test_version_is_4(self):
-        """Version should be 4.3.0."""
-        assert __version__ == "4.3.0"
+        """Version should match the current release."""
+        assert __version__ == "4.3.4"
 
 
 # =============================================================================

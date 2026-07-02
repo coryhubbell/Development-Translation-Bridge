@@ -29,11 +29,12 @@ Two transformation paths:
 
 | Path | Engine | Approach | Metadata | Speed | Best for |
 |---|---|---|---|---|---|
-| `transform` | Python (v4) | JSON-native | **100%** | ~0.5s/page | JSON formats (Elementor, Bricks, Oxygen, Atomic v4) |
+| `transform` | Python (v4) | JSON-native | **100%** | ~0.5s/page | Elementor JSON today; more JSON source parsers planned |
 | `translate` | PHP (v3) | HTML intermediate | ~42% | ~30s/page | Any framework, including shortcode-based (WPBakery, DIVI 4, Avada) |
 
 The `transform` path is the recommended default; `translate` is retained for
-HTML-based frameworks that don't have a JSON canonical form.
+HTML-based frameworks that don't have a JSON canonical form and for sources
+whose v4 parser is not production-ready yet.
 
 ---
 
@@ -148,7 +149,7 @@ v4.3.1 → v4.3.3 notes: [v4.3.3 release](https://github.com/coryhubbell/Develop
 
 - PHP **8.1+** (for the `translate` path, theme install, and REST API)
 - Python **3.9+** (for the `transform` path and CLI)
-- Node **20+** + npm (only to rebuild the React admin UI from source)
+- Node **20.19+** + npm (only to rebuild the React admin UI from source)
 - Composer 2.0+ and pip (only if installing from source)
 
 ### Install
@@ -175,6 +176,10 @@ cd ..
 # Make the CLI executable
 chmod +x devtb
 ```
+
+Release assets named `development-translation-bridge-*.zip` are packaged for
+WordPress theme installation. Clone the repository when you need the standalone
+CLI, Python package, tests, or development tooling.
 
 ### Translate a file
 
@@ -436,10 +441,10 @@ python3 -m pytest tests/python -q
 ```
 
 As of v4.3.4:
-- PHP: **284 tests / 4,133 assertions / 0 errors / 0 failures / 0 deprecations**,
-  plus 16 new widget-coverage tests added in v4.3.4 (`tests/Unit/GutenbergWidgetCoverageTest.php`).
-- Python: 125 tests across converters, parsers, transforms (was 109 in v4.3.3;
-  `TestGutenbergConverter` grew 5 → 21 in v4.3.4).
+- PHP: **301 tests / 4,246 assertions / 0 errors / 0 failures / 0 deprecations**,
+  including 17 widget-coverage tests added in v4.3.4 (`tests/Unit/GutenbergWidgetCoverageTest.php`).
+- Python: 130 tests across converters, parsers, transforms (was 109 in v4.3.3;
+  `TestGutenbergConverter` grew 5 → 22 in v4.3.4).
 - End-to-end smoke (`tests/smoke_gutenberg_e2e.py`): kitchen-sink Elementor
   fixture through both engines, now a CI gate on every push and PR.
 

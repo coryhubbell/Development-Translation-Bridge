@@ -22,6 +22,17 @@ updates:
       - "dependencies"
       - "javascript"
 
+  # Python package and dev tooling
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"

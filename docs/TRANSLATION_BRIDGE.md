@@ -2,7 +2,7 @@
 
 ## **World's First Multi-Framework WordPress Translator**
 
-Translation Bridge™ enables seamless conversion between 5 major page builders with 98% accuracy.
+Translation Bridge™ enables seamless conversion across 14 page builder frameworks with 98% accuracy.
 
 ---
 
@@ -12,11 +12,14 @@ Translation Bridge™ enables seamless conversion between 5 major page builders 
 
 Translation Bridge is a universal translation system that converts page builder components between different frameworks:
 
-- **Bootstrap 5.3.3** ↔ Clean HTML/CSS
-- **DIVI Builder** ↔ Shortcode-based layouts
-- **Elementor** ↔ JSON widget structures
-- **Avada Fusion** ↔ Advanced shortcodes
-- **Bricks Builder** ↔ Modern JSON components
+- **Bootstrap 5.3.x** ↔ Clean HTML/CSS
+- **Elementor 3 / Elementor 4 Atomic** ↔ JSON widget structures
+- **DIVI 4 / DIVI 5** ↔ Shortcodes and block markup
+- **Oxygen 4 / Oxygen 6** ↔ JSON builder trees
+- **Gutenberg / Kadence** ↔ WordPress block markup
+- **Bricks / Beaver Builder** ↔ JSON/export data
+- **WPBakery / Avada** ↔ Shortcode-based layouts
+- **Thrive Architect** ↔ TCB HTML
 
 ### **How It Works**
 

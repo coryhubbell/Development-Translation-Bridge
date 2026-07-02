@@ -37,7 +37,7 @@ That's it! You're ready to contribute.
 
 ### Optional (for full development)
 - **Docker & Docker Compose** - For running WordPress locally
-- **Node.js 18+** - For Visual Interface development
+- **Node.js 20.19+** - For Visual Interface development
 - **Make** - For standardized commands (included on macOS/Linux)
 
 ## Development Setup Options
@@ -264,7 +264,7 @@ Tests use [Brain Monkey](https://brain-wp.github.io/BrainMonkey/) for WordPress 
 All pull requests are automatically tested:
 
 - **PHP Matrix**: 8.1, 8.2, 8.3, 8.4, 8.5
-- **Node.js Matrix**: 18, 20 (for admin builds)
+- **Node.js Matrix**: 20.19, 22, 24 (for admin builds)
 - **Code Coverage**: Generated on PHP 8.4
 - **Security**: `composer audit` runs on every job (advisories fail CI)
 

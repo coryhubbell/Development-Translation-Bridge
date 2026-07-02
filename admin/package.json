@@ -1,8 +1,11 @@
 {
   "name": "admin",
   "private": true,
-  "version": "4.3.3",
+  "version": "4.3.4",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -17,10 +20,13 @@
     "allotment": "^1.20.4",
     "axios": "^1.13.2",
     "framer-motion": "^12.23.24",
-    "monaco-editor": "^0.54.0",
+    "monaco-editor": "^0.55.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "zustand": "^5.0.8"
+  },
+  "overrides": {
+    "dompurify": "^3.4.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -24,7 +24,7 @@ Before you begin, ensure you have:
 - **Web Server**: Apache or Nginx
 
 ### Optional (for development)
-- **Node.js 18+** - For Visual Interface development
+- **Node.js 20.19+** - For Visual Interface development
 - **Composer 2.0+** - For dependency management
 - **Docker** - For containerized development
 - **Claude AI Account** - For AI-powered editing features

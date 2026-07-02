@@ -23,7 +23,7 @@
 
 The DevelopmentTranslation Bridge REST API v2 provides programmatic access to the Translation Bridge, allowing you to:
 
-- Convert content between any of the 10 supported frameworks
+- Convert content between any of the 14 supported frameworks
 - Process batch translations asynchronously
 - Validate framework content
 - Manage API keys
@@ -32,18 +32,24 @@ The DevelopmentTranslation Bridge REST API v2 provides programmatic access to th
 
 ### Supported Frameworks
 
-1. Bootstrap 5.3.3
-2. DIVI Builder
-3. Elementor
-4. Avada Fusion
-5. Bricks Builder
-6. WPBakery Page Builder
-7. Beaver Builder
-8. Gutenberg Block Editor
-9. Oxygen Builder
-10. Claude AI-Optimized HTML
+1. Bootstrap 5.3.x
+2. Elementor 3.30.x
+3. Elementor 4 Atomic
+4. DIVI 4
+5. DIVI 5
+6. Oxygen 4
+7. Oxygen 6 / Breakdance
+8. Gutenberg / WordPress core
+9. Bricks Builder
+10. Kadence Blocks
+11. Thrive Architect
+12. WPBakery Page Builder
+13. Beaver Builder
+14. Avada Fusion Builder
 
-**Total Translation Pairs:** 90 (10 frameworks × 9 possible targets)
+**Total Translation Pairs:** 182 (14 frameworks × 13 possible targets)
+
+AI-ready HTML is requested with `ai_ready:true`; it is not a framework key.
 
 ---
 
@@ -199,20 +205,22 @@ curl https://yoursite.com/wp-json/devtb/v2/frameworks
 ```json
 {
   "success": true,
-  "total_frameworks": 10,
-  "translation_pairs": 90,
+  "total_frameworks": 14,
+  "translation_pairs": 182,
   "frameworks": {
     "bootstrap": {
-      "name": "Bootstrap 5.3.3",
-      "type": "HTML/CSS",
+      "name": "Bootstrap 5.3.x",
+      "format": "html",
       "extension": "html",
-      "description": "Clean HTML/CSS framework, perfect for Claude AI"
+      "file_extensions": ["html"],
+      "cms_version": "5.3.x"
     },
     "gutenberg": {
-      "name": "Gutenberg Block Editor",
-      "type": "HTML Comments",
+      "name": "Gutenberg / WordPress core",
+      "format": "block",
       "extension": "html",
-      "description": "WordPress native block editor with 50+ core blocks"
+      "file_extensions": ["html"],
+      "cms_version": "6.9.0"
     }
     // ... other frameworks
   }
@@ -810,7 +818,7 @@ For API support and questions:
 
 ### Version 2.0 (January 2025)
 - Initial release of REST API v2
-- Support for 10 frameworks (90 translation pairs)
+- Support for 14 frameworks (182 translation pairs)
 - API key authentication
 - Rate limiting with 4 tiers
 - Webhook notifications with retry logic

@@ -1,6 +1,6 @@
 # Translation Bridge Skill
 
-Translation Bridge is a universal page builder translation system that converts content between 10 WordPress page builder frameworks with AI-native capabilities.
+Translation Bridge is a universal page builder translation system that converts content between 14 WordPress page builder frameworks with AI-ready annotations as an output option.
 
 ## Overview
 
@@ -46,16 +46,23 @@ devtb validate <framework> <file>
 
 ## Supported Frameworks
 
-1. **Bootstrap 5.3.3** - Clean HTML/CSS
-2. **DIVI Builder** - Shortcodes
-3. **Elementor** - JSON
-4. **Avada Fusion** - HTML
-5. **Bricks Builder** - JSON
-6. **WPBakery** - Shortcodes
-7. **Beaver Builder** - Serialized PHP
-8. **Gutenberg** - HTML comments
-9. **Oxygen Builder** - JSON
-10. **Claude AI** - AI-optimized HTML
+1. **Bootstrap 5.3.x** - Clean HTML/CSS
+2. **Elementor 3.30.x** - JSON
+3. **Elementor 4 Atomic** - JSON
+4. **DIVI 4** - Shortcodes
+5. **DIVI 5** - Block markup
+6. **Oxygen 4** - JSON
+7. **Oxygen 6 / Breakdance** - JSON tree
+8. **Gutenberg / WordPress core** - Block markup
+9. **Bricks Builder** - JSON
+10. **Kadence Blocks** - Block markup
+11. **Thrive Architect** - TCB HTML
+12. **WPBakery Page Builder** - Shortcodes
+13. **Beaver Builder** - JSON/export data
+14. **Avada Fusion Builder** - Shortcodes
+
+AI-ready HTML is a modifier (`--ai-ready` / `ai_ready:true`), not a separate
+framework key.
 
 ## Zone Theory
 
