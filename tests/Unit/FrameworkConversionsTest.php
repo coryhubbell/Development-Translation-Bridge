@@ -297,7 +297,9 @@ HTML;
             ]
         ]);
 
-        // Elementor 4 Atomic - atomic element tree (e-* elTypes)
+        // Elementor 4 Atomic - atomic element tree with the REAL typed-prop
+        // settings (every value wrapped in {"$$type": ..., "value": ...};
+        // verified against the open-source elementor repo).
         self::$sampleInputs['elementor-4'] = json_encode([
             [
                 'id'              => 'e4root1',
@@ -315,7 +317,13 @@ HTML;
                         'elType'          => 'e-heading',
                         'isInner'         => true,
                         'interactions'    => [],
-                        'settings'        => [ 'title' => 'Welcome', 'tag' => 'h2' ],
+                        'settings'        => [
+                            'title' => [
+                                '$$type' => 'html-v3',
+                                'value'  => [ 'content' => [ '$$type' => 'string', 'value' => 'Welcome' ] ],
+                            ],
+                            'tag'   => [ '$$type' => 'string', 'value' => 'h2' ],
+                        ],
                         'editor_settings' => (object) [],
                         'styles'          => (object) [],
                         'elements'        => [],
@@ -326,7 +334,12 @@ HTML;
                         'elType'          => 'e-paragraph',
                         'isInner'         => true,
                         'interactions'    => [],
-                        'settings'        => [ 'text' => 'This is sample Elementor 4 Atomic content.' ],
+                        'settings'        => [
+                            'paragraph' => [
+                                '$$type' => 'html-v3',
+                                'value'  => [ 'content' => [ '$$type' => 'string', 'value' => 'This is sample Elementor 4 Atomic content.' ] ],
+                            ],
+                        ],
                         'editor_settings' => (object) [],
                         'styles'          => (object) [],
                         'elements'        => [],
@@ -337,7 +350,19 @@ HTML;
                         'elType'          => 'e-button',
                         'isInner'         => true,
                         'interactions'    => [],
-                        'settings'        => [ 'text' => 'Learn More', 'link' => [ 'url' => '#', 'target' => '_self' ] ],
+                        'settings'        => [
+                            'text' => [
+                                '$$type' => 'html-v3',
+                                'value'  => [ 'content' => [ '$$type' => 'string', 'value' => 'Learn More' ] ],
+                            ],
+                            'link' => [
+                                '$$type' => 'link',
+                                'value'  => [
+                                    'destination'   => [ '$$type' => 'url', 'value' => '#' ],
+                                    'isTargetBlank' => [ '$$type' => 'boolean', 'value' => false ],
+                                ],
+                            ],
+                        ],
                         'editor_settings' => (object) [],
                         'styles'          => (object) [],
                         'elements'        => [],
@@ -346,50 +371,78 @@ HTML;
             ],
         ]);
 
-        // DIVI 5 - WordPress block markup with the `divi/*` namespace
+        // DIVI 5 - WordPress block markup with the `divi/*` namespace. Content
+        // lives in the TOP-LEVEL `content` attribute group with unicode-escaped
+        // HTML (verified against the Divi 5 block-format docs).
         self::$sampleInputs['divi-5'] = <<<HTML
-<!-- wp:divi/section {"module":{},"builderVersion":"5.0.0"} -->
-<!-- wp:divi/row {"module":{},"builderVersion":"5.0.0"} -->
-<!-- wp:divi/column {"module":{},"builderVersion":"5.0.0"} -->
-<!-- wp:divi/heading {"module":{"content":{"text":{"desktop":{"value":"Welcome"}},"level":{"desktop":{"value":"h2"}}}},"builderVersion":"5.0.0"} /-->
-<!-- wp:divi/text {"module":{"content":{"innerContent":{"desktop":{"value":"This is sample DIVI 5 content."}}}},"builderVersion":"5.0.0"} /-->
-<!-- wp:divi/button {"module":{"content":{"text":{"desktop":{"value":"Learn More"}},"url":{"desktop":{"value":"#"}}}},"builderVersion":"5.0.0"} /-->
+<!-- wp:divi/section {"builderVersion":"5.0.0"} -->
+<!-- wp:divi/row {"builderVersion":"5.0.0"} -->
+<!-- wp:divi/column {"builderVersion":"5.0.0"} -->
+<!-- wp:divi/heading {"content":{"text":{"desktop":{"value":"Welcome"}},"level":{"desktop":{"value":"h2"}}},"builderVersion":"5.0.0"} /-->
+<!-- wp:divi/text {"content":{"innerContent":{"desktop":{"value":"\\u003cp\\u003eThis is sample DIVI 5 content.\\u003c/p\\u003e"}}},"builderVersion":"5.0.0"} /-->
+<!-- wp:divi/button {"content":{"text":{"desktop":{"value":"Learn More"}},"url":{"desktop":{"value":"#"}}},"builderVersion":"5.0.0"} /-->
 <!-- /wp:divi/column -->
 <!-- /wp:divi/row -->
 <!-- /wp:divi/section -->
 HTML;
 
-        // Oxygen 6 - nested JSON tree (Breakdance-proxy schema, EssentialElements\* namespace)
+        // Oxygen 6 - nested JSON tree in the REAL Breakdance shape (verified
+        // against a real export): tree.root envelope, integer ids, the element
+        // payload nested under `data`, content fields under content.content,
+        // and the plural `tags` heading key.
         self::$sampleInputs['oxygen-6'] = json_encode([
-            '_version'    => 1,
-            '_nextNodeId' => 5,
             'tree'        => [
-                [
-                    'id'         => 'n-1',
-                    'type'       => 'EssentialElements\\Section',
-                    'properties' => [],
-                    'children'   => [
+                'root' => [
+                    'id'       => 1,
+                    'data'     => [ 'type' => 'root', 'properties' => [] ],
+                    'children' => [
                         [
-                            'id'         => 'n-2',
-                            'type'       => 'EssentialElements\\Heading',
-                            'properties' => [ 'text' => 'Welcome', 'tag' => 'h2' ],
-                            'children'   => [],
-                        ],
-                        [
-                            'id'         => 'n-3',
-                            'type'       => 'EssentialElements\\Text',
-                            'properties' => [ 'text' => 'This is sample Oxygen 6 content.' ],
-                            'children'   => [],
-                        ],
-                        [
-                            'id'         => 'n-4',
-                            'type'       => 'EssentialElements\\Button',
-                            'properties' => [ 'text' => 'Learn More', 'link' => [ 'url' => '#' ] ],
-                            'children'   => [],
+                            'id'        => 100,
+                            'data'      => [
+                                'type'       => 'EssentialElements\\Section',
+                                'properties' => [],
+                            ],
+                            'children'  => [
+                                [
+                                    'id'        => 101,
+                                    'data'      => [
+                                        'type'       => 'EssentialElements\\Heading',
+                                        'properties' => [
+                                            'content' => [ 'content' => [ 'text' => 'Welcome', 'tags' => 'h2' ] ],
+                                        ],
+                                    ],
+                                    'children'  => [],
+                                    '_parentId' => 100,
+                                ],
+                                [
+                                    'id'        => 102,
+                                    'data'      => [
+                                        'type'       => 'EssentialElements\\Text',
+                                        'properties' => [
+                                            'content' => [ 'content' => [ 'text' => 'This is sample Oxygen 6 content.' ] ],
+                                        ],
+                                    ],
+                                    'children'  => [],
+                                    '_parentId' => 100,
+                                ],
+                                [
+                                    'id'        => 103,
+                                    'data'      => [
+                                        'type'       => 'EssentialElements\\Button',
+                                        'properties' => [
+                                            'content' => [ 'content' => [ 'text' => 'Learn More', 'link' => [ 'url' => '#' ] ] ],
+                                        ],
+                                    ],
+                                    'children'  => [],
+                                    '_parentId' => 100,
+                                ],
+                            ],
+                            '_parentId' => 1,
                         ],
                     ],
                 ],
             ],
+            '_nextNodeId' => 104,
         ]);
 
         // DIVI - Shortcodes
@@ -754,22 +807,31 @@ HTML;
     }
 
     /**
-     * Assert Oxygen 6 output is a wrapped nested JSON tree (Breakdance-proxy schema).
+     * Assert Oxygen 6 output is a wrapped nested JSON tree.
      *
-     * Expected shape: `{ "_version": 1, "_nextNodeId": <int>, "tree": [ <node>, ... ] }`
-     * where each node is `{ id, type, properties, children: [<node>, ...] }` and
-     * `type` is a namespaced string containing a backslash.
+     * The node shape is verified against a real Breakdance export: the payload
+     * wraps a `root` node — `{ "tree": { "root": { id, data, children } },
+     * "_nextNodeId": <int> }` — and each element node is
+     * `{ id: <int>, data: { type, properties }, children: [<node>, ...],
+     * _parentId: <int> }` with a namespaced `data.type`.
      *
      * @param array  $decoded Decoded JSON output.
      * @param string $source  Source framework, for error messages.
      */
     private function assertOxygen6TreeStructure( array $decoded, string $source ): void {
         $this->assertArrayHasKey( 'tree', $decoded, "{$source} → oxygen-6: payload must have a 'tree' key" );
-        $this->assertIsArray( $decoded['tree'], "{$source} → oxygen-6: 'tree' must be an array of root nodes" );
+        $this->assertIsArray( $decoded['tree'], "{$source} → oxygen-6: 'tree' must be an array" );
         $this->assertArrayHasKey( '_nextNodeId', $decoded, "{$source} → oxygen-6: payload must carry '_nextNodeId' for collision-free injects" );
 
-        foreach ( $decoded['tree'] as $i => $node ) {
-            $this->walkOxygen6Node( $node, "{$source} → oxygen-6: tree[{$i}]" );
+        $this->assertArrayHasKey( 'root', $decoded['tree'], "{$source} → oxygen-6: tree must wrap a 'root' node" );
+        $root = $decoded['tree']['root'];
+        $this->assertIsArray( $root, "{$source} → oxygen-6: root must be a node" );
+        $this->assertSame( 1, $root['id'] ?? null, "{$source} → oxygen-6: root id must be 1" );
+        $this->assertSame( 'root', $root['data']['type'] ?? null, "{$source} → oxygen-6: root data.type must be 'root'" );
+        $this->assertArrayHasKey( 'children', $root, "{$source} → oxygen-6: root missing children" );
+
+        foreach ( $root['children'] as $i => $node ) {
+            $this->walkOxygen6Node( $node, "{$source} → oxygen-6: root/children[{$i}]" );
         }
     }
 
@@ -822,15 +884,19 @@ HTML;
     private function walkOxygen6Node( $node, string $path ): void {
         $this->assertIsArray( $node, "{$path}: node is not an array" );
         $this->assertArrayHasKey( 'id', $node, "{$path}: node missing id" );
-        $this->assertArrayHasKey( 'type', $node, "{$path}: node missing type" );
-        $this->assertIsString( $node['type'], "{$path}: type must be a string" );
+        $this->assertIsInt( $node['id'], "{$path}: node id must be an integer" );
+        $this->assertArrayHasKey( '_parentId', $node, "{$path}: node missing _parentId back-reference" );
+        $this->assertArrayHasKey( 'data', $node, "{$path}: node missing data envelope" );
+        $this->assertIsArray( $node['data'], "{$path}: data must be an array" );
+        $this->assertArrayHasKey( 'type', $node['data'], "{$path}: node missing data.type" );
+        $this->assertIsString( $node['data']['type'], "{$path}: data.type must be a string" );
         $this->assertStringContainsString(
             '\\',
-            $node['type'],
-            "{$path}: type '{$node['type']}' must be namespaced (e.g. EssentialElements\\Heading)"
+            $node['data']['type'],
+            "{$path}: data.type '{$node['data']['type']}' must be namespaced (e.g. EssentialElements\\Heading)"
         );
-        $this->assertArrayHasKey( 'properties', $node, "{$path}: node missing properties" );
-        $this->assertIsArray( $node['properties'], "{$path}: properties must be an array" );
+        $this->assertArrayHasKey( 'properties', $node['data'], "{$path}: node missing data.properties" );
+        $this->assertIsArray( $node['data']['properties'], "{$path}: data.properties must be an array" );
         $this->assertArrayHasKey( 'children', $node, "{$path}: node missing children" );
         $this->assertIsArray( $node['children'], "{$path}: children must be an array" );
 

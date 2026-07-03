@@ -90,15 +90,30 @@ whose v4 parser is not production-ready yet.
 | `beaver-builder` | Beaver Builder 2.10.2 | JSON | |
 | `avada` | Avada 7.15.3 | Shortcodes | `[fusion_*]` |
 
-### Proxy-schema disclosure
+### Schema verification status
 
-The `oxygen-6`, `divi-5`, and `elementor-4` paths in v4.3.0 are implemented
-against published documentation but **not yet verified against real exports**.
-Structural shape (block delimiters, atomic field set, namespaced types) is
-asserted by the test suite; specific internal property keys may need a
-follow-up patch once real fixtures are available. See the
-[v4.3.0 release notes](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.0)
-for the single-helper locations to patch.
+The `oxygen-6`, `divi-5`, and `elementor-4` paths shipped in v4.3.0 as
+documentation-based proxies; they have since been **verified and corrected
+against real evidence**:
+
+- **`elementor-4`** — verified against the open-source
+  [elementor/elementor](https://github.com/elementor/elementor) repository
+  (`modules/atomic-widgets`): settings now use the real typed-prop system
+  (`$$type` envelopes, `html-v3` content, `link.destination`,
+  `Style_Definition` variants) and only real atomic element types are emitted.
+- **`divi-5`** — verified against the Divi 5 block-format docs: content lives
+  in the top-level `content` attribute group with unicode-escaped HTML and
+  the responsive `desktop.value` wrapper.
+- **`oxygen-6`** — node shape verified against a **real Breakdance element
+  export** (committed at `tests/fixtures/oxygen6/`): integer ids,
+  `data`-nested type/properties, `_parentId` back-references, and
+  `content.content` field grouping. Oxygen 6 shares ~80% of Breakdance's
+  codebase; if Oxygen 6 ships its own element namespace, the parser's
+  namespace-agnostic lookup already handles it and the emitter's prefix is a
+  single constant.
+
+`tests/Unit/ProxySchemaVerificationTest.php` pins all of the above, including
+parsing the real export end-to-end.
 
 ---
 
@@ -580,10 +595,14 @@ keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. Remaining 4.x.y work:
 
-- Verify the v4.3.0 proxy schemas (`oxygen-6`, `divi-5`, `elementor-4`)
-  against real exports and patch the isolated extractor helpers as needed.
+- ~~Verify the v4.3.0 proxy schemas (`oxygen-6`, `divi-5`, `elementor-4`)
+  against real exports~~ — **done**: verified against the open-source
+  elementor repo, the Divi 5 block-format docs, and a real Breakdance export
+  (see [Schema verification status](#schema-verification-status)).
 - Responsive breakpoint round-tripping for DIVI 5 / Elementor 4 / Oxygen 6
   (v1 reads desktop values only).
+- An Oxygen 6-specific export fixture (vs. the Breakdance one) would close the
+  last ~20% of schema uncertainty — contributions welcome.
 
 A 5.x line — if it happens — would likely consolidate the PHP and Python
 engines onto a single shared schema and drop the legacy HTML-intermediate

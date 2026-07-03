@@ -1,27 +1,35 @@
 <?php
 /**
- * Oxygen 6 Converter (Breakdance-proxy schema).
+ * Oxygen 6 Converter (Breakdance-based schema).
  *
  * Emits the wrapped Oxygen 6 JSON payload:
  *
  *     {
- *       "_version": 1,
- *       "_nextNodeId": <int>,
- *       "tree": [
- *         {
- *           "id": "n-1",
- *           "type": "EssentialElements\\Section",
- *           "properties": {...},
- *           "children": [ <node>, ... ]
+ *       "tree": {
+ *         "root": {
+ *           "id": 1,
+ *           "data": { "type": "root", "properties": [] },
+ *           "children": [
+ *             {
+ *               "id": 2,
+ *               "data": {
+ *                 "type": "EssentialElements\\Section",
+ *                 "properties": { "content": { "content": {...} }, "design": {...} }
+ *               },
+ *               "children": [ <node>, ... ],
+ *               "_parentId": 1
+ *             }
+ *           ]
  *         }
- *       ]
+ *       },
+ *       "_nextNodeId": <int>
  *     }
  *
- * The schema is a proxy based on Breakdance's `_breakdance_data` format
- * (Oxygen 6 shares ~80% of Breakdance's codebase). Element type namespace and
- * property key conventions are draft assumptions until verified against a real
- * Oxygen 6 export. The namespace is centralized in `ELEMENT_NAMESPACE` so a
- * single change updates every emitted type.
+ * The node shape is VERIFIED against a real Breakdance element export
+ * (tests/fixtures/oxygen6/breakdance-element-export.json); Oxygen 6 shares
+ * ~80% of Breakdance's codebase. The namespace is centralized in
+ * `ELEMENT_NAMESPACE` so a single change updates every emitted type if
+ * Oxygen 6 ends up shipping its own prefix.
  *
  * @package DevelopmentTranslation_Bridge
  * @subpackage Translation_Bridge
@@ -73,7 +81,7 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 		'heading'        => 'Heading',
 		'image'          => 'Image',
 		'button'         => 'Button',
-		'link'           => 'Link',
+		'link'           => 'TextLink',
 		'icon'           => 'Icon',
 		'video'          => 'Video',
 		'audio'          => 'Audio',
@@ -87,14 +95,14 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 		'slider'         => 'Slider',
 		'card'           => 'Card',
 		'testimonial'    => 'Testimonial',
-		'pricing-table'  => 'Pricing',
+		'pricing-table'  => 'PricingTable',
 		'counter'        => 'Counter',
-		'progress'       => 'Progress',
+		'progress'       => 'ProgressBar',
 		'map'            => 'Map',
 		'alert'          => 'Alert',
 		'social-icons'   => 'SocialIcons',
 		'countdown'      => 'Countdown',
-		'code'           => 'Code',
+		'code'           => 'CodeBlock',
 		'nav'            => 'Menu',
 		'menu'           => 'Menu',
 		'blockquote'     => 'Text',
@@ -116,24 +124,34 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 	 * @return string Pretty-printed JSON.
 	 */
 	public function convert( $component ) {
-		$this->node_counter = 0;
+		$this->node_counter = 1; // id 1 is reserved for the root node.
 
 		$components = is_array( $component ) ? $component : [ $component ];
 
-		$tree = [];
+		$children = [];
 		foreach ( $components as $comp ) {
 			if ( $comp instanceof DEVTB_Component ) {
-				$node = $this->convert_component( $comp );
+				$node = $this->convert_component( $comp, 1 );
 				if ( $node ) {
-					$tree[] = $node;
+					$children[] = $node;
 				}
 			}
 		}
 
+		// Real _breakdance_data envelope: a `tree` object wrapping a `root`
+		// node, plus the monotonic `_nextNodeId` collision-avoidance counter.
 		$payload = [
-			'_version'    => 1,
+			'tree'        => [
+				'root' => [
+					'id'       => 1,
+					'data'     => [
+						'type'       => 'root',
+						'properties' => [],
+					],
+					'children' => $children,
+				],
+			],
 			'_nextNodeId' => $this->node_counter + 1,
-			'tree'        => $tree,
 		];
 
 		return wp_json_encode( $payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
@@ -149,7 +167,7 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 	 * @param DEVTB_Component $component Component to convert.
 	 * @return array<string, mixed>|null Node array, or null if the type cannot be mapped.
 	 */
-	public function convert_component( DEVTB_Component $component ): ?array {
+	public function convert_component( DEVTB_Component $component, int $parent_id = 1 ): ?array {
 		$local = $this->type_map[ $component->type ] ?? null;
 		if ( $local === null ) {
 			return null;
@@ -157,16 +175,22 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 
 		$properties = $this->build_properties( $local, $component );
 
-		$node = [
-			'id'         => $this->generate_id(),
-			'type'       => self::ELEMENT_NAMESPACE . $local,
-			'properties' => $properties,
-			'children'   => [],
+		// Verified against a real Breakdance export: integer ids, the element
+		// payload nested under `data`, and a `_parentId` back-reference.
+		$node_id = $this->generate_id();
+		$node    = [
+			'id'        => $node_id,
+			'data'      => [
+				'type'       => self::ELEMENT_NAMESPACE . $local,
+				'properties' => $properties,
+			],
+			'children'  => [],
+			'_parentId' => $parent_id,
 		];
 
 		if ( ! empty( $component->children ) ) {
 			foreach ( $component->children as $child ) {
-				$child_node = $this->convert_component( $child );
+				$child_node = $this->convert_component( $child, $node_id );
 				if ( $child_node ) {
 					$node['children'][] = $child_node;
 				}
@@ -192,52 +216,61 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 		$styles   = is_array( $component->styles ?? null ) ? $component->styles : [];
 		$content  = isset( $component->content ) ? (string) $component->content : '';
 
-		$properties = [];
+		$fields = [];
 
 		switch ( $local ) {
 			case 'Heading':
-				$properties['text'] = $content !== '' ? $content : (string) ( $attrs['heading'] ?? $attrs['title'] ?? '' );
-				$properties['tag']  = (string) ( $attrs['level'] ?? $attrs['tag'] ?? 'h2' );
+				$fields['text'] = $content !== '' ? $content : (string) ( $attrs['heading'] ?? $attrs['title'] ?? '' );
+				// Real exports use the plural `tags` key for the heading tag.
+				$fields['tags'] = (string) ( $attrs['level'] ?? $attrs['tag'] ?? 'h2' );
 				break;
 			case 'Text':
 			case 'RichText':
-				$properties['text'] = $content !== '' ? $content : (string) ( $attrs['text'] ?? '' );
+				$fields['text'] = $content !== '' ? $content : (string) ( $attrs['text'] ?? '' );
 				break;
 			case 'Button':
-			case 'Link':
-				$properties['text'] = $content !== '' ? $content : (string) ( $attrs['label'] ?? $attrs['text'] ?? '' );
+			case 'TextLink':
+				$fields['text'] = $content !== '' ? $content : (string) ( $attrs['label'] ?? $attrs['text'] ?? '' );
 				if ( isset( $attrs['url'] ) ) {
-					$properties['link'] = [
+					$fields['link'] = [
 						'url'    => (string) $attrs['url'],
 						'target' => isset( $attrs['target'] ) ? (string) $attrs['target'] : '_self',
 					];
 				}
 				break;
 			case 'Image':
-				$properties['src'] = (string) ( $attrs['image_url'] ?? $attrs['src'] ?? '' );
-				$properties['alt'] = (string) ( $attrs['alt_text'] ?? $attrs['alt'] ?? '' );
+				$fields['src'] = (string) ( $attrs['image_url'] ?? $attrs['src'] ?? '' );
+				$fields['alt'] = (string) ( $attrs['alt_text'] ?? $attrs['alt'] ?? '' );
 				break;
 			case 'Icon':
-				$properties['icon'] = (string) ( $attrs['icon'] ?? '' );
+				$fields['icon'] = (string) ( $attrs['icon'] ?? '' );
 				break;
-			case 'Code':
-				$properties['code'] = $content;
+			case 'CodeBlock':
+				// Real CodeBlock exports carry php_code / javascript_code;
+				// php_code accepts raw HTML too.
+				$fields['php_code'] = $content;
 				break;
 			default:
 				if ( $content !== '' ) {
-					$properties['text'] = $content;
+					$fields['text'] = $content;
 				}
 				break;
 		}
 
 		// Pass through any extra universal attributes that didn't map to a
-		// well-known property, so they aren't silently dropped.
+		// well-known field, so they aren't silently dropped.
 		foreach ( $attrs as $key => $value ) {
-			if ( ! array_key_exists( $key, $properties ) && is_scalar( $value ) ) {
-				$properties[ $key ] = $value;
+			if ( ! array_key_exists( $key, $fields ) && is_scalar( $value ) ) {
+				$fields[ $key ] = $value;
 			}
 		}
 
+		// Verified property layout: content fields nest under content.content;
+		// design data sits alongside in its own section.
+		$properties = [];
+		if ( ! empty( $fields ) ) {
+			$properties['content'] = [ 'content' => $fields ];
+		}
 		if ( ! empty( $styles ) ) {
 			$properties['design'] = $styles;
 		}
@@ -246,13 +279,13 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 	}
 
 	/**
-	 * Generate a deterministic node id ("n-1", "n-2", ...) and advance the counter.
+	 * Generate a monotonically increasing integer node id.
 	 *
-	 * @return string
+	 * @return int
 	 */
-	private function generate_id(): string {
+	private function generate_id(): int {
 		$this->node_counter++;
-		return 'n-' . $this->node_counter;
+		return $this->node_counter;
 	}
 
 	/**
@@ -284,7 +317,7 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 			return 0.0;
 		}
 
-		$confidence = 0.75; // Base — proxy schema, real Oxygen 6 fixture not yet verified.
+		$confidence = 0.85; // Base — node shape verified against a real Breakdance export; Oxygen 6-specific deltas may remain.
 
 		if ( isset( $component->metadata['source_framework'] ) && $component->metadata['source_framework'] === 'oxygen-6' ) {
 			$confidence = 0.95;
@@ -305,12 +338,19 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 	 */
 	public function get_fallback( DEVTB_Component $component ) {
 		return [
-			'id'         => $this->generate_id(),
-			'type'       => self::ELEMENT_NAMESPACE . 'Text',
-			'properties' => [
-				'text' => $component->content !== '' ? $component->content : 'Unsupported component: ' . $component->type,
+			'id'        => $this->generate_id(),
+			'data'      => [
+				'type'       => self::ELEMENT_NAMESPACE . 'Text',
+				'properties' => [
+					'content' => [
+						'content' => [
+							'text' => $component->content !== '' ? $component->content : 'Unsupported component: ' . $component->type,
+						],
+					],
+				],
 			],
-			'children'   => [],
+			'children'  => [],
+			'_parentId' => 1,
 		];
 	}
 }

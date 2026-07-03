@@ -864,64 +864,72 @@ class TestOxygen6Converter:
     """Test Oxygen6Converter class.
 
     Oxygen 6 is a ground-up rewrite built on Breakdance — incompatible with
-    classic Oxygen. These tests pin the proxy schema shape so a future fixture
-    update (real Oxygen 6 export) lights up only the schema-specific fields.
+    classic Oxygen. The node shape asserted here is verified against a real
+    Breakdance export: integer ids, the element payload nested under `data`,
+    `_parentId` back-references, and content fields under
+    `properties.content.content` (heading tag key is the plural `tags`).
     """
 
     def test_convert_returns_wrapped_payload(self, sample_elementor_data):
-        """Output must be the wrapped payload with _version/_nextNodeId/tree."""
+        """Output must be the tree.root envelope with _nextNodeId."""
         result = json.loads(Oxygen6Converter().convert(sample_elementor_data))
         assert isinstance(result, dict)
-        assert result.get("_version") == 1
         assert isinstance(result.get("_nextNodeId"), int)
-        assert isinstance(result.get("tree"), list)
-        assert result["tree"], "tree must not be empty for non-trivial input"
+        root = result.get("tree", {}).get("root")
+        assert isinstance(root, dict), "tree must wrap a root node"
+        assert root["id"] == 1
+        assert root["data"]["type"] == "root"
+        assert root["children"], "root children must not be empty for non-trivial input"
 
     def test_nodes_are_nested_with_namespaced_types(self, sample_elementor_data):
-        """Every node has id/type/properties/children; type is namespaced; hierarchy nests."""
+        """Every node nests type/properties under `data`; type is namespaced."""
         payload = Oxygen6Converter().convert_to_dict(sample_elementor_data)
 
-        def walk(node, path="tree[0]"):
+        def walk(node, parent_id, path):
             assert isinstance(node, dict), f"{path}: not a dict"
-            for key in ("id", "type", "properties", "children"):
+            for key in ("id", "data", "children", "_parentId"):
                 assert key in node, f"{path}: missing {key!r}"
-            assert isinstance(node["type"], str)
-            assert "\\" in node["type"], (
-                f"{path}: type {node['type']!r} must be namespaced "
+            assert isinstance(node["id"], int), f"{path}: id must be an integer"
+            assert node["_parentId"] == parent_id, f"{path}: bad _parentId"
+            data = node["data"]
+            assert isinstance(data["type"], str)
+            assert "\\" in data["type"], (
+                f"{path}: type {data['type']!r} must be namespaced "
                 "(e.g. EssentialElements\\Heading)"
             )
-            assert isinstance(node["properties"], dict)
+            assert isinstance(data["properties"], dict)
             assert isinstance(node["children"], list)
             for i, child in enumerate(node["children"]):
-                walk(child, f"{path}/children[{i}]")
+                walk(child, node["id"], f"{path}/children[{i}]")
 
-        for i, root in enumerate(payload["tree"]):
-            walk(root, f"tree[{i}]")
+        root = payload["tree"]["root"]
+        for i, child in enumerate(root["children"]):
+            walk(child, root["id"], f"root/children[{i}]")
 
     def test_node_ids_are_unique_and_match_nextnodeid(self, sample_elementor_data):
         """Generated ids must be unique; _nextNodeId points one past the max."""
         payload = Oxygen6Converter().convert_to_dict(sample_elementor_data)
 
-        ids = []
+        ids = [payload["tree"]["root"]["id"]]
 
         def collect(node):
             ids.append(node["id"])
             for child in node["children"]:
                 collect(child)
 
-        for root in payload["tree"]:
-            collect(root)
+        for child in payload["tree"]["root"]["children"]:
+            collect(child)
 
         assert len(ids) == len(set(ids)), "node ids must be unique within the payload"
-        # Counter is monotonic 1..N, so _nextNodeId should equal N + 1.
+        # Counter is monotonic 1..N (root included), so _nextNodeId == N + 1.
         assert payload["_nextNodeId"] == len(ids) + 1
 
-    def test_heading_carries_text_and_tag(self, sample_elementor_data):
-        """Heading nodes must surface `text` and `tag` in their properties."""
+    def test_heading_carries_text_and_tags(self, sample_elementor_data):
+        """Heading nodes surface text + plural `tags` under content.content."""
         payload = Oxygen6Converter().convert_to_dict(sample_elementor_data)
 
         def find(node, type_suffix):
-            if node["type"].endswith(type_suffix):
+            if node["data"]["type"].endswith(type_suffix):
                 return node
             for child in node["children"]:
                 hit = find(child, type_suffix)
@@ -930,14 +938,15 @@ class TestOxygen6Converter:
             return None
 
         heading = None
-        for root in payload["tree"]:
-            heading = find(root, "Heading")
+        for child in payload["tree"]["root"]["children"]:
+            heading = find(child, "Heading")
             if heading:
                 break
 
         assert heading is not None, "expected at least one Heading node"
-        assert "text" in heading["properties"]
-        assert "tag" in heading["properties"]
+        fields = heading["data"]["properties"]["content"]["content"]
+        assert "text" in fields
+        assert "tags" in fields
 
     def test_get_framework(self):
         assert Oxygen6Converter().get_framework() == "oxygen-6"

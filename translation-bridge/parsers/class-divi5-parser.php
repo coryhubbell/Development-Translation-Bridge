@@ -243,8 +243,7 @@ class DEVTB_DIVI5_Parser implements DEVTB_Parser_Interface {
 	 * @return string
 	 */
 	private function extract_content( string $local_name, array $attrs, string $inner_html ): string {
-		$module  = is_array( $attrs['module'] ?? null ) ? $attrs['module'] : [];
-		$content = is_array( $module['content'] ?? null ) ? $module['content'] : [];
+		$content = $this->content_group( $attrs );
 
 		switch ( $local_name ) {
 			case 'text':
@@ -260,6 +259,26 @@ class DEVTB_DIVI5_Parser implements DEVTB_Parser_Interface {
 			default:
 				return $inner_html !== '' ? $inner_html : (string) $this->desktop_value( $content['text'] ?? '' );
 		}
+	}
+
+	/**
+	 * Locate the content attribute group.
+	 *
+	 * Verified against the Divi 5 block-format docs: content lives in a
+	 * TOP-LEVEL `content` group (`attrs.content.innerContent` etc.); the
+	 * legacy proxy shape nested it under `module.content`, which is kept as
+	 * a fallback for back-compat.
+	 *
+	 * @param array $attrs Block attributes.
+	 * @return array
+	 */
+	private function content_group( array $attrs ): array {
+		if ( is_array( $attrs['content'] ?? null ) ) {
+			return $attrs['content'];
+		}
+
+		$module = is_array( $attrs['module'] ?? null ) ? $attrs['module'] : [];
+		return is_array( $module['content'] ?? null ) ? $module['content'] : [];
 	}
 
 	/**
@@ -289,8 +308,7 @@ class DEVTB_DIVI5_Parser implements DEVTB_Parser_Interface {
 	 * @return array
 	 */
 	private function normalize_attributes( string $local_name, array $attrs ): array {
-		$module  = is_array( $attrs['module'] ?? null ) ? $attrs['module'] : [];
-		$content = is_array( $module['content'] ?? null ) ? $module['content'] : [];
+		$content = $this->content_group( $attrs );
 
 		$normalized = [];
 

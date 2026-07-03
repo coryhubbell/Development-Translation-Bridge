@@ -1,22 +1,26 @@
 <?php
 /**
- * Oxygen 6 Parser (Breakdance-proxy schema).
+ * Oxygen 6 Parser (Breakdance-based schema).
  *
  * Oxygen 6 is a ground-up rewrite built on the Breakdance codebase (~80% shared).
  * Classic Oxygen (ct_* shortcode vocabulary, ct_parent linkage) is incompatible
- * with Oxygen 6 per Oxygen's own migration docs. This parser targets the new
- * format described by upstream research:
+ * with Oxygen 6 per Oxygen's own migration docs. The node shape accepted here
+ * is VERIFIED against a real Breakdance element export
+ * (tests/fixtures/oxygen6/breakdance-element-export.json):
  *
- * - Data lives in `_breakdance_data` post meta (or an equivalent Oxygen 6 alias).
- * - A nested JSON tree (not a flat ct_parent table) with each node holding
- *   `id`, `type`, `properties`, `children`.
- * - Element `type` uses a namespaced prefix, e.g. `EssentialElements\Heading`.
+ * - Data lives in `_breakdance_data` post meta (or an equivalent Oxygen 6 alias),
+ *   with a `tree` object wrapping a `root` node.
+ * - Node ids are integers; children carry a `_parentId` back-reference.
+ * - Each node nests `type` + `properties` under a `data` key, e.g.
+ *   `{"id": 102, "data": {"type": "EssentialElements\Heading", "properties":
+ *   {...}}, "children": [...], "_parentId": 101}`.
+ * - Content fields nest under `properties.content.content` (heading tag key is
+ *   the plural `tags`); design/meta/settings are sibling sections.
  * - A `_nextNodeId` counter avoids collisions when injecting elements.
  *
- * Until we can verify against a real Oxygen 6 export, the type prefix
- * (`EssentialElements\\` vs. an Oxygen-specific namespace) and the precise
- * shape of `properties` are draft assumptions. Both are isolated to the
- * type map and `extract_*` helpers so a single patch can correct them.
+ * The legacy proxy shape (flat `type`/`properties` at the node top level) is
+ * still accepted for back-compat. An Oxygen 6-specific namespace variant, if
+ * one emerges, is handled by namespace-agnostic local-name lookup below.
  *
  * @package DevelopmentTranslation_Bridge
  * @subpackage Translation_Bridge
@@ -93,6 +97,10 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 		'SocialIcons'   => 'social-icons',
 		'Countdown'     => 'countdown',
 		'Code'          => 'code',
+		'CodeBlock'     => 'code',
+		'TextLink'      => 'button',
+		'Columns'       => 'row',
+		'PostsLoop'     => 'container',
 	];
 
 	/**
@@ -141,6 +149,18 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 	private function extract_root_nodes( array $content ): array {
 		if ( isset( $content['tree'] ) && is_array( $content['tree'] ) ) {
 			$tree = $content['tree'];
+
+			// Real _breakdance_data shape: tree wraps a `root` node whose
+			// children are the page elements. The root node itself carries
+			// `data.type === "root"` and is not a renderable element.
+			if ( isset( $tree['root'] ) && is_array( $tree['root'] ) ) {
+				$root = $tree['root'];
+				if ( isset( $root['children'] ) && is_array( $root['children'] ) ) {
+					return array_values( array_filter( $root['children'], 'is_array' ) );
+				}
+				return $this->looks_like_node( $root ) ? [ $root ] : [];
+			}
+
 			return $this->looks_like_node( $tree ) ? [ $tree ] : array_values( array_filter( $tree, 'is_array' ) );
 		}
 
@@ -148,18 +168,25 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 			return [ $content ];
 		}
 
+		// Element-copy envelope: { "source": ..., "element": { node } }.
+		if ( isset( $content['element'] ) && is_array( $content['element'] ) && $this->looks_like_node( $content['element'] ) ) {
+			return [ $content['element'] ];
+		}
+
 		// Bare list of nodes.
 		return array_values( array_filter( $content, 'is_array' ) );
 	}
 
 	/**
-	 * Heuristic: a node is an associative array with a `type` key.
+	 * Heuristic: a node is an associative array with a `type` key, either at
+	 * the top level (legacy proxy shape) or nested under `data` (real
+	 * Breakdance/Oxygen 6 shape).
 	 *
 	 * @param array $candidate Candidate array.
 	 * @return bool
 	 */
 	private function looks_like_node( array $candidate ): bool {
-		return isset( $candidate['type'] );
+		return isset( $candidate['type'] ) || isset( $candidate['data']['type'] );
 	}
 
 	/**
@@ -174,7 +201,10 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 			return null;
 		}
 
-		$type_full = isset( $element['type'] ) ? (string) $element['type'] : '';
+		// Real Breakdance/Oxygen 6 nodes nest type + properties under `data`;
+		// the legacy proxy shape carried them at the node top level.
+		$data      = isset( $element['data'] ) && is_array( $element['data'] ) ? $element['data'] : $element;
+		$type_full = isset( $data['type'] ) ? (string) $data['type'] : '';
 		if ( $type_full === '' ) {
 			return null;
 		}
@@ -182,10 +212,11 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 		$local_type     = $this->local_name( $type_full );
 		$universal_type = $this->type_map[ $local_type ] ?? 'unknown';
 
-		$properties = isset( $element['properties'] ) && is_array( $element['properties'] ) ? $element['properties'] : [];
+		$properties = isset( $data['properties'] ) && is_array( $data['properties'] ) ? $data['properties'] : [];
+		$flat       = $this->flatten_properties( $properties );
 
-		$attributes = $this->normalize_properties( $properties );
-		$content    = $this->extract_content( $local_type, $properties );
+		$attributes = $this->normalize_properties( $flat );
+		$content    = $this->extract_content( $local_type, $flat );
 		$category   = $this->get_category( $universal_type );
 
 		$component = new DEVTB_Component( [
@@ -225,6 +256,43 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 	}
 
 	/**
+	 * Flatten the sectioned Breakdance property bag into one content bag.
+	 *
+	 * Real exports group properties into `content` / `design` / `settings` /
+	 * `meta` sections, with content fields nested one level deeper under
+	 * `content.content` (e.g. heading text at `properties.content.content.text`).
+	 * The legacy proxy shape carried content fields at the top level; both are
+	 * accepted here. Design/meta/settings sections are excluded — they are
+	 * preserved verbatim in metadata.
+	 *
+	 * @param array $properties Raw element properties.
+	 * @return array Flat content-field bag.
+	 */
+	private function flatten_properties( array $properties ): array {
+		$flat = [];
+
+		// Legacy flat proxy shape: everything except known section keys.
+		foreach ( $properties as $key => $value ) {
+			if ( in_array( $key, [ 'content', 'design', 'settings', 'meta' ], true ) ) {
+				continue;
+			}
+			$flat[ $key ] = $value;
+		}
+
+		// Real shape: properties.content.<section>.* — usually the section is
+		// itself named `content`; merge every sub-section's fields.
+		if ( isset( $properties['content'] ) && is_array( $properties['content'] ) ) {
+			foreach ( $properties['content'] as $section ) {
+				if ( is_array( $section ) ) {
+					$flat = array_merge( $flat, $section );
+				}
+			}
+		}
+
+		return $flat;
+	}
+
+	/**
 	 * Best-effort mapping from Oxygen 6 property bag to universal attributes.
 	 *
 	 * Real Oxygen 6 properties are CSS-mapped and split content vs. design. The
@@ -246,6 +314,7 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 			'url'            => 'url',
 			'href'           => 'url',
 			'tag'            => 'level',
+			'tags'           => 'level',
 			'level'          => 'level',
 			'src'            => 'image_url',
 			'image'          => 'image_url',
@@ -290,9 +359,11 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 				return (string) ( $properties['text'] ?? $properties['content'] ?? $properties['html'] ?? '' );
 			case 'Button':
 			case 'Link':
+			case 'TextLink':
 				return (string) ( $properties['text'] ?? $properties['label'] ?? '' );
 			case 'Code':
-				return (string) ( $properties['code'] ?? $properties['html'] ?? '' );
+			case 'CodeBlock':
+				return (string) ( $properties['php_code'] ?? $properties['code'] ?? $properties['html'] ?? '' );
 			default:
 				return (string) ( $properties['text'] ?? $properties['content'] ?? '' );
 		}
@@ -350,7 +421,7 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 
 		$nodes = $this->extract_root_nodes( $content );
 		foreach ( $nodes as $node ) {
-			if ( is_array( $node ) && isset( $node['type'] ) ) {
+			if ( is_array( $node ) && $this->looks_like_node( $node ) ) {
 				return true;
 			}
 		}

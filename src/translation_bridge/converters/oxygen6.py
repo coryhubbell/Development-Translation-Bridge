@@ -1,21 +1,41 @@
 """
-Translation Bridge v4 - Oxygen 6 (Breakdance-proxy) JSON Converter.
+Translation Bridge v4 - Oxygen 6 (Breakdance-based) JSON Converter.
 
 Oxygen 6 is a ground-up rewrite of Oxygen Builder, built on the Breakdance
 codebase (~80% shared). Classic Oxygen (``ct_*`` shortcode vocabulary, flat
 ``ct_parent`` linkage) is declared incompatible with Oxygen 6 by Oxygen's own
-migration docs. This converter targets the new format described by upstream
-research:
+migration docs.
+
+The node shape below is **verified against a real Breakdance export**
+(element-copy JSON from a production site):
 
 * Data lives in ``_breakdance_data`` post meta (or an Oxygen 6 alias).
-* A **nested** JSON tree (not a flat parent-id table). Each node holds
-  ``id``, ``type``, ``properties``, and a ``children`` list of nested nodes.
-* Element ``type`` is namespaced, e.g. ``EssentialElements\\Heading``.
+* Node ids are integers; children carry a ``_parentId`` back-reference.
+* Each node nests its payload under ``data``::
+
+      {
+          "id": 102,
+          "data": {
+              "type": "EssentialElements\\Heading",
+              "properties": {
+                  "content": {"content": {"text": "Genre: ", "tags": "h4"}},
+                  "design": { ... },
+                  "meta": {"friendlyName": "Filters"}
+              }
+          },
+          "children": [ ... ],
+          "_parentId": 101
+      }
+
+* ``properties`` groups into ``content`` / ``design`` / ``settings`` / ``meta``
+  sections; content fields nest one level deeper under ``content.content``
+  (e.g. heading text at ``properties.content.content.text`` with the tag under
+  ``tags`` — plural).
 * A monotonic ``_nextNodeId`` counter avoids id collisions when injecting.
 
-Until verified against a real Oxygen 6 export, the type prefix and property
-key conventions are draft assumptions, isolated to the type map and
-``_build_properties`` so a single patch can correct them.
+The full-document envelope (``tree`` wrapping a ``root`` node) follows the
+documented ``_breakdance_data`` conventions; the parser accepts both this and
+a bare node list.
 """
 
 from __future__ import annotations
@@ -27,7 +47,8 @@ from typing import Any, Dict, List, Optional
 # Upstream framework version this converter is calibrated against.
 TARGET_CMS_VERSION: str = "6.0.0"
 
-# Namespaced element prefix used by Breakdance/Oxygen 6 (proxy).
+# Namespaced element prefix used by Breakdance/Oxygen 6 (verified against a
+# real Breakdance export).
 ELEMENT_NAMESPACE: str = "EssentialElements\\"
 
 
@@ -37,24 +58,22 @@ class Oxygen6Converter:
     The emitted payload shape::
 
         {
-            "_version": 1,
-            "_nextNodeId": <int>,
-            "tree": [ <node>, ... ]
-        }
-
-    Each node::
-
-        {
-            "id": "n-1",
-            "type": "EssentialElements\\Section",
-            "properties": { ... },
-            "children": [ <node>, ... ]
+            "tree": {
+                "root": {
+                    "id": 1,
+                    "data": {"type": "root", "properties": []},
+                    "children": [ <node>, ... ]
+                }
+            },
+            "_nextNodeId": <int>
         }
     """
 
     # Local element name lookup (namespace prepended on emit). Keys are universal
     # types from the Translation Bridge component model; values are the local
-    # Oxygen 6 element name.
+    # Oxygen 6 element name. Div / Heading / CodeBlock verified against a real
+    # export; Section / Columns / Column / Text / Button / Image match the
+    # published Breakdance element registry.
     ELEMENT_TYPE_MAP: Dict[str, str] = {
         "container": "Section",
         "section": "Section",
@@ -65,7 +84,7 @@ class Oxygen6Converter:
         "paragraph": "Text",
         "image": "Image",
         "button": "Button",
-        "link": "Link",
+        "link": "TextLink",
         "icon": "Icon",
         "video": "Video",
         "audio": "Audio",
@@ -81,14 +100,14 @@ class Oxygen6Converter:
         "card": "Card",
         "icon-box": "Card",
         "testimonial": "Testimonial",
-        "pricing-table": "Pricing",
+        "pricing-table": "PricingTable",
         "counter": "Counter",
-        "progress": "Progress",
+        "progress": "ProgressBar",
         "map": "Map",
         "alert": "Alert",
         "social-icons": "SocialIcons",
         "countdown": "Countdown",
-        "code": "Code",
+        "code": "CodeBlock",
         "nav": "Menu",
         "menu": "Menu",
     }
@@ -103,13 +122,18 @@ class Oxygen6Converter:
 
     def convert_to_dict(self, data: Any) -> Dict[str, Any]:
         """Convert parsed data to an Oxygen 6 payload dict."""
-        self._node_counter = 0
+        self._node_counter = 1  # id 1 is reserved for the root node
 
-        tree = self._build_tree(data)
+        children = self._build_tree(data, parent_id=1)
         return {
-            "_version": 1,
+            "tree": {
+                "root": {
+                    "id": 1,
+                    "data": {"type": "root", "properties": []},
+                    "children": children,
+                }
+            },
             "_nextNodeId": self._node_counter + 1,
-            "tree": tree,
         }
 
     def get_framework(self) -> str:
@@ -118,20 +142,30 @@ class Oxygen6Converter:
     def get_supported_types(self) -> List[str]:
         return list(self.ELEMENT_TYPE_MAP.keys())
 
-    def _build_tree(self, data: Any) -> List[Dict[str, Any]]:
-        """Walk parsed/universal data and emit a list of root Oxygen 6 nodes."""
+    def _build_tree(self, data: Any, parent_id: int) -> List[Dict[str, Any]]:
+        """Walk parsed/universal data and emit a list of Oxygen 6 nodes."""
         if isinstance(data, dict):
             if "elements" in data and isinstance(data["elements"], list):
-                return [n for el in data["elements"] if (n := self._build_node(el))]
-            node = self._build_node(data)
+                return [
+                    n
+                    for el in data["elements"]
+                    if (n := self._build_node(el, parent_id))
+                ]
+            node = self._build_node(data, parent_id)
             return [node] if node else []
 
         if isinstance(data, list):
-            return [n for el in data if isinstance(el, dict) and (n := self._build_node(el))]
+            return [
+                n
+                for el in data
+                if isinstance(el, dict) and (n := self._build_node(el, parent_id))
+            ]
 
         return []
 
-    def _build_node(self, element: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _build_node(
+        self, element: Dict[str, Any], parent_id: int
+    ) -> Optional[Dict[str, Any]]:
         """Build a single Oxygen 6 node (and its subtree) from a parsed element."""
         if not isinstance(element, dict):
             return None
@@ -152,11 +186,15 @@ class Oxygen6Converter:
         settings = element.get("settings", element.get("attributes", {})) or {}
         content = element.get("content", "")
 
+        node_id = self._generate_id()
         node: Dict[str, Any] = {
-            "id": self._generate_id(),
-            "type": ELEMENT_NAMESPACE + local_name,
-            "properties": self._build_properties(local_name, settings, content),
+            "id": node_id,
+            "data": {
+                "type": ELEMENT_NAMESPACE + local_name,
+                "properties": self._build_properties(local_name, settings, content),
+            },
             "children": [],
+            "_parentId": parent_id,
         }
 
         child_source = element.get("children")
@@ -165,7 +203,7 @@ class Oxygen6Converter:
         if isinstance(child_source, list):
             for child in child_source:
                 if isinstance(child, dict):
-                    child_node = self._build_node(child)
+                    child_node = self._build_node(child, node_id)
                     if child_node:
                         node["children"].append(child_node)
 
@@ -188,65 +226,73 @@ class Oxygen6Converter:
     ) -> Dict[str, Any]:
         """Build the Oxygen 6 ``properties`` bag for an element.
 
-        Content fields land at the top of the property bag (``text``, ``code``,
-        ``src``...) mirroring the documented Oxygen 6 content/design split.
-        Style-only data is grouped under ``design`` so the proxy round-trips
-        without colliding with content keys.
+        Verified against a real Breakdance export: content fields nest under
+        ``content.content`` (a section named ``content`` inside the content
+        tab), design data under ``design``, and the admin label under
+        ``meta.friendlyName``. Heading tags use the plural ``tags`` key.
         """
         properties: Dict[str, Any] = {}
+        content_fields: Dict[str, Any] = {}
         styles = settings.get("styles") or settings.get("_design") or {}
 
         if local_name == "Heading":
-            properties["text"] = content or settings.get("title", settings.get("text", ""))
-            properties["tag"] = settings.get("header_size", settings.get("tag", settings.get("level", "h2")))
+            content_fields["text"] = content or settings.get("title", settings.get("text", ""))
+            content_fields["tags"] = settings.get(
+                "header_size", settings.get("tag", settings.get("level", "h2"))
+            )
         elif local_name in ("Text", "RichText"):
-            properties["text"] = content or settings.get("editor", settings.get("text", ""))
-        elif local_name in ("Button", "Link"):
-            properties["text"] = content or settings.get("text", settings.get("label", ""))
+            content_fields["text"] = content or settings.get("editor", settings.get("text", ""))
+        elif local_name in ("Button", "TextLink"):
+            content_fields["text"] = content or settings.get("text", settings.get("label", ""))
             link = settings.get("link")
             if isinstance(link, dict):
-                properties["link"] = {
+                content_fields["link"] = {
                     "url": link.get("url", "#"),
                     "target": link.get("target", "_self"),
                 }
             elif isinstance(link, str):
-                properties["link"] = {"url": link, "target": "_self"}
+                content_fields["link"] = {"url": link, "target": "_self"}
             elif "url" in settings:
-                properties["link"] = {"url": settings["url"], "target": settings.get("target", "_self")}
+                content_fields["link"] = {
+                    "url": settings["url"],
+                    "target": settings.get("target", "_self"),
+                }
         elif local_name == "Image":
             image = settings.get("image")
             if isinstance(image, dict):
-                properties["src"] = image.get("url", "")
-                properties["alt"] = image.get("alt", "")
+                content_fields["src"] = image.get("url", "")
+                content_fields["alt"] = image.get("alt", "")
             else:
-                properties["src"] = settings.get("src", settings.get("image_url", ""))
-                properties["alt"] = settings.get("alt", settings.get("alt_text", ""))
+                content_fields["src"] = settings.get("src", settings.get("image_url", ""))
+                content_fields["alt"] = settings.get("alt", settings.get("alt_text", ""))
         elif local_name == "Icon":
             icon = settings.get("selected_icon") or settings.get("icon") or ""
             if isinstance(icon, dict):
-                properties["icon"] = icon.get("value", "")
-            else:
-                properties["icon"] = icon
-        elif local_name == "Code":
-            properties["code"] = content or settings.get("code", settings.get("html", ""))
-        else:
-            if content:
-                properties["text"] = content
+                icon = icon.get("value", "")
+            content_fields["icon"] = icon
+        elif local_name == "CodeBlock":
+            # Real CodeBlock exports carry php_code / javascript_code fields;
+            # php_code accepts raw HTML too.
+            content_fields["php_code"] = content or settings.get("code", settings.get("html", ""))
+        elif content:
+            content_fields["text"] = content
 
         # Pass through any extra scalar settings we didn't explicitly handle so
         # they aren't silently dropped (preserves round-trip fidelity).
         for key, value in settings.items():
-            if key in properties or key in ("styles", "_design", "link", "image", "selected_icon"):
+            if key in content_fields or key in ("styles", "_design", "link", "image", "selected_icon"):
                 continue
             if isinstance(value, (str, int, float, bool)):
-                properties[key] = value
+                content_fields[key] = value
 
+        if content_fields:
+            properties["content"] = {"content": content_fields}
         if styles:
             properties["design"] = styles
 
         return properties
 
-    def _generate_id(self) -> str:
-        """Generate a deterministic node id ("n-1", "n-2", ...)."""
+    def _generate_id(self) -> int:
+        """Generate a monotonically increasing integer node id."""
         self._node_counter += 1
-        return f"n-{self._node_counter}"
+        return self._node_counter

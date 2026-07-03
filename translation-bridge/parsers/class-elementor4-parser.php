@@ -64,6 +64,11 @@ class DEVTB_Elementor4_Parser implements DEVTB_Parser_Interface {
 		'e-icon'       => 'icon',
 		'e-form'       => 'form',
 		'e-list'       => 'list',
+		// Real atomic types verified against the open-source elementor repo.
+		'e-svg'                => 'icon',
+		'e-youtube'            => 'video',
+		'e-self-hosted-video'  => 'video',
+		'e-divider'            => 'divider',
 	];
 
 	/**
@@ -199,16 +204,57 @@ class DEVTB_Elementor4_Parser implements DEVTB_Parser_Interface {
 	private function extract_content( string $el_type, array $settings ): string {
 		switch ( $el_type ) {
 			case 'e-heading':
-				return (string) ( $settings['title'] ?? $settings['text'] ?? $settings['content'] ?? '' );
+				$raw = $settings['title'] ?? $settings['text'] ?? $settings['content'] ?? '';
+				break;
 			case 'e-paragraph':
 			case 'e-text':
-				return (string) ( $settings['text'] ?? $settings['content'] ?? $settings['paragraph'] ?? '' );
+				$raw = $settings['paragraph'] ?? $settings['text'] ?? $settings['content'] ?? '';
+				break;
 			case 'e-button':
 			case 'e-link':
-				return (string) ( $settings['text'] ?? $settings['label'] ?? '' );
+				$raw = $settings['text'] ?? $settings['label'] ?? '';
+				break;
 			default:
-				return (string) ( $settings['text'] ?? $settings['content'] ?? '' );
+				$raw = $settings['paragraph'] ?? $settings['text'] ?? $settings['content'] ?? '';
+				break;
 		}
+
+		$plain = $this->unwrap_prop( $raw );
+		return is_scalar( $plain ) ? (string) $plain : '';
+	}
+
+	/**
+	 * Recursively unwrap Elementor's typed-prop envelopes.
+	 *
+	 * Real atomic exports wrap every stored setting in
+	 * `{"$$type": <key>, "value": ...}` (verified against the open-source
+	 * elementor repo). `html-v3` values nest a string prop under `content`.
+	 * Plain (legacy proxy) values pass through unchanged.
+	 *
+	 * @param mixed $value Raw setting value.
+	 * @return mixed Unwrapped plain value.
+	 */
+	private function unwrap_prop( $value ) {
+		if ( ! is_array( $value ) ) {
+			return $value;
+		}
+
+		if ( isset( $value['$$type'] ) && array_key_exists( 'value', $value ) ) {
+			$inner = $value['value'];
+
+			if ( $value['$$type'] === 'html-v3' && is_array( $inner ) && isset( $inner['content'] ) ) {
+				return $this->unwrap_prop( $inner['content'] );
+			}
+
+			return $this->unwrap_prop( $inner );
+		}
+
+		// Recurse into object shapes (link destination, image src, ...).
+		$out = [];
+		foreach ( $value as $key => $entry ) {
+			$out[ $key ] = $this->unwrap_prop( $entry );
+		}
+		return $out;
 	}
 
 	/**
@@ -222,31 +268,44 @@ class DEVTB_Elementor4_Parser implements DEVTB_Parser_Interface {
 		$normalized = [];
 
 		if ( $el_type === 'e-heading' ) {
-			$level = $settings['tag'] ?? $settings['level'] ?? null;
-			if ( $level !== null ) {
+			$level = $this->unwrap_prop( $settings['tag'] ?? $settings['level'] ?? null );
+			if ( $level !== null && is_scalar( $level ) ) {
 				$normalized['level'] = (string) $level;
 			}
 		} elseif ( $el_type === 'e-button' || $el_type === 'e-link' ) {
-			$link = $settings['link'] ?? null;
-			if ( is_array( $link ) && isset( $link['url'] ) ) {
-				$normalized['url'] = (string) $link['url'];
-				if ( ! empty( $link['target'] ) ) {
+			$link = $this->unwrap_prop( $settings['link'] ?? null );
+			if ( is_array( $link ) ) {
+				// Real link prop stores `destination` + `isTargetBlank`;
+				// the legacy proxy shape stored `url` + `target`.
+				$url = $link['destination'] ?? $link['url'] ?? null;
+				if ( $url !== null && is_scalar( $url ) && (string) $url !== '' ) {
+					$normalized['url'] = (string) $url;
+				}
+				if ( ! empty( $link['isTargetBlank'] ) ) {
+					$normalized['target'] = '_blank';
+				} elseif ( ! empty( $link['target'] ) && is_scalar( $link['target'] ) ) {
 					$normalized['target'] = (string) $link['target'];
 				}
 			} elseif ( is_string( $link ) && $link !== '' ) {
 				$normalized['url'] = $link;
 			}
 		} elseif ( $el_type === 'e-image' ) {
-			$image = $settings['image'] ?? null;
+			$image = $this->unwrap_prop( $settings['image'] ?? null );
 			if ( is_array( $image ) ) {
-				if ( isset( $image['url'] ) ) {
-					$normalized['image_url'] = (string) $image['url'];
+				// Real image prop nests src → {id, url, alt}; the legacy proxy
+				// shape stored {url, alt} directly.
+				$src = isset( $image['src'] ) && is_array( $image['src'] ) ? $image['src'] : $image;
+				if ( isset( $src['url'] ) && is_scalar( $src['url'] ) ) {
+					$normalized['image_url'] = (string) $src['url'];
 				}
-				if ( isset( $image['alt'] ) ) {
-					$normalized['alt_text'] = (string) $image['alt'];
+				if ( isset( $src['alt'] ) && is_scalar( $src['alt'] ) ) {
+					$normalized['alt_text'] = (string) $src['alt'];
 				}
 			} elseif ( isset( $settings['src'] ) ) {
-				$normalized['image_url'] = (string) $settings['src'];
+				$src = $this->unwrap_prop( $settings['src'] );
+				if ( is_scalar( $src ) ) {
+					$normalized['image_url'] = (string) $src;
+				}
 			}
 		}
 
