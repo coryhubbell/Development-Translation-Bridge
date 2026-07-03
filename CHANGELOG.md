@@ -9,6 +9,13 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [4.7.0] — 2026-07-03
+
+JSON source parsers for the lossless transform path. Full notes:
+[RELEASE_NOTES_V4.7.0.md](RELEASE_NOTES_V4.7.0.md).
+
 ### Added
 - **JSON source parsers for the lossless `transform` path** (roadmap 4.7+
   item 1): Bricks Builder, classic Oxygen, and Elementor 4 Atomic content now
@@ -256,7 +263,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.6.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.7.0...HEAD
+[4.7.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.6.0...v4.7.0
 [4.6.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.5.0...v4.6.0
 [4.5.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.4.0...v4.5.0
 [4.4.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.3.4...v4.4.0
