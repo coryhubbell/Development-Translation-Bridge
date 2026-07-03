@@ -9,6 +9,13 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [4.4.0] — 2026-07-02
+
+Schema verification + release-engineering modernization. Full notes:
+[RELEASE_NOTES_V4.4.0.md](RELEASE_NOTES_V4.4.0.md).
+
 ### Fixed
 - **Proxy schemas verified against real evidence** (`oxygen-6`, `divi-5`,
   `elementor-4` — the v4.3.0 roadmap item):
@@ -42,9 +49,9 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
   typecheck / build / audit, release-package smoke, whitespace check).
 - `LICENSE` file (GPL-2.0-or-later) committed to the repository root.
 - `.python-version` pinning local verification to Python 3.11.
-- Additional Gutenberg widget-coverage tests (18 total) and Python project
-  alignment checks (Python suite now 133 tests; PHP suite 302 tests /
-  4,250 assertions).
+- Additional Gutenberg widget-coverage tests (18 total), Python project
+  alignment checks, and the new `ProxySchemaVerificationTest` (Python suite
+  now 133 tests; PHP suite 311 tests / 4,818 assertions).
 - README: live CI badge, Mermaid architecture + engine-selection diagrams,
   client-focused framing, Visual Interface screenshot, CI/Dependabot/release
   packaging documentation.
@@ -168,7 +175,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.3.4...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.4.0...HEAD
+[4.4.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.3.4...v4.4.0
 [4.3.4]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.3.3...v4.3.4
 [4.3.3]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.3.2...v4.3.3
 [4.3.2]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.3.1...v4.3.2
