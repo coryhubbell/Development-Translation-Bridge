@@ -7,7 +7,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage Core
- * @version    4.7.0
+ * @version    4.8.0
  */
 
 /**
@@ -23,7 +23,7 @@ class DEVTB_Config {
 	/**
 	 * Plugin version
 	 */
-	public const VERSION = '4.7.0';
+	public const VERSION = '4.8.0';
 
 	/**
 	 * API namespace

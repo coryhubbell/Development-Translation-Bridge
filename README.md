@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-4.7.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0)
+[![Version](https://img.shields.io/badge/version-4.8.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -116,14 +116,27 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v4.7.0 (production-ready)
+## Current release: v4.8.0 (production-ready)
 
-**v4.7.0 is the current production release.** Bricks Builder, classic
-Oxygen, and Elementor 4 Atomic content can now be **sources on the
-100%-metadata `transform` path** — previously these JSON-native formats were
-forced through the ~42%-fidelity HTML-intermediate path. Full notes:
-[v4.7.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0)
-and [`RELEASE_NOTES_V4.7.0.md`](RELEASE_NOTES_V4.7.0.md).
+**v4.8.0 is the current production release.** The e2e fidelity smoke-gate
+pattern now guards three conversion paths through both engines on every
+push/PR — Elementor → Gutenberg, Elementor → Bricks, and DIVI → Gutenberg —
+and the new gates caught seven real content drops on their first run, all
+fixed in this release. Full notes:
+[v4.8.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0)
+and [`RELEASE_NOTES_V4.8.0.md`](RELEASE_NOTES_V4.8.0.md).
+
+### What 4.8.0 added (e2e fidelity smoke gates)
+
+- **Two new gates:** Elementor → Bricks (flat-format integrity + content
+  survival) and DIVI → Gutenberg (new 17-module DIVI kitchen-sink fixture;
+  content survival + block integrity, both Gutenberg converters).
+- **Seven content drops fixed:** Bricks converters (Python widget branches,
+  PHP gallery arrays) and Gutenberg converters (container recursion,
+  universal attribute vocabulary, button labels, toggle panels, testimonial
+  citations).
+- `make e2e-smoke` runs all three gates locally; `make verify` and CI
+  include them.
 
 ### What 4.7.0 added (JSON source parsers)
 
@@ -583,7 +596,7 @@ Full local release gate:
 make verify
 ```
 
-As of v4.7.0:
+As of v4.8.0:
 - PHP: **328 tests / 5,627 assertions / 0 errors / 0 failures / 0 deprecations**,
   including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
   9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
@@ -671,7 +684,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.7.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0) **(latest)** | 2026-07-03 | JSON source parsers: Bricks, classic Oxygen, and Elementor 4 Atomic now ride the lossless `transform` path as sources |
+| [v4.8.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0) **(latest)** | 2026-07-03 | E2e fidelity smoke gates for Elementor → Bricks and DIVI → Gutenberg; seven content drops caught and fixed |
+| [v4.7.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0) | 2026-07-03 | JSON source parsers: Bricks, classic Oxygen, and Elementor 4 Atomic now ride the lossless `transform` path as sources |
 | [v4.6.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0) | 2026-07-03 | Classic Oxygen hardening: all real storage shapes parse, real `ct_*`/`oxy_*` vocabulary, unified root-tree output, full style passthrough, responsive `media` round-tripping |
 | [v4.5.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.5.0) | 2026-07-03 | Responsive breakpoint round-tripping: canonical desktop/tablet/phone + hover model for `divi-5` / `elementor-4` / `oxygen-6`, with cross-framework transfer |
 | [v4.4.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.4.0) | 2026-07-02 | `divi-5` / `elementor-4` / `oxygen-6` schemas verified against real formats (elementor repo, Divi 5 docs, real Breakdance export); Dependabot, reproducible packaging, four-job CI, `make verify` |
@@ -689,7 +703,7 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.7.0. Release verification is automated end to end — Dependabot
+as of v4.8.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
@@ -713,7 +727,7 @@ Candidate work for upcoming 4.x releases, roughly in priority order:
    **Done in v4.7.0:** Bricks, classic Oxygen, and Elementor 4 Atomic now
    parse into the universal shape and ride the 100%-metadata Python engine as
    sources (`devtb transform bricks|oxygen|elementor4 <target> file.json`).
-2. ~~**E2e fidelity smoke gates for more targets.**~~ **Done (unreleased):**
+2. ~~**E2e fidelity smoke gates for more targets.**~~ **Done in v4.8.0:**
    Elementor → Bricks and DIVI → Gutenberg kitchen-sink gates now run through
    both engines on every push/PR alongside the original Elementor → Gutenberg
    gate — and caught seven real content drops on their first run.
