@@ -73,7 +73,18 @@ def get_parser_for_framework(framework: str) -> Optional[Any]:
     framework_lower = framework.lower()
     if framework_lower == "elementor":
         return ElementorParser()
-    # Add more parsers as they are implemented
+    if framework_lower in ("elementor4", "elementor-4", "elementor-atomic"):
+        from .parsers.elementor4 import Elementor4Parser
+
+        return Elementor4Parser()
+    if framework_lower == "bricks":
+        from .parsers.bricks import BricksParser
+
+        return BricksParser()
+    if framework_lower == "oxygen":
+        from .parsers.oxygen import OxygenParser
+
+        return OxygenParser()
     return None
 
 

@@ -299,3 +299,68 @@ def bricks_to_gutenberg(data: Any) -> str:
     """Transform Bricks JSON to Gutenberg block markup."""
     from ..converters.gutenberg import GutenbergConverter
     return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="bricks_to_bootstrap",
+    source_framework="bricks",
+    target_framework="bootstrap",
+    description="Transform parsed Bricks content to Bootstrap 5 HTML",
+    version="4.7.0",
+)
+def bricks_to_bootstrap(data: Any) -> str:
+    """Transform parsed Bricks content to Bootstrap HTML."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="oxygen_to_gutenberg",
+    source_framework="oxygen",
+    target_framework="gutenberg",
+    description="Transform parsed classic Oxygen content to Gutenberg block markup",
+    version="4.7.0",
+)
+def oxygen_to_gutenberg(data: Any) -> str:
+    """Transform parsed classic Oxygen content to Gutenberg block markup."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="oxygen_to_bootstrap",
+    source_framework="oxygen",
+    target_framework="bootstrap",
+    description="Transform parsed classic Oxygen content to Bootstrap 5 HTML",
+    version="4.7.0",
+)
+def oxygen_to_bootstrap(data: Any) -> str:
+    """Transform parsed classic Oxygen content to Bootstrap HTML."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="elementor4_to_gutenberg",
+    source_framework="elementor4",
+    target_framework="gutenberg",
+    description="Transform parsed Elementor 4 Atomic content to Gutenberg block markup",
+    version="4.7.0",
+)
+def elementor4_to_gutenberg(data: Any) -> str:
+    """Transform parsed Elementor 4 Atomic content to Gutenberg block markup."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="elementor4_to_bootstrap",
+    source_framework="elementor4",
+    target_framework="bootstrap",
+    description="Transform parsed Elementor 4 Atomic content to Bootstrap 5 HTML",
+    version="4.7.0",
+)
+def elementor4_to_bootstrap(data: Any) -> str:
+    """Transform parsed Elementor 4 Atomic content to Bootstrap HTML."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)
