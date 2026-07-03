@@ -128,6 +128,40 @@ reproducible zip packaging, a four-job CI pipeline, and `make verify`.
 Full notes: [v4.4.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.4.0)
 and [`RELEASE_NOTES_V4.4.0.md`](RELEASE_NOTES_V4.4.0.md).
 
+### What 4.4.0 added (real-format schema verification)
+
+The three next-generation framework paths shipped in v4.3.0 as
+documentation-based proxies; v4.4.0 corrects each against real evidence:
+
+- **Elementor 4 — verified against the open-source elementor repo**
+  (`modules/atomic-widgets`). Settings now use the real typed-prop system:
+  every value wrapped in a `{"$$type": ..., "value": ...}` envelope,
+  `html-v3` content props, the `paragraph` settings key,
+  `link.destination`/`isTargetBlank`, the nested `image.src` shape, and
+  `Style_Definition` variants referenced via the `classes` prop. Emissions
+  use only real atomic element types — `e-svg`, `e-youtube`,
+  `e-self-hosted-video`, `e-divider` replace the invented
+  `e-icon`/`e-video`/`e-list`.
+- **DIVI 5 — verified against the Divi 5 block-format docs.** Content moved
+  to the top-level `content` attribute group (was `module.content`), and
+  block attrs now unicode-escape HTML exactly like WP core's
+  `serialize_block_attributes()`, so content can never break the
+  block-comment delimiters. The responsive `desktop.value` wrapper was
+  confirmed correct as shipped.
+- **Oxygen 6 — verified against a real Breakdance export** (committed,
+  scrubbed, at `tests/fixtures/oxygen6/`). Nodes carry integer ids with the
+  element payload nested under `data`, `_parentId` back-references, a
+  `tree.root` envelope, `content.content` field grouping, the plural `tags`
+  heading key, and real element names (`CodeBlock`, `TextLink`,
+  `PricingTable`, `ProgressBar`).
+- **Back-compat preserved:** parsers accept both the real shapes and the old
+  proxy shapes, so v4.3.x output still translates. Nine new
+  schema-verification tests pin the real formats — including parsing the
+  real export end-to-end.
+- **Release engineering:** Dependabot across five ecosystems, reproducible
+  zip packaging (`scripts/build-release-package.sh` + tag-triggered
+  releases), the four-job CI pipeline, and `make verify`.
+
 ### What 4.3.4 added (Elementor → Gutenberg widget coverage)
 
 - **Widget coverage on both engines.** ~70 of the 90+ universal widget types
