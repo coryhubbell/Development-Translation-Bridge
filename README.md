@@ -1,9 +1,10 @@
 # DevelopmentTranslation Bridge
 
-Universal page builder translation for WordPress. Convert content between 14
-frameworks — Elementor, DIVI, Gutenberg, Bricks, Oxygen, Avada, WPBakery,
-Beaver Builder, Kadence, Thrive, Bootstrap, plus native support for the
-ground-up rewrites (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
+**Move a WordPress site from one page builder to another — without rebuilding
+it by hand.** Translation Bridge converts content between 14 frameworks —
+Elementor, DIVI, Gutenberg, Bricks, Oxygen, Avada, WPBakery, Beaver Builder,
+Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
+(DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-4.3.4-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4)
@@ -26,7 +27,30 @@ Translation Bridge takes content in any supported page builder's native format
 another framework's format. It runs as either a WordPress plugin (with a REST
 API), a standalone CLI, or a Python library.
 
-Two transformation paths:
+Typical situations it solves:
+
+- **Builder migration.** A site built on Elementor needs to become
+  Gutenberg-native (or Bricks, or anything else) — convert the pages instead
+  of rebuilding them.
+- **Version rewrites.** DIVI 4 → DIVI 5, Elementor 3 → Elementor 4 Atomic,
+  Oxygen 4 → Oxygen 6: the successor formats are supported natively, so
+  legacy content can be modernized in place.
+- **Clean HTML output.** Emit framework-free Bootstrap 5 HTML from any
+  builder — useful for handoffs, static exports, and AI/agentic content
+  pipelines.
+- **No silent data loss.** Elements without a native equivalent in the target
+  framework are preserved and visibly annotated rather than dropped.
+
+Two transformation paths — pick by your source format:
+
+```mermaid
+flowchart TD
+    IN(["Your content"]) --> Q{"Source format?"}
+    Q -->|"JSON-native<br/>(Elementor)"| T["<b>transform</b> — Python v4 engine<br/>100% metadata preserved · ~0.5s/page"]
+    Q -->|"Shortcodes / HTML<br/>(DIVI 4, WPBakery, Avada, ...)"| L["<b>translate</b> — PHP v3 engine<br/>HTML intermediate · ~30s/page"]
+    T --> OUT(["Any of the 14 target frameworks"])
+    L --> OUT
+```
 
 | Path | Engine | Approach | Metadata | Speed | Best for |
 |---|---|---|---|---|---|
@@ -376,23 +400,17 @@ Full endpoint reference: [`docs/api-v2.md`](docs/api-v2.md).
 
 ## Architecture
 
-```
-┌──────────────────┐    ┌───────────────────┐    ┌──────────────────┐
-│  Source content  │───▶│   Parser (one     │───▶│   Universal      │
-│  (Elementor JSON,│    │   per framework)  │    │   Component[]    │
-│   DIVI shortcode,│    └───────────────────┘    │   (typed tree)   │
-│   etc.)          │                              └────────┬─────────┘
-└──────────────────┘                                       │
-                                                           ▼
-                          ┌───────────────────┐    ┌──────────────────┐
-                          │  Converter (one   │◀───│  Mapping engine  │
-                          │  per framework)   │    │  / styles, etc.  │
-                          └─────────┬─────────┘    └──────────────────┘
-                                    ▼
-                          ┌───────────────────┐
-                          │  Target content   │
-                          │  (any framework)  │
-                          └───────────────────┘
+Every framework plugs into the same hub-and-spoke pipeline: parse into a
+universal component tree, map, then convert out. Adding one framework adds
+13 × 2 new translation pairs — no per-pair code.
+
+```mermaid
+flowchart LR
+    A["Source content<br/>(Elementor JSON,<br/>DIVI shortcodes, ...)"] --> B["Parser<br/>(one per framework)"]
+    B --> C["Universal<br/>Component[]<br/>(typed tree)"]
+    C --> D["Mapping engine<br/>(styles, tokens,<br/>element maps)"]
+    D --> E["Converter<br/>(one per framework)"]
+    E --> F["Target content<br/>(any of 14<br/>frameworks)"]
 ```
 
 Each framework provides a paired **parser** (input → universal components)
