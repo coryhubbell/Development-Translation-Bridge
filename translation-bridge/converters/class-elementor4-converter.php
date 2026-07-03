@@ -76,18 +76,22 @@ class DEVTB_Elementor4_Converter implements DEVTB_Converter_Interface {
 		'button'     => 'e-button',
 		'link'       => 'e-button',
 		'image'      => 'e-image',
-		'video'      => 'e-video',
-		'icon'       => 'e-icon',
+		// Real atomic element types verified against the open-source
+		// elementor repo (modules/atomic-widgets/elements): there is no
+		// e-video / e-icon / e-list — video splits into e-youtube /
+		// e-self-hosted-video and icons are e-svg.
+		'video'      => 'e-youtube',
+		'icon'       => 'e-svg',
 		'form'       => 'e-form',
-		'list'       => 'e-list',
+		'divider'    => 'e-divider',
 		// Fallbacks for richer universal types — atomic v4 doesn't yet expose
 		// dedicated widgets for these so map to the closest layout/text shape.
+		'list'       => 'e-div-block',
 		'card'       => 'e-div-block',
 		'gallery'    => 'e-div-block',
 		'accordion'  => 'e-div-block',
 		'tabs'       => 'e-div-block',
 		'slider'     => 'e-div-block',
-		'divider'    => 'e-div-block',
 		'spacer'     => 'e-div-block',
 	];
 
@@ -124,6 +128,12 @@ class DEVTB_Elementor4_Converter implements DEVTB_Converter_Interface {
 
 		$settings = $this->build_settings( $el_type, $component );
 		$styles   = $this->build_styles( $component );
+
+		// Local styles apply through the classes prop referencing the style
+		// definition id (see atomic-widgets/styles in the elementor repo).
+		if ( ! empty( $styles ) ) {
+			$settings['classes'] = $this->prop( 'classes', array_keys( $styles ) );
+		}
 
 		$node = [
 			'id'              => $this->generate_id(),
@@ -165,49 +175,50 @@ class DEVTB_Elementor4_Converter implements DEVTB_Converter_Interface {
 
 		switch ( $el_type ) {
 			case 'e-heading':
-				$settings['title'] = $content !== '' ? $content : (string) ( $attrs['heading'] ?? '' );
-				$settings['tag']   = (string) ( $attrs['level'] ?? $attrs['tag'] ?? 'h2' );
+				$title             = $content !== '' ? $content : (string) ( $attrs['heading'] ?? '' );
+				$settings['title'] = $this->html_prop( $title );
+				$settings['tag']   = $this->string_prop( (string) ( $attrs['level'] ?? $attrs['tag'] ?? 'h2' ) );
 				break;
 			case 'e-paragraph':
-			case 'e-text':
-				$settings['text'] = $content !== '' ? $content : (string) ( $attrs['text'] ?? '' );
+				// Real prop key is `paragraph` (Html_V3), not `text` — see
+				// atomic-widgets/elements/atomic-paragraph.
+				$text                  = $content !== '' ? $content : (string) ( $attrs['text'] ?? '' );
+				$settings['paragraph'] = $this->html_prop( $text );
 				break;
 			case 'e-button':
-			case 'e-link':
-				$settings['text'] = $content !== '' ? $content : (string) ( $attrs['label'] ?? $attrs['text'] ?? '' );
+				$settings['text'] = $this->html_prop( $content !== '' ? $content : (string) ( $attrs['label'] ?? $attrs['text'] ?? '' ) );
 				if ( isset( $attrs['url'] ) ) {
-					$settings['link'] = [
-						'url'    => (string) $attrs['url'],
-						'target' => isset( $attrs['target'] ) ? (string) $attrs['target'] : '_self',
-					];
+					$settings['link'] = $this->link_prop(
+						(string) $attrs['url'],
+						isset( $attrs['target'] ) ? (string) $attrs['target'] : '_self'
+					);
 				}
 				break;
 			case 'e-image':
 				$src = (string) ( $attrs['image_url'] ?? $attrs['src'] ?? '' );
 				if ( $src !== '' ) {
-					$settings['image'] = [
-						'url' => $src,
-						'alt' => (string) ( $attrs['alt_text'] ?? $attrs['alt'] ?? '' ),
-					];
+					$settings['image'] = $this->image_prop( $src, (string) ( $attrs['alt_text'] ?? $attrs['alt'] ?? '' ) );
 				}
 				break;
-			case 'e-icon':
-				$settings['icon'] = (string) ( $attrs['icon'] ?? '' );
+			case 'e-svg':
+				if ( isset( $attrs['icon'] ) && $attrs['icon'] !== '' ) {
+					$settings['svg'] = $this->string_prop( (string) $attrs['icon'] );
+				}
 				break;
 			default:
 				if ( $content !== '' ) {
-					$settings['text'] = $content;
+					$settings['paragraph'] = $this->html_prop( $content );
 				}
 				break;
 		}
 
 		// Pass through other scalar attributes so they aren't silently dropped.
 		foreach ( $attrs as $key => $value ) {
-			if ( array_key_exists( $key, $settings ) ) {
+			if ( array_key_exists( $key, $settings ) || in_array( $key, [ 'heading', 'label', 'text', 'level', 'tag', 'url', 'target', 'image_url', 'src', 'alt_text', 'alt', 'icon' ], true ) ) {
 				continue;
 			}
 			if ( is_scalar( $value ) ) {
-				$settings[ $key ] = $value;
+				$settings[ $key ] = $this->wrap_scalar( $value );
 			}
 		}
 
@@ -215,9 +226,100 @@ class DEVTB_Elementor4_Converter implements DEVTB_Converter_Interface {
 	}
 
 	/**
-	 * Build the atomic `styles` object — for v1 we surface any universal styles
-	 * verbatim as a single `default` style entry; responsive / pseudo-state
-	 * variants are not synthesised.
+	 * Wrap a value in Elementor's typed-prop envelope.
+	 *
+	 * Every stored atomic setting is a `{"$$type": <key>, "value": ...}` object
+	 * (verified against the open-source elementor repo, modules/atomic-widgets).
+	 *
+	 * @param string $type  Prop type key (string, html-v3, link, image, ...).
+	 * @param mixed  $value Prop value.
+	 * @return array{"$$type": string, value: mixed}
+	 */
+	private function prop( string $type, $value ): array {
+		return [
+			'$$type' => $type,
+			'value'  => $value,
+		];
+	}
+
+	/**
+	 * `string` prop wrapper.
+	 *
+	 * @param string $value String value.
+	 * @return array
+	 */
+	private function string_prop( string $value ): array {
+		return $this->prop( 'string', $value );
+	}
+
+	/**
+	 * `html-v3` prop: content nests a string prop (Html_V3_Prop_Type).
+	 *
+	 * @param string $value HTML/text content.
+	 * @return array
+	 */
+	private function html_prop( string $value ): array {
+		return $this->prop( 'html-v3', [ 'content' => $this->string_prop( $value ) ] );
+	}
+
+	/**
+	 * `link` prop: destination url prop + isTargetBlank boolean prop
+	 * (Link_Prop_Type stores `destination`, not `url`).
+	 *
+	 * @param string $url    Destination URL.
+	 * @param string $target Legacy target value (`_blank` → isTargetBlank).
+	 * @return array
+	 */
+	private function link_prop( string $url, string $target = '_self' ): array {
+		return $this->prop( 'link', [
+			'destination'   => $this->prop( 'url', $url ),
+			'isTargetBlank' => $this->prop( 'boolean', $target === '_blank' ),
+		] );
+	}
+
+	/**
+	 * `image` prop: src (image-src → id/url/alt) + size (Image_Prop_Type).
+	 *
+	 * @param string $url Image URL.
+	 * @param string $alt Alt text.
+	 * @return array
+	 */
+	private function image_prop( string $url, string $alt = '' ): array {
+		$src = [
+			'id'  => null,
+			'url' => $this->prop( 'url', $url ),
+		];
+		if ( $alt !== '' ) {
+			$src['alt'] = $this->string_prop( $alt );
+		}
+		return $this->prop( 'image', [
+			'src'  => $this->prop( 'image-src', $src ),
+			'size' => $this->string_prop( 'full' ),
+		] );
+	}
+
+	/**
+	 * Wrap an arbitrary scalar in the matching primitive prop type.
+	 *
+	 * @param mixed $value Scalar value.
+	 * @return mixed
+	 */
+	private function wrap_scalar( $value ) {
+		if ( is_bool( $value ) ) {
+			return $this->prop( 'boolean', $value );
+		}
+		if ( is_int( $value ) || is_float( $value ) ) {
+			return $this->prop( 'number', $value );
+		}
+		if ( is_string( $value ) ) {
+			return $this->string_prop( $value );
+		}
+		return $value;
+	}
+
+	/**
+	 * Build the atomic `styles` object as a real Style_Definition entry:
+	 * `{id, type, label, variants: [{meta: {breakpoint, state}, props}]}`.
 	 *
 	 * @param DEVTB_Component $component Component being converted.
 	 * @return array
@@ -227,9 +329,21 @@ class DEVTB_Elementor4_Converter implements DEVTB_Converter_Interface {
 		if ( empty( $styles ) ) {
 			return [];
 		}
+		$style_id = 'e-' . $this->generate_id();
 		return [
-			'default' => [
-				'props' => $styles,
+			$style_id => [
+				'id'       => $style_id,
+				'type'     => 'class',
+				'label'    => 'local',
+				'variants' => [
+					[
+						'meta'  => [
+							'breakpoint' => 'desktop',
+							'state'      => null,
+						],
+						'props' => $styles,
+					],
+				],
 			],
 		];
 	}
@@ -298,7 +412,7 @@ class DEVTB_Elementor4_Converter implements DEVTB_Converter_Interface {
 			'elType'          => 'e-paragraph',
 			'isInner'         => false,
 			'interactions'    => [],
-			'settings'        => (object) [ 'text' => $component->content !== '' ? $component->content : 'Unsupported component: ' . $component->type ],
+			'settings'        => (object) [ 'paragraph' => $this->html_prop( $component->content !== '' ? $component->content : 'Unsupported component: ' . $component->type ) ],
 			'editor_settings' => (object) [],
 			'styles'          => (object) [],
 			'elements'        => [],

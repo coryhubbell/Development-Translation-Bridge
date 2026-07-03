@@ -9,6 +9,27 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+### Fixed
+- **Proxy schemas verified against real evidence** (`oxygen-6`, `divi-5`,
+  `elementor-4` — the v4.3.0 roadmap item):
+  - Elementor 4 settings now use the real typed-prop system verified against
+    the open-source elementor repo: `$$type` envelopes, `html-v3` content
+    props, the `paragraph` settings key, `link.destination`/`isTargetBlank`,
+    nested `image.src` shape, `Style_Definition` variants, and only real
+    atomic element types (`e-svg`, `e-youtube`, `e-divider`, ... — no more
+    `e-video`/`e-icon`/`e-list`).
+  - DIVI 5 attrs now carry content in the top-level `content` group (not
+    `module.content`) with WP-style unicode-escaped HTML, per the Divi 5
+    block-format docs.
+  - Oxygen 6 nodes now match a real Breakdance element export: integer ids,
+    `data`-nested type/properties, `_parentId` back-references, `tree.root`
+    envelope, `content.content` field grouping, plural `tags` heading key,
+    and real element names (`CodeBlock`, `TextLink`, `PricingTable`,
+    `ProgressBar`).
+  - Parsers accept both the real shapes and the legacy proxy shapes for
+    back-compat; `tests/Unit/ProxySchemaVerificationTest.php` pins the real
+    formats, including parsing a committed real Breakdance export fixture.
+
 ### Added
 - Dependabot automation across five ecosystems: Composer, npm (`admin/`), and
   pip weekly; GitHub Actions and Docker Compose monthly.

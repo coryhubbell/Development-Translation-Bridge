@@ -1,0 +1,457 @@
+{
+  "source": "real Breakdance element export (structure preserved, code truncated)",
+  "element": {
+    "id": 102,
+    "data": {
+      "type": "EssentialElements\\Div",
+      "properties": {
+        "meta": {
+          "friendlyName": "Filters"
+        },
+        "design": {
+          "container": {
+            "width": {
+              "breakpoint_base": {
+                "number": 100,
+                "unit": "%",
+                "style": "100%"
+              }
+            },
+            "padding": {
+              "padding": {
+                "breakpoint_base": {
+                  "left": {
+                    "number": 50,
+                    "unit": "px",
+                    "style": "50px"
+                  },
+                  "right": {
+                    "number": 50,
+                    "unit": "px",
+                    "style": "50px"
+                  },
+                  "top": {
+                    "number": 20,
+                    "unit": "px",
+                    "style": "20px"
+                  },
+                  "bottom": {
+                    "number": 20,
+                    "unit": "px",
+                    "style": "20px"
+                  }
+                }
+              }
+            }
+          },
+          "background": {
+            "color": "#D7D0E6FF"
+          },
+          "layout": {
+            "gap": {
+              "breakpoint_base": {
+                "number": 40,
+                "unit": "px",
+                "style": "40px"
+              }
+            },
+            "horizontal": {
+              "align": {
+                "breakpoint_base": "center"
+              },
+              "vertical_align": {
+                "breakpoint_base": "center"
+              }
+            },
+            "vertical_align": {
+              "breakpoint_base": null
+            }
+          }
+        }
+      }
+    },
+    "children": [
+      {
+        "id": 105,
+        "data": {
+          "type": "EssentialElements\\Div",
+          "properties": {
+            "meta": {
+              "friendlyName": "filter box"
+            },
+            "design": {
+              "layout": {
+                "horizontal": {
+                  "align": {
+                    "breakpoint_base": "flex-start"
+                  },
+                  "vertical_align": {
+                    "breakpoint_base": "center"
+                  }
+                },
+                "gap": {
+                  "breakpoint_base": {
+                    "number": 20,
+                    "unit": "px",
+                    "style": "20px"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "id": 106,
+            "data": {
+              "type": "EssentialElements\\Heading",
+              "properties": {
+                "content": {
+                  "content": {
+                    "text": "Genre: ",
+                    "tags": "h4"
+                  }
+                }
+              }
+            },
+            "children": [],
+            "_parentId": 105
+          },
+          {
+            "id": 104,
+            "data": {
+              "type": "EssentialElements\\CodeBlock",
+              "properties": {
+                "content": {
+                  "content": {
+                    "php_code": "<?php\nrequire_once(ABSPATH . 'wp-include /* truncated for fixture */",
+                    "disable_builder_label": true,
+                    "javascript_code": "// JavaScript to update URL parameter wh /* truncated for fixture */"
+                  }
+                }
+              }
+            },
+            "children": [],
+            "_parentId": 105
+          }
+        ],
+        "_parentId": 102
+      },
+      {
+        "id": 107,
+        "data": {
+          "type": "EssentialElements\\Div",
+          "properties": {
+            "meta": {
+              "friendlyName": "filter box"
+            },
+            "design": {
+              "layout": {
+                "horizontal": {
+                  "align": {
+                    "breakpoint_base": "flex-start"
+                  },
+                  "vertical_align": {
+                    "breakpoint_base": "center"
+                  }
+                },
+                "gap": {
+                  "breakpoint_base": {
+                    "number": 20,
+                    "unit": "px",
+                    "style": "20px"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "id": 108,
+            "data": {
+              "type": "EssentialElements\\Heading",
+              "properties": {
+                "content": {
+                  "content": {
+                    "text": "Medium:",
+                    "tags": "h4"
+                  }
+                }
+              }
+            },
+            "children": [],
+            "_parentId": 107
+          },
+          {
+            "id": 109,
+            "data": {
+              "type": "EssentialElements\\CodeBlock",
+              "properties": {
+                "content": {
+                  "content": {
+                    "php_code": "<?php\n// Get the selected 'medium' term /* truncated for fixture */",
+                    "disable_builder_label": true,
+                    "javascript_code": "document.getElementById('medium-dropdown /* truncated for fixture */"
+                  }
+                }
+              }
+            },
+            "children": [],
+            "_parentId": 107
+          }
+        ],
+        "_parentId": 102
+      },
+      {
+        "id": 111,
+        "data": {
+          "type": "EssentialElements\\CodeBlock",
+          "properties": {
+            "content": {
+              "content": {
+                "javascript_code": "document.getElementById('search_button') /* truncated for fixture */",
+                "php_code": "  <p>SEARCH</p>\n ",
+                "disable_builder_label": true
+              }
+            },
+            "design": {
+              "wrapper": {
+                "background": "var(--bde-palette-offset-fd7d4b3a-886d-4496-b218-7a63d3bf6bfa-1)",
+                "borders": {
+                  "border": {
+                    "breakpoint_base": {
+                      "top": {
+                        "color": "var(--bde-brand-primary-color)",
+                        "width": {
+                          "number": 1,
+                          "unit": "px",
+                          "style": "1px"
+                        }
+                      },
+                      "bottom": {
+                        "color": "var(--bde-brand-primary-color)",
+                        "width": {
+                          "number": 1,
+                          "unit": "px",
+                          "style": "1px"
+                        }
+                      },
+                      "left": {
+                        "color": "var(--bde-brand-primary-color)",
+                        "width": {
+                          "number": 1,
+                          "unit": "px",
+                          "style": "1px"
+                        }
+                      },
+                      "right": {
+                        "color": "var(--bde-brand-primary-color)",
+                        "width": {
+                          "number": 1,
+                          "unit": "px",
+                          "style": "1px"
+                        }
+                      }
+                    }
+                  }
+                },
+                "padding": {
+                  "padding": {
+                    "breakpoint_base": {
+                      "top": {
+                        "number": 5,
+                        "unit": "px",
+                        "style": "5px"
+                      },
+                      "bottom": {
+                        "number": 5,
+                        "unit": "px",
+                        "style": "5px"
+                      },
+                      "left": {
+                        "number": 10,
+                        "unit": "px",
+                        "style": "10px"
+                      },
+                      "right": {
+                        "number": 10,
+                        "unit": "px",
+                        "style": "10px"
+                      }
+                    }
+                  }
+                }
+              },
+              "typography": {
+                "typography": {
+                  "custom": {
+                    "customTypography": {
+                      "advanced": {
+                        "lineHeight": {
+                          "breakpoint_base": {
+                            "number": 1,
+                            "unit": "px",
+                            "style": "1px"
+                          }
+                        },
+                        "letterSpacing": {
+                          "breakpoint_base": {
+                            "number": 1,
+                            "unit": "px",
+                            "style": "1px"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "settings": {
+              "advanced": {
+                "wrapper": {
+                  "effects": {
+                    "transition": {
+                      "breakpoint_base": [
+                        {
+                          "duration": {
+                            "number": 300,
+                            "unit": "ms",
+                            "style": "300ms"
+                          },
+                          "timing_function": "ease-in-out"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "wrapper_hover": {
+                  "background": {
+                    "color": {
+                      "breakpoint_base": "var(--bde-brand-primary-color)"
+                    }
+                  }
+                },
+                "id": "search_button"
+              }
+            },
+            "meta": {
+              "friendlyName": "Button - Code block"
+            }
+          }
+        },
+        "children": [],
+        "_parentId": 102
+      },
+      {
+        "id": 103,
+        "data": {
+          "type": "EssentialElements\\Div",
+          "properties": {
+            "meta": {
+              "friendlyName": "Results"
+            },
+            "design": {
+              "container": {
+                "width": {
+                  "breakpoint_base": {
+                    "number": 100,
+                    "unit": "%",
+                    "style": "100%"
+                  }
+                },
+                "padding": {
+                  "padding": {
+                    "breakpoint_base": {
+                      "left": {
+                        "number": 50,
+                        "unit": "px",
+                        "style": "50px"
+                      },
+                      "right": {
+                        "number": 50,
+                        "unit": "px",
+                        "style": "50px"
+                      },
+                      "top": {
+                        "number": 50,
+                        "unit": "px",
+                        "style": "50px"
+                      },
+                      "bottom": {
+                        "number": 50,
+                        "unit": "px",
+                        "style": "50px"
+                      }
+                    }
+                  }
+                }
+              },
+              "background": {
+                "color": "#DAB52EFF"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "id": 112,
+            "data": {
+              "type": "EssentialElements\\PostsLoop",
+              "properties": {
+                "content": {
+                  "query": {
+                    "query": {
+                      "active": "php",
+                      "text": "post_type=art",
+                      "custom": {
+                        "source": "post_types",
+                        "postsPerPage": 8,
+                        "conditions": [
+                          [
+                            []
+                          ]
+                        ],
+                        "totalPosts": null,
+                        "ignoreStickyPosts": false,
+                        "ignoreCurrentPost": false,
+                        "postTypes": [
+                          "post"
+                        ],
+                        "orderBy": "date",
+                        "order": "DESC",
+                        "date": "all",
+                        "beforeDate": null,
+                        "afterDate": null,
+                        "offset": null,
+                        "acfField": null,
+                        "metaboxField": null
+                      },
+                      "php": "// Check if the 'genre' parameter is set in the URL\n$genre = isset($_GET['genre']) ? sanitize_text_field($_GET['genre']) : '';\n\n// Check if the 'medium' parameter is set in the URL\n$medium = isset($_GET['medium']) ? sanitize_text_field($_GET['medium']) : '';\n\n// Return the modified query array\nreturn array(\n    'post_type' => 'art', // Set the post type to 'art'\n    'tax_query' => array(\n        'relation' => 'AND', // Adjust the relation based on your requirements\n        array(\n            'taxonomy' => 'genre', // Taxonomy name for genre\n            'field'    => 'slug',\n            'terms'    => $genre,\n            'operator' => 'IN',\n        ),\n        array(\n            'taxonomy' => 'medium', // Taxonomy name for medium\n            'field'    => 'slug',\n            'terms'    => $medium,\n            'operator' => 'IN',\n        ),\n    ),\n);"
+                    }
+                  },
+                  "repeated_block": {
+                    "global_block": 223
+                  }
+                },
+                "design": {
+                  "list": {
+                    "layout": "grid",
+                    "items_per_row": {
+                      "breakpoint_base": 3
+                    }
+                  }
+                }
+              }
+            },
+            "children": [],
+            "_parentId": 103
+          }
+        ],
+        "_parentId": 102
+      }
+    ],
+    "_parentId": 101
+  }
+}

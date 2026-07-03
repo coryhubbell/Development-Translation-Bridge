@@ -112,7 +112,7 @@ class Divi5Converter:
             return ""
 
         attrs = self._build_attrs(local, element)
-        attrs_json = json.dumps(attrs, separators=(",", ":"))
+        attrs_json = self._serialize_attrs(attrs)
 
         child_source = element.get("children") or element.get("elements") or []
         rendered_children = "".join(
@@ -198,10 +198,28 @@ class Divi5Converter:
 
         attrs: Dict[str, Any] = {}
         if module_content:
-            attrs["module"] = {"content": module_content}
+            # Verified against the Divi 5 block-format docs: content lives in
+            # a TOP-LEVEL "content" attribute group (attrs.content.innerContent
+            # etc.), not nested under "module" — module holds meta/decoration.
+            attrs["content"] = module_content
         attrs["builderVersion"] = TARGET_CMS_VERSION
         return attrs
 
     def _responsive(self, value: Any) -> Dict[str, Dict[str, Any]]:
         """Wrap a scalar in DIVI 5's desktop responsive variant."""
         return {"desktop": {"value": value}}
+
+    @staticmethod
+    def _serialize_attrs(attrs: Dict[str, Any]) -> str:
+        """Serialize block attrs the way WP's serialize_block_attributes does.
+
+        HTML inside the JSON must use unicode escapes so it cannot break the
+        surrounding block-comment delimiters (``--``, ``<``, ``>``).
+        """
+        encoded = json.dumps(attrs, separators=(",", ":"))
+        encoded = encoded.replace("--", "\\u002d\\u002d")
+        encoded = encoded.replace("<", "\\u003c")
+        encoded = encoded.replace(">", "\\u003e")
+        encoded = encoded.replace("&", "\\u0026")
+        encoded = encoded.replace('\\"', "\\u0022")
+        return encoded

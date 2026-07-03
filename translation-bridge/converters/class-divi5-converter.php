@@ -143,7 +143,7 @@ class DEVTB_DIVI5_Converter implements DEVTB_Converter_Interface {
 		}
 
 		$attrs   = $this->build_attrs( $local, $component );
-		$json    = wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES );
+		$json    = $this->serialize_attrs( $attrs );
 		$has_kids = ! empty( $component->children ) && isset( $this->type_map[ $component->children[0]->type ?? '' ] );
 
 		// Leaf modules self-close unless caller injected actual child components.
@@ -169,10 +169,11 @@ class DEVTB_DIVI5_Converter implements DEVTB_Converter_Interface {
 	/**
 	 * Build the DIVI 5 block attribute object for an element.
 	 *
-	 * The shape mirrors the public `block-json-reference`:
+	 * Verified against the Divi 5 block-format docs: content lives in a
+	 * TOP-LEVEL `content` attribute group; `module` holds meta/decoration.
 	 *
 	 *   {
-	 *     "module": { "content": {...}, "decoration": {...}, ... },
+	 *     "content": { "innerContent": {"desktop": {"value": ...}}, ... },
 	 *     "builderVersion": "5.0.0"
 	 *   }
 	 *
@@ -239,14 +240,9 @@ class DEVTB_DIVI5_Converter implements DEVTB_Converter_Interface {
 				break;
 		}
 
-		$module = [];
-		if ( ! empty( $module_content ) ) {
-			$module['content'] = $module_content;
-		}
-
 		$result = [];
-		if ( ! empty( $module ) ) {
-			$result['module'] = $module;
+		if ( ! empty( $module_content ) ) {
+			$result['content'] = $module_content;
 		}
 		$result['builderVersion'] = self::TARGET_CMS_VERSION;
 
@@ -261,6 +257,29 @@ class DEVTB_DIVI5_Converter implements DEVTB_Converter_Interface {
 	 */
 	private function responsive( string $value ): array {
 		return [ 'desktop' => [ 'value' => $value ] ];
+	}
+
+	/**
+	 * Serialize block attrs the way WP core's serialize_block_attributes() does.
+	 *
+	 * HTML inside the JSON must use unicode escapes so it cannot break the
+	 * surrounding block-comment delimiters (`--`, `<`, `>`).
+	 *
+	 * @param array<string, mixed> $attrs Block attributes.
+	 * @return string
+	 */
+	private function serialize_attrs( array $attrs ): string {
+		if ( function_exists( 'serialize_block_attributes' ) ) {
+			return serialize_block_attributes( $attrs );
+		}
+
+		$encoded = wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES );
+		$encoded = str_replace( '--', '\\u002d\\u002d', $encoded );
+		$encoded = str_replace( '<', '\\u003c', $encoded );
+		$encoded = str_replace( '>', '\\u003e', $encoded );
+		$encoded = str_replace( '&', '\\u0026', $encoded );
+		$encoded = str_replace( '\\"', '\\u0022', $encoded );
+		return $encoded;
 	}
 
 	/**
@@ -311,9 +330,9 @@ class DEVTB_DIVI5_Converter implements DEVTB_Converter_Interface {
 	public function get_fallback( DEVTB_Component $component ) {
 		$text = $component->content !== '' ? $component->content : 'Unsupported component: ' . $component->type;
 		$attrs = [
-			'module'         => [ 'content' => [ 'innerContent' => $this->responsive( $text ) ] ],
+			'content'        => [ 'innerContent' => $this->responsive( $text ) ],
 			'builderVersion' => self::TARGET_CMS_VERSION,
 		];
-		return sprintf( '<!-- wp:%stext %s /-->%s', self::BLOCK_NAMESPACE, wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ), "\n" );
+		return sprintf( '<!-- wp:%stext %s /-->%s', self::BLOCK_NAMESPACE, $this->serialize_attrs( $attrs ), "\n" );
 	}
 }
