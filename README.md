@@ -655,10 +655,14 @@ and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
 (see [Schema verification status](#schema-verification-status)), and v4.5.0
 added responsive breakpoint round-tripping: tablet/phone breakpoints and
 hover states survive round trips for all three paths and transfer across
-frameworks through a canonical responsive model. Remaining 4.x.y work:
+frameworks through a canonical responsive model.
 
-- An Oxygen 6-specific export fixture (vs. the Breakdance one) would close the
-  last ~20% of schema uncertainty — contributions welcome.
+On Oxygen: classic Oxygen (4.x) support is fully hardened — real `ct_*`/`oxy_*`
+vocabulary, every storage shape (JSON tree, wrapper, flat list, shortcodes),
+full style passthrough with unit normalization, and responsive `media`
+round-tripping. The `oxygen-6` path intentionally tracks the verified
+Breakdance-derived schema (~80% shared codebase) rather than chasing
+Oxygen 6-specific deltas.
 
 A 5.x line — if it happens — would likely consolidate the PHP and Python
 engines onto a single shared schema and drop the legacy HTML-intermediate
@@ -676,9 +680,9 @@ Contributions welcome. Useful starting points:
   input, and follow the existing structural-assertion pattern. The
   [Bricks flat-format work in v4.3](https://github.com/coryhubbell/Development-Translation-Bridge/commit/a9e0a06)
   is a good reference.
-- **Verify a proxy schema:** if you have a real export from Oxygen 6, DIVI 5,
-  or Elementor 4 Atomic, please open an issue with the JSON dump — that
-  unblocks moving those parsers from "proxy" to "verified."
+- **Share real exports:** real page exports from any supported builder make
+  great regression fixtures — open an issue with the JSON dump if you have
+  one that behaves unexpectedly.
 - **Fix a converter bug:** see the audit-finding pattern in
   [RELEASE_NOTES_V4.2.0.md](RELEASE_NOTES_V4.2.0.md) — these were caught by
   running real CMS exports through the round-trip and diffing.

@@ -821,34 +821,68 @@ class TestAvadaConverter:
 # =============================================================================
 
 class TestOxygenConverter:
-    """Test OxygenConverter class."""
+    """Test OxygenConverter class.
+
+    Output is classic Oxygen's real ct_builder_json shape: a nested tree
+    under a `root` node, unified with the PHP converter.
+    """
 
     def test_convert_returns_json(self, sample_elementor_data):
-        """Should convert to valid JSON string."""
+        """Should convert to a valid root-tree JSON string."""
         converter = OxygenConverter()
         result = converter.convert(sample_elementor_data)
         assert isinstance(result, str)
         parsed = json.loads(result)
-        assert "ct_builder_json" in parsed
+        assert parsed.get("name") == "root"
+        assert parsed.get("id") == 0
 
     def test_convert_to_dict(self, sample_elementor_data):
-        """Should convert to Oxygen dict structure."""
+        """Should convert to the Oxygen root-tree structure."""
         converter = OxygenConverter()
         result = converter.convert_to_dict(sample_elementor_data)
         assert isinstance(result, dict)
-        assert "ct_builder_json" in result
-        assert "ct_builder" in result["ct_builder_json"]
+        assert result["name"] == "root"
+        assert isinstance(result["children"], list)
+        assert result["children"], "non-trivial input must produce elements"
 
     def test_element_structure(self, sample_elementor_data):
-        """Elements should have proper Oxygen structure."""
+        """Elements should have proper Oxygen structure with real names."""
         converter = OxygenConverter()
         result = converter.convert_to_dict(sample_elementor_data)
-        elements = result["ct_builder_json"]["ct_builder"]
-        for element in elements:
+
+        def walk(element, parent_id):
             assert "id" in element
             assert "name" in element
+            assert element["name"].startswith(("ct_", "oxy_"))
             assert "options" in element
+            assert element["options"]["ct_id"] == element["id"]
+            assert element["options"]["ct_parent"] == parent_id
+            assert "selector" in element["options"]
             assert "children" in element
+            for child in element["children"]:
+                walk(child, element["id"])
+
+        for element in result["children"]:
+            walk(element, 0)
+
+    def test_no_fabricated_element_names(self, sample_elementor_data):
+        """Emitted names must come from the real classic Oxygen vocabulary."""
+        fabricated = {
+            "ct_link_text", "ct_icon", "ct_tabs", "ct_tab", "ct_accordion",
+            "ct_toggle", "ct_google_map", "ct_testimonial", "ct_pricing_box",
+            "ct_progress_bar", "ct_nav_menu", "ct_menu", "ct_gallery",
+            "oxy_accordion", "oxy_counter", "oxy_testimonial", "ct_icon_box",
+            "ct_contact_form",
+        }
+        result = OxygenConverter().convert_to_dict(sample_elementor_data)
+
+        def walk(element):
+            assert element["name"] not in fabricated, f"fabricated name: {element['name']}"
+            for child in element["children"]:
+                walk(child)
+
+        for element in result["children"]:
+            walk(element)
 
     def test_get_framework(self):
         """Should return correct framework name."""

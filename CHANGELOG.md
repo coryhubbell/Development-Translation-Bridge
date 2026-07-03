@@ -9,7 +9,39 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+- **Classic Oxygen (4.x) support fully hardened** (audit-driven):
+  - Parser now accepts every real storage shape: the nested `ct_builder_json`
+    root tree, the `ct_builder_json` wrapper, the flat `ct_parent` list, and
+    `ct_builder_shortcodes` strings (previously only the flat list parsed —
+    the committed fixture itself was unreadable).
+  - Element vocabulary corrected to classic Oxygen's real names: `ct_link`,
+    `ct_new_columns`/`ct_column`, `oxy_rich_text`, `ct_svg_icon`, `oxy_tabs`/
+    `oxy_tab`/`oxy_tab_content`, `oxy_toggle`, `oxy_testimonial_box`,
+    `oxy_pricing_box`, `oxy_progress_bar`, `oxy_icon_box`, `oxy_map`,
+    `oxy_nav_menu`, `oxy_login_form`, `oxy_search_form`, `oxy_share_box`,
+    `oxy_superbox`, `oxy_shortcode` — fabricated names (`ct_link_text`,
+    `ct_tabs`, `ct_google_map`, `ct_testimonial`, ...) are still parsed as
+    aliases but never emitted. PHP and Python converters now emit identical
+    vocabulary and the same root-tree output shape (previously three
+    mutually incompatible shapes).
+  - Styles: `options.original` passes through in full (the old 33-prop
+    allow-list silently dropped `gap`, `border` shorthand, `box-shadow`,
+    positioning, etc.) with unit normalization both ways (Oxygen unitless ↔
+    CSS px).
+  - Responsive: `options.media.<breakpoint>.original` overrides now
+    round-trip via the canonical responsive model (tablet, phone-portrait).
+  - Deterministic selectors (was `time()`-based — output is now reproducible).
+  - Content extraction for testimonials (quote/author/title), icons, image
+    attachments, and reusable-part references; containers no longer carry
+    `ct_content`.
+  - New `OxygenClassicHardeningTest` (9 tests) including a full fixture
+    round trip; the 182-pair matrix now structurally validates every
+    `*_to_oxygen` conversion.
+
+### Changed
+- The `oxygen-6` path intentionally tracks the verified Breakdance-derived
+  schema; the README no longer solicits Oxygen 6-specific export fixtures.
 
 ## [4.5.0] — 2026-07-03
 

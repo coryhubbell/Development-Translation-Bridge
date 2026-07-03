@@ -664,6 +664,10 @@ HTML;
                     $this->assertBricksFlatStructure( $decoded, $source );
                 }
 
+                if ( $target === 'oxygen' && is_array( $decoded ) ) {
+                    $this->assertOxygenClassicTreeStructure( $decoded, $source );
+                }
+
                 if ( $target === 'oxygen-6' && is_array( $decoded ) ) {
                     $this->assertOxygen6TreeStructure( $decoded, $source );
                 }
@@ -803,6 +807,48 @@ HTML;
                 $ids,
                 "{$source} → bricks: element [{$i}] parent '{$parent}' does not match any element id"
             );
+        }
+    }
+
+    /**
+     * Assert classic Oxygen output is the real ct_builder_json root-tree shape:
+     * a `root` node wrapping nested elements with real ct_/oxy_ names,
+     * `ct_id` matching the element `id`, and correct `ct_parent` linkage.
+     *
+     * @param array  $decoded Decoded JSON output.
+     * @param string $source  Source framework, for error messages.
+     */
+    private function assertOxygenClassicTreeStructure( array $decoded, string $source ): void {
+        $this->assertSame( 'root', $decoded['name'] ?? null, "{$source} → oxygen: output must wrap a root node" );
+        $this->assertSame( 0, $decoded['id'] ?? null, "{$source} → oxygen: root id must be 0" );
+        $this->assertIsArray( $decoded['children'] ?? null, "{$source} → oxygen: root must carry children" );
+
+        foreach ( $decoded['children'] as $i => $element ) {
+            $this->walkOxygenClassicElement( $element, 0, "{$source} → oxygen: children[{$i}]" );
+        }
+    }
+
+    /**
+     * Recursively validate a classic Oxygen element.
+     *
+     * @param mixed  $element   Candidate element.
+     * @param int    $parent_id Expected ct_parent value.
+     * @param string $path      Human-readable path for error messages.
+     */
+    private function walkOxygenClassicElement( $element, int $parent_id, string $path ): void {
+        $this->assertIsArray( $element, "{$path}: element is not an array" );
+        $this->assertArrayHasKey( 'name', $element, "{$path}: element missing name" );
+        $this->assertMatchesRegularExpression(
+            '/^(ct_|oxy_)/',
+            (string) $element['name'],
+            "{$path}: name '{$element['name']}' must use the real ct_/oxy_ vocabulary"
+        );
+        $this->assertArrayHasKey( 'options', $element, "{$path}: element missing options" );
+        $this->assertSame( $element['id'] ?? null, $element['options']['ct_id'] ?? null, "{$path}: options.ct_id must match element id" );
+        $this->assertSame( $parent_id, $element['options']['ct_parent'] ?? null, "{$path}: bad ct_parent linkage" );
+
+        foreach ( ( $element['children'] ?? [] ) as $j => $child ) {
+            $this->walkOxygenClassicElement( $child, (int) $element['id'], "{$path}/children[{$j}]" );
         }
     }
 
