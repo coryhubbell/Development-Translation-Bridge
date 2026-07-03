@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-4.6.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0)
+[![Version](https://img.shields.io/badge/version-4.7.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -52,7 +52,7 @@ Two transformation paths — pick by your source format:
 ```mermaid
 flowchart TD
     IN(["Your content"]) --> Q{"Source format?"}
-    Q -->|"JSON-native<br/>(Elementor)"| T["<b>transform</b> — Python v4 engine<br/>100% metadata preserved · ~0.5s/page"]
+    Q -->|"JSON-native<br/>(Elementor, Bricks,<br/>Oxygen, Elementor 4)"| T["<b>transform</b> — Python v4 engine<br/>100% metadata preserved · ~0.5s/page"]
     Q -->|"Shortcodes / HTML<br/>(DIVI 4, WPBakery, Avada, ...)"| L["<b>translate</b> — PHP v3 engine<br/>HTML intermediate · ~30s/page"]
     T --> OUT(["Any of the 14 target frameworks"])
     L --> OUT
@@ -116,16 +116,29 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v4.6.0 (production-ready)
+## Current release: v4.7.0 (production-ready)
 
-**v4.6.0 is the current production release.** It overhauls classic Oxygen
-(4.x) support end to end: every real storage shape now parses (nested
-`ct_builder_json` tree, wrapper, flat list, shortcodes), both engines emit
-the real element vocabulary in the real root-tree shape, styles pass through
-in full with unit normalization, and responsive `options.media` overrides
-round-trip. Full notes:
-[v4.6.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0)
-and [`RELEASE_NOTES_V4.6.0.md`](RELEASE_NOTES_V4.6.0.md).
+**v4.7.0 is the current production release.** Bricks Builder, classic
+Oxygen, and Elementor 4 Atomic content can now be **sources on the
+100%-metadata `transform` path** — previously these JSON-native formats were
+forced through the ~42%-fidelity HTML-intermediate path. Full notes:
+[v4.7.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0)
+and [`RELEASE_NOTES_V4.7.0.md`](RELEASE_NOTES_V4.7.0.md).
+
+### What 4.7.0 added (JSON source parsers)
+
+- **Three new source parsers** on the lossless Python engine, built on
+  schemas verified in earlier releases: `BricksParser` (real 2.x flat page
+  format), `OxygenParser` (all four classic storage shapes, with unit
+  normalization and responsive `media` canonicalization), and
+  `Elementor4Parser` (typed-prop unwrapping + style-variant
+  canonicalization).
+- **CLI wiring:** `devtb transform bricks|oxygen|elementor4 <target>
+  file.json` works end to end; five new transform pairs registered
+  (each source → `gutenberg` / `bootstrap`).
+- **Shared `UniversalDocument` primitives** so the next source parser is a
+  much smaller diff.
+- Purely additive — no existing transform or converter behavior changed.
 
 ### What 4.6.0 added (classic Oxygen hardening)
 
@@ -570,13 +583,13 @@ Full local release gate:
 make verify
 ```
 
-As of v4.6.0:
+As of v4.7.0:
 - PHP: **328 tests / 5,627 assertions / 0 errors / 0 failures / 0 deprecations**,
   including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
   9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
   8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`),
   and 9 classic-Oxygen hardening tests (`tests/Unit/OxygenClassicHardeningTest.php`).
-- Python: 140 tests across converters, parsers, transforms, responsive helpers, and project alignment checks.
+- Python: 156 tests across converters, parsers (now including Bricks, classic Oxygen, and Elementor 4 sources), transforms, responsive helpers, and project alignment checks.
 - End-to-end smoke (`tests/smoke_gutenberg_e2e.py`): kitchen-sink Elementor
   fixture through both engines, now a CI gate on every push and PR.
 
@@ -654,7 +667,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.6.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0) **(latest)** | 2026-07-03 | Classic Oxygen hardening: all real storage shapes parse, real `ct_*`/`oxy_*` vocabulary, unified root-tree output, full style passthrough, responsive `media` round-tripping |
+| [v4.7.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0) **(latest)** | 2026-07-03 | JSON source parsers: Bricks, classic Oxygen, and Elementor 4 Atomic now ride the lossless `transform` path as sources |
+| [v4.6.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0) | 2026-07-03 | Classic Oxygen hardening: all real storage shapes parse, real `ct_*`/`oxy_*` vocabulary, unified root-tree output, full style passthrough, responsive `media` round-tripping |
 | [v4.5.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.5.0) | 2026-07-03 | Responsive breakpoint round-tripping: canonical desktop/tablet/phone + hover model for `divi-5` / `elementor-4` / `oxygen-6`, with cross-framework transfer |
 | [v4.4.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.4.0) | 2026-07-02 | `divi-5` / `elementor-4` / `oxygen-6` schemas verified against real formats (elementor repo, Divi 5 docs, real Breakdance export); Dependabot, reproducible packaging, four-job CI, `make verify` |
 | [v4.3.4](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4) | 2026-05-20 | Elementor → Gutenberg widget coverage hotfix (compound widgets, marker fallback, settings denormalization); e2e smoke harness now a CI gate |
@@ -671,7 +685,7 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.6.0. Release verification is automated end to end — Dependabot
+as of v4.7.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
@@ -692,7 +706,7 @@ Oxygen 6-specific deltas.
 Candidate work for upcoming 4.x releases, roughly in priority order:
 
 1. ~~**More JSON source parsers for the lossless `transform` path.**~~
-   **Done (unreleased):** Bricks, classic Oxygen, and Elementor 4 Atomic now
+   **Done in v4.7.0:** Bricks, classic Oxygen, and Elementor 4 Atomic now
    parse into the universal shape and ride the 100%-metadata Python engine as
    sources (`devtb transform bricks|oxygen|elementor4 <target> file.json`).
 2. **E2e fidelity smoke gates for more targets.** The kitchen-sink smoke that
