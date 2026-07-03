@@ -590,8 +590,12 @@ As of v4.7.0:
   8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`),
   and 9 classic-Oxygen hardening tests (`tests/Unit/OxygenClassicHardeningTest.php`).
 - Python: 156 tests across converters, parsers (now including Bricks, classic Oxygen, and Elementor 4 sources), transforms, responsive helpers, and project alignment checks.
-- End-to-end smoke (`tests/smoke_gutenberg_e2e.py`): kitchen-sink Elementor
-  fixture through both engines, now a CI gate on every push and PR.
+- End-to-end fidelity smoke gates (`make e2e-smoke`), each running through
+  both engines as CI gates on every push and PR: Elementor → Gutenberg
+  (`tests/smoke_gutenberg_e2e.py`), Elementor → Bricks
+  (`tests/smoke_bricks_e2e.py`, flat-format + content survival), and
+  DIVI → Gutenberg (`tests/smoke_divi_e2e.py`, content survival + block
+  integrity).
 
 The 41 pre-existing errors and 3 failures that v4.1 / v4.2 / v4.3.0 inherited
 (class-autoload mismatches and missing WP-function mocks) were all resolved in
@@ -606,7 +610,7 @@ Every push and PR to `main` / `develop` runs four jobs
 | Job | What it runs |
 |---|---|
 | **PHP tests** | PHPUnit across PHP **8.1 – 8.5**, plus composer validate, syntax check, `composer audit`, PHPCS (WordPress standards), and Codecov coverage upload |
-| **Python tests + Gutenberg e2e smoke** | Full pytest suite, then the kitchen-sink Elementor fixture through both the Python v4 and PHP v3 engines |
+| **Python tests + Gutenberg e2e smoke** | Full pytest suite, then three e2e fidelity gates through both engines: Elementor → Gutenberg, Elementor → Bricks, and DIVI → Gutenberg kitchen-sink fixtures |
 | **Admin build** | ESLint, `tsc --noEmit`, and a production Vite build on Node **20.19.0 / 22.13.0 / 24** |
 | **Release package smoke** | Builds and inspects the WordPress theme zip via `scripts/build-release-package.sh`, so packaging breakage is caught before tagging |
 
@@ -709,10 +713,10 @@ Candidate work for upcoming 4.x releases, roughly in priority order:
    **Done in v4.7.0:** Bricks, classic Oxygen, and Elementor 4 Atomic now
    parse into the universal shape and ride the 100%-metadata Python engine as
    sources (`devtb transform bricks|oxygen|elementor4 <target> file.json`).
-2. **E2e fidelity smoke gates for more targets.** The kitchen-sink smoke that
-   guards Elementor → Gutenberg (and caught two real bugs before v4.3.4
-   shipped) has no equivalent for other high-traffic targets — Elementor →
-   Bricks and DIVI → Gutenberg are the natural next gates.
+2. ~~**E2e fidelity smoke gates for more targets.**~~ **Done (unreleased):**
+   Elementor → Bricks and DIVI → Gutenberg kitchen-sink gates now run through
+   both engines on every push/PR alongside the original Elementor → Gutenberg
+   gate — and caught seven real content drops on their first run.
 3. **Responsive canonicalization for the remaining frameworks.** The
    canonical breakpoint model (v4.5.0) covers `divi-5`, `elementor-4`,
    `oxygen-6`, and classic `oxygen`; Elementor v3's `_tablet`/`_mobile`

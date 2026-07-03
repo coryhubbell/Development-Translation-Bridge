@@ -437,8 +437,13 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 				$url    = $attrs['url'] ?? ( $attrs['href'] ?? '#' );
 				$target = ! empty( $attrs['target'] ) ? ' target="' . esc_attr( $attrs['target'] ) . '"' : '';
 				$rel    = ! empty( $attrs['rel'] ) ? ' rel="' . esc_attr( $attrs['rel'] ) . '"' : '';
+				// Shortcode-based sources (DIVI/WPBakery) carry the button text as a
+				// `label`/`text` attribute rather than element content.
+				$text = $content !== ''
+					? $content
+					: (string) ( $attrs['label'] ?? ( $attrs['text'] ?? ( $attrs['button_text'] ?? '' ) ) );
 				// `wp-element-button` is required by theme.json element-styling pipeline since WP 6.1.
-				return '<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="' . esc_url( $url ) . '"' . $target . $rel . '>' . esc_html( $content ) . '</a></div>';
+				return '<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="' . esc_url( $url ) . '"' . $target . $rel . '>' . esc_html( $text ) . '</a></div>';
 
 			case 'core/quote':
 				// `author` is the Elementor blockquote widget's citation field (parser passes through
@@ -900,6 +905,17 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 				$blocks[] = $this->build_heading_block( $title, 3 );
 				$blocks[] = $this->build_paragraph_block( $body );
 			}
+		} elseif ( ! empty( $component->attributes['heading'] ) || trim( (string) $component->content ) !== '' ) {
+			// Single-panel toggles (DIVI et_pb_toggle) carry a heading attribute
+			// plus body content instead of an items array.
+			$title = (string) ( $component->attributes['heading'] ?? ( $component->attributes['title'] ?? '' ) );
+			if ( $title !== '' ) {
+				$blocks[] = $this->build_heading_block( $title, 3 );
+			}
+			$body = trim( (string) $component->content );
+			if ( $body !== '' ) {
+				$blocks[] = $this->build_paragraph_block( $body );
+			}
 		} elseif ( ! empty( $component->children ) ) {
 			foreach ( $component->children as $child ) {
 				$blocks[] = $this->convert_component( $child );
@@ -999,8 +1015,14 @@ class DEVTB_Gutenberg_Converter implements DEVTB_Converter_Interface {
 	private function convert_testimonial( DEVTB_Component $component ): string {
 		$attrs = $component->attributes;
 		$content = $attrs['testimonial_content'] ?? $component->content;
-		$author = $attrs['testimonial_name'] ?? ( $attrs['name'] ?? '' );
-		$job = $attrs['testimonial_job'] ?? ( $attrs['title'] ?? '' );
+		// `author`/`job_title`/`company_name` are the DIVI parser's attribute
+		// names; `testimonial_*` are Elementor's.
+		$author = $attrs['testimonial_name'] ?? ( $attrs['name'] ?? ( $attrs['author'] ?? '' ) );
+		$job = $attrs['testimonial_job'] ?? ( $attrs['title'] ?? ( $attrs['job_title'] ?? '' ) );
+		$company = (string) ( $attrs['company_name'] ?? '' );
+		if ( $company !== '' ) {
+			$job = trim( $job . ( $job !== '' ? ', ' : '' ) . $company );
+		}
 		$cite = trim( $author . ( $author && $job ? ', ' : '' ) . $job );
 
 		$inner = '<blockquote class="wp-block-quote"><p>' . esc_html( $content ) . '</p>';

@@ -54,6 +54,14 @@ class BricksConverter:
         "section": "section",
         "container": "container",
         "column": "div",
+        "call-to-action": "icon-box",
+        "price-table": "pricing-tables",
+        "alert": "alert",
+        "blockquote": "text-basic",
+        "icon-list": "list",
+        "image-gallery": "image-gallery",
+        "social-icons": "social-icons",
+        "text-editor": "text-basic",
     }
 
     def __init__(self):
@@ -280,6 +288,79 @@ class BricksConverter:
                     "content": item.get("tab_content", ""),
                 }
                 for i, item in enumerate(items)
+            ]
+
+        elif widget_type == "testimonial":
+            bricks_settings["items"] = [
+                {
+                    "content": settings.get("testimonial_content", ""),
+                    "name": settings.get("testimonial_name", ""),
+                    "title": settings.get("testimonial_job", ""),
+                }
+            ]
+
+        elif widget_type == "call-to-action":
+            bricks_settings["heading"] = settings.get("title", "")
+            bricks_settings["text"] = settings.get("description", "")
+            if settings.get("button_text"):
+                bricks_settings["buttonText"] = settings["button_text"]
+
+        elif widget_type == "icon-box":
+            bricks_settings["heading"] = settings.get("title_text", "")
+            bricks_settings["text"] = settings.get("description_text", "")
+            if settings.get("button_text"):
+                bricks_settings["buttonText"] = settings["button_text"]
+
+        elif widget_type == "price-table":
+            bricks_settings["heading"] = settings.get("heading", "")
+            bricks_settings["price"] = settings.get("price", "")
+            if settings.get("currency_symbol"):
+                bricks_settings["currency"] = settings["currency_symbol"]
+            if settings.get("period"):
+                bricks_settings["period"] = settings["period"]
+            bricks_settings["features"] = [
+                {"text": item.get("item_text", "")}
+                for item in settings.get("features", [])
+                if isinstance(item, dict)
+            ]
+            if settings.get("button_text"):
+                bricks_settings["buttonText"] = settings["button_text"]
+
+        elif widget_type == "alert":
+            bricks_settings["heading"] = settings.get("alert_title", "")
+            bricks_settings["text"] = settings.get("alert_description", "")
+            if settings.get("alert_type"):
+                bricks_settings["type"] = settings["alert_type"]
+
+        elif widget_type == "blockquote":
+            bricks_settings["text"] = settings.get("blockquote_content", "")
+            if settings.get("author"):
+                bricks_settings["citation"] = settings["author"]
+
+        elif widget_type == "icon-list":
+            bricks_settings["items"] = [
+                {"text": item.get("text", "")}
+                for item in settings.get("icon_list", [])
+                if isinstance(item, dict)
+            ]
+
+        elif widget_type == "image-gallery":
+            bricks_settings["images"] = [
+                {"url": img.get("url", ""), "id": img.get("id", "")}
+                for img in settings.get("wp_gallery", [])
+                if isinstance(img, dict)
+            ]
+
+        elif widget_type == "social-icons":
+            bricks_settings["items"] = [
+                {
+                    "service": item.get("social", ""),
+                    "link": (item.get("link") or {}).get("url", "")
+                    if isinstance(item.get("link"), dict)
+                    else "",
+                }
+                for item in settings.get("social_icon_list", [])
+                if isinstance(item, dict)
             ]
 
         # Common styling

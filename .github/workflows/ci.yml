@@ -145,6 +145,12 @@ jobs:
         # tests don't reach (see PR #11 for two such bugs caught after 4.3.4 merged).
         run: python tests/smoke_gutenberg_e2e.py
 
+      - name: Run Elementor → Bricks e2e smoke (flat format + content survival)
+        run: python tests/smoke_bricks_e2e.py
+
+      - name: Run DIVI → Gutenberg e2e smoke (content survival + block integrity)
+        run: python tests/smoke_divi_e2e.py
+
   admin-build:
     name: Admin Build (Node ${{ matrix.node }})
     runs-on: ubuntu-latest

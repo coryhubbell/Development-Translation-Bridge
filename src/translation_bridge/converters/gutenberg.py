@@ -213,6 +213,21 @@ class GutenbergConverter:
         comp_type = component.get("type", component.get("widgetType", ""))
         settings = component.get("attributes", component.get("settings", {})) or {}
         content = component.get("content", "")
+
+        # Container-ish universal components: recurse into children inside a
+        # group block (they are not widgets and must never hit the marker path).
+        if comp_type in ("container", "section", "row", "column", "unknown") and component.get("children"):
+            inner = "".join(
+                self._convert(child)
+                for child in component.get("children", [])
+                if isinstance(child, dict)
+            )
+            return (
+                "<!-- wp:group -->\n<div class=\"wp-block-group\">\n"
+                f"{inner}"
+                "</div>\n<!-- /wp:group -->\n\n"
+            )
+
         universal_to_widget = {
             "text": "text-editor",
             "paragraph": "text-editor",
@@ -249,14 +264,65 @@ class GutenbergConverter:
             "progress": "progress",
             "rating": "star-rating",
         }
+        # Translate the universal attribute vocabulary the PHP parsers emit
+        # (label/url/heading/image_url + content) into the Elementor-style
+        # setting keys the widget builders read.
+        synthetic = dict(settings) if isinstance(settings, dict) else {}
+        text = content.strip() if isinstance(content, str) else ""
+
+        def put(key: str, value: Any) -> None:
+            if value not in (None, ""):
+                synthetic.setdefault(key, value)
+
+        if comp_type == "button":
+            put("text", synthetic.get("label"))
+            if synthetic.get("url"):
+                synthetic.setdefault("link", {"url": synthetic["url"]})
+        elif comp_type == "image":
+            if synthetic.get("image_url"):
+                synthetic.setdefault("image", {"url": synthetic["image_url"]})
+            put("alt", synthetic.get("alt_text"))
+        elif comp_type == "card":
+            put("title_text", synthetic.get("heading"))
+            put("description_text", text)
+        elif comp_type == "accordion" and (synthetic.get("heading") or text):
+            synthetic.setdefault(
+                "tabs",
+                [{"tab_title": synthetic.get("heading", ""), "tab_content": text}],
+            )
+        elif comp_type == "counter":
+            put("title", synthetic.get("heading"))
+            put("ending_number", synthetic.get("number"))
+        elif comp_type == "testimonial":
+            put("testimonial_content", text)
+            put("testimonial_name", synthetic.get("author"))
+            job = ", ".join(
+                part
+                for part in (synthetic.get("job_title"), synthetic.get("company_name"))
+                if part
+            )
+            put("testimonial_job", job)
+        elif comp_type == "cta":
+            put("title", synthetic.get("heading"))
+            put("description", text)
+            put("button_text", synthetic.get("label"))
+        elif comp_type in ("countdown", "form", "slider", "portfolio", "toc", "map", "progress", "rating"):
+            put("title", synthetic.get("heading"))
+            put("form_name", synthetic.get("heading"))
+        elif comp_type == "video":
+            put("youtube_url", synthetic.get("image_url") or synthetic.get("url"))
+        elif comp_type == "unknown" and text and not component.get("children"):
+            # Unmapped leaf with raw content — preserve it verbatim as HTML.
+            comp_type = "html"
+            put("html", text)
+
         widget_type = universal_to_widget.get(comp_type, comp_type)
-        synthetic_settings = settings if isinstance(settings, dict) else {}
-        if content and widget_type in ("text-editor", "text"):
-            synthetic_settings = {**synthetic_settings, "editor": content}
+        if text and widget_type in ("text-editor", "text"):
+            synthetic.setdefault("editor", content)
         return self._convert_widget({
             "elType": "widget",
             "widgetType": widget_type,
-            "settings": synthetic_settings,
+            "settings": synthetic,
             "elements": component.get("children", []),
         })
 

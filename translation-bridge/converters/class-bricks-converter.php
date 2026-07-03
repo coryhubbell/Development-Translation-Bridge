@@ -256,6 +256,21 @@ class DEVTB_Bricks_Converter implements DEVTB_Converter_Interface {
 			} elseif ( $key === 'heading' && isset( $attributes['title'] ) ) {
 				// For icon-box, use title
 				$settings['title'] = $value;
+			} elseif ( $key === 'wp_gallery' || $key === 'images' ) {
+				// Gallery images: decode JSON-string blobs from upstream
+				// normalization into the real Bricks images array.
+				$images = is_string( $value ) ? json_decode( $value, true ) : $value;
+				if ( is_array( $images ) ) {
+					$settings['images'] = array_values( array_map(
+						static fn( $img ) => [
+							'url' => is_array( $img ) ? (string) ( $img['url'] ?? '' ) : '',
+							'id'  => is_array( $img ) ? ( $img['id'] ?? '' ) : '',
+						],
+						array_filter( $images, 'is_array' )
+					) );
+				} else {
+					$settings[ $bricks_key ] = $value;
+				}
 			} else {
 				$settings[ $bricks_key ] = $value;
 			}

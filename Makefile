@@ -5,7 +5,7 @@
 # Run 'make help' to see available targets
 # =============================================================================
 
-.PHONY: setup install verify composer-validate composer-install composer-audit python-install test test-php test-coverage test-watch test-unit test-integration test-python gutenberg-smoke lint-php docker-up docker-down docker-logs docker-restart docker-clean admin-dev admin-install admin-build admin-lint admin-typecheck admin-audit release-package-smoke whitespace-check clean clean-all version help
+.PHONY: setup install verify composer-validate composer-install composer-audit python-install test test-php test-coverage test-watch test-unit test-integration test-python gutenberg-smoke bricks-smoke divi-smoke e2e-smoke lint-php docker-up docker-down docker-logs docker-restart docker-clean admin-dev admin-install admin-build admin-lint admin-typecheck admin-audit release-package-smoke whitespace-check clean clean-all version help
 
 COMPOSER ?= $(if $(wildcard composer.phar),php composer.phar,composer)
 NPM ?= npm
@@ -26,7 +26,7 @@ install: ## Install all dependencies (PHP + Node)
 	@$(COMPOSER) install --prefer-dist --no-progress
 	@if [ -d "admin" ]; then cd admin && $(NPM) ci; fi
 
-verify: composer-validate composer-install composer-audit test-php python-install test-python gutenberg-smoke admin-install admin-lint admin-typecheck admin-build admin-audit release-package-smoke whitespace-check ## Run the full local release verification suite
+verify: composer-validate composer-install composer-audit test-php python-install test-python e2e-smoke admin-install admin-lint admin-typecheck admin-build admin-audit release-package-smoke whitespace-check ## Run the full local release verification suite
 
 composer-validate: ## Validate Composer metadata
 	@$(COMPOSER) validate --no-check-all
@@ -69,6 +69,14 @@ test-python: ## Run Python tests (v4 transform engine)
 
 gutenberg-smoke: ## Run Elementor to Gutenberg e2e smoke
 	@PYTHONPATH=src $(PYTHON) tests/smoke_gutenberg_e2e.py
+
+bricks-smoke: ## Run Elementor to Bricks e2e smoke
+	@PYTHONPATH=src $(PYTHON) tests/smoke_bricks_e2e.py
+
+divi-smoke: ## Run DIVI to Gutenberg e2e smoke
+	@PYTHONPATH=src $(PYTHON) tests/smoke_divi_e2e.py
+
+e2e-smoke: gutenberg-smoke bricks-smoke divi-smoke ## Run all e2e fidelity smoke gates
 
 lint-php: ## Check PHP syntax
 	@find includes translation-bridge -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
