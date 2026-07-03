@@ -688,9 +688,33 @@ round-tripping. The `oxygen-6` path intentionally tracks the verified
 Breakdance-derived schema (~80% shared codebase) rather than chasing
 Oxygen 6-specific deltas.
 
-A 5.x line — if it happens — would likely consolidate the PHP and Python
-engines onto a single shared schema and drop the legacy HTML-intermediate
-path.
+### Next (4.7+)
+
+Candidate work for upcoming 4.x releases, roughly in priority order:
+
+1. **More JSON source parsers for the lossless `transform` path.** Today only
+   Elementor JSON rides the 100%-metadata Python engine; Bricks, Oxygen, and
+   Elementor 4 Atomic are JSON-native formats currently forced through the
+   ~42%-fidelity HTML-intermediate path when used as *sources*. Bringing them
+   onto `transform` is the single biggest fidelity win available.
+2. **E2e fidelity smoke gates for more targets.** The kitchen-sink smoke that
+   guards Elementor → Gutenberg (and caught two real bugs before v4.3.4
+   shipped) has no equivalent for other high-traffic targets — Elementor →
+   Bricks and DIVI → Gutenberg are the natural next gates.
+3. **Responsive canonicalization for the remaining frameworks.** The
+   canonical breakpoint model (v4.5.0) covers `divi-5`, `elementor-4`,
+   `oxygen-6`, and classic `oxygen`; Elementor v3's `_tablet`/`_mobile`
+   setting suffixes and Bricks' breakpoint arrays don't feed it yet, so
+   their responsive data still drops in cross-framework conversions.
+4. **Python parsers for the remaining frameworks.** The Python engine is
+   converter-only for nearly everything (Elementor is the lone parser),
+   which is half of the eventual engine consolidation below.
+
+### 5.x (speculative)
+
+A 5.x line — if it happens — would consolidate the PHP and Python engines
+onto a single shared schema and drop the legacy HTML-intermediate path.
+Items 1 and 4 above are its stepping stones.
 
 ---
 
