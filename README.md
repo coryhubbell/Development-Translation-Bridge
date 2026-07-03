@@ -499,6 +499,13 @@ docker-compose up -d
 # phpMyAdmin:   http://localhost:8081
 ```
 
+The stack pins WordPress 7.0 (PHP 8.4 + Apache), MySQL 9.7, and phpMyAdmin
+5.2 — image versions are kept fresh by Dependabot's monthly
+`docker-compose` updates. Ports and database credentials are overridable via
+environment variables (`WORDPRESS_PORT`, `MYSQL_PORT`, `MYSQL_USER`, ...);
+see [`docker-compose.yml`](docker-compose.yml) for the full list and
+[`DOCKER_SETUP.md`](DOCKER_SETUP.md) for a walkthrough.
+
 The plugin is mounted from the working tree, so edits are reflected
 immediately.
 
