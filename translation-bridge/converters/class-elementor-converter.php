@@ -21,6 +21,7 @@ use DEVTB\TranslationBridge\Core\DEVTB_Converter_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
 use DEVTB\TranslationBridge\Utils\DEVTB_JSON_Helper;
 use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 
 /**
  * Class DEVTB_Elementor_Converter
@@ -272,6 +273,14 @@ class DEVTB_Elementor_Converter implements DEVTB_Converter_Interface {
 		// Add styles
 		if ( ! empty( $component->styles ) ) {
 			$settings = array_merge( $settings, $this->convert_styles( $component->styles ) );
+		}
+
+		// Responsive round-trip: emit canonical responsive styles as Elementor
+		// `_tablet` / `_mobile` / `_hover` suffixed settings.
+		$metadata  = is_array( $component->metadata ?? null ) ? $component->metadata : [];
+		$canonical = $metadata[ DEVTB_Responsive_Helper::METADATA_KEY ]['styles'] ?? null;
+		if ( is_array( $canonical ) ) {
+			$settings = array_merge( $settings, DEVTB_Responsive_Helper::canonical_to_elementor_v3_settings( $canonical ) );
 		}
 
 		// Handle nested elements for tabs/accordions (stored in settings, not elements)

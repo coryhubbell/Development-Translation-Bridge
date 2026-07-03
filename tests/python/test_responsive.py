@@ -119,3 +119,126 @@ class TestOxygen6Responsive:
         assert design["font-size"]["breakpoint_base"] == "32px"
         assert design["font-size"]["breakpoint_tablet_portrait"] == "24px"
         assert design["font-size"]["breakpoint_phone_portrait"] == "18px"
+
+
+class TestElementorV3Canonicalization:
+    def test_parser_canonicalizes_suffixes(self):
+        from translation_bridge.parsers.elementor import ElementorParser
+
+        doc = ElementorParser().parse(
+            [
+                {
+                    "id": "w1",
+                    "elType": "widget",
+                    "widgetType": "heading",
+                    "settings": {
+                        "title": "Hi",
+                        "align": "left",
+                        "align_tablet": "center",
+                        "align_mobile": "right",
+                        "color_hover": "#ff0000",
+                    },
+                }
+            ]
+        )
+        element = doc.elements[0].to_dict()
+        styles = element["responsive"]["styles"]
+        assert styles["tablet"]["default"]["align"] == "center"
+        assert styles["phone"]["default"]["align"] == "right"
+        assert styles["desktop"]["hover"]["color"] == "#ff0000"
+
+    def test_converter_emits_suffixes(self):
+        from translation_bridge.converters.elementor import ElementorConverter
+        import json as _json
+
+        out = ElementorConverter().convert(
+            [
+                {
+                    "type": "heading",
+                    "content": "Hi",
+                    "attributes": {},
+                    "responsive": {
+                        "styles": {
+                            "tablet": {"default": {"align": "center"}},
+                            "phone": {"default": {"align": "right"}},
+                            "desktop": {"hover": {"color": "#f00"}},
+                        }
+                    },
+                }
+            ]
+        )
+        text = out if isinstance(out, str) else _json.dumps(out)
+        assert "align_tablet" in text
+        assert "align_mobile" in text
+        assert "color_hover" in text
+
+
+class TestBricksCanonicalization:
+    def test_parser_canonicalizes_breakpoint_suffixes(self):
+        from translation_bridge.parsers.bricks import BricksParser
+
+        doc = BricksParser().parse(
+            [
+                {
+                    "id": "h1",
+                    "name": "heading",
+                    "parent": 0,
+                    "children": [],
+                    "settings": {
+                        "text": "Hi",
+                        "_typography": {"font-size": "32px"},
+                        "_typography:tablet_portrait": {"font-size": "24px"},
+                        "_typography:mobile_portrait": {"font-size": "18px"},
+                    },
+                }
+            ]
+        )
+        styles = doc.elements[0].responsive["styles"]
+        assert styles["tablet"]["default"]["_typography"]["font-size"] == "24px"
+        assert styles["phone"]["default"]["_typography"]["font-size"] == "18px"
+
+    def test_converter_emits_breakpoint_suffixes(self):
+        from translation_bridge.converters.bricks import BricksConverter
+
+        out = BricksConverter().convert(
+            [
+                {
+                    "type": "heading",
+                    "settings": {"title": "Hi"},
+                    "elType": "widget",
+                    "widgetType": "heading",
+                    "responsive": {
+                        "styles": {
+                            "tablet": {"default": {"_typography": {"font-size": "24px"}}},
+                            "phone": {"default": {"_typography": {"font-size": "18px"}}},
+                        }
+                    },
+                }
+            ]
+        )
+        assert "_typography:tablet_portrait" in out
+        assert "_typography:mobile_portrait" in out
+
+    def test_cross_framework_bricks_to_elementor(self):
+        from translation_bridge.parsers.bricks import BricksParser
+        from translation_bridge.converters.elementor import ElementorConverter
+        import json as _json
+
+        doc = BricksParser().parse(
+            [
+                {
+                    "id": "h1",
+                    "name": "heading",
+                    "parent": 0,
+                    "children": [],
+                    "settings": {
+                        "text": "Hi",
+                        "align": "left",
+                        "align:tablet_portrait": "center",
+                    },
+                }
+            ]
+        )
+        out = ElementorConverter().convert(doc.to_dict())
+        text = out if isinstance(out, str) else _json.dumps(out)
+        assert "align_tablet" in text, "Bricks tablet override must become an Elementor _tablet suffix"

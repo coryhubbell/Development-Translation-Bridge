@@ -79,6 +79,119 @@ class DEVTB_Responsive_Helper {
 	];
 
 	/**
+	 * Elementor v3 responsive setting suffixes → [breakpoint, state].
+	 */
+	public const ELEMENTOR_V3_SUFFIXES = [
+		'_tablet' => [ 'tablet', 'default' ],
+		'_mobile' => [ 'phone', 'default' ],
+		'_hover'  => [ 'desktop', 'hover' ],
+	];
+
+	/**
+	 * Bricks responsive setting-key suffixes → breakpoint.
+	 * `mobile_landscape` has no canonical slot and passes through verbatim.
+	 */
+	public const BRICKS_BREAKPOINT_SUFFIXES = [
+		':tablet_portrait' => 'tablet',
+		':mobile_portrait' => 'phone',
+	];
+
+	/**
+	 * Canonicalize Elementor v3 suffix-based responsive settings
+	 * (`align_tablet`, `align_mobile`, `color_hover`). Base (unsuffixed)
+	 * settings are the desktop defaults and stay where they are.
+	 *
+	 * @param array<string, mixed> $settings Widget settings.
+	 * @return array<string, array<string, array<string, mixed>>>|null
+	 */
+	public static function elementor_v3_settings_to_canonical( array $settings ): ?array {
+		$canonical = [];
+		foreach ( $settings as $key => $value ) {
+			foreach ( self::ELEMENTOR_V3_SUFFIXES as $suffix => [$breakpoint, $state] ) {
+				$len = strlen( $suffix );
+				if ( strlen( $key ) > $len && substr( $key, -$len ) === $suffix ) {
+					$base = substr( $key, 0, -$len );
+					$canonical[ $breakpoint ][ $state ][ $base ] = $value;
+					break;
+				}
+			}
+		}
+		return $canonical === [] ? null : $canonical;
+	}
+
+	/**
+	 * Emit Elementor v3 suffix-based settings from canonical styles.
+	 *
+	 * @param array<string, array<string, array<string, mixed>>> $canonical Canonical styles.
+	 * @return array<string, mixed>
+	 */
+	public static function canonical_to_elementor_v3_settings( array $canonical ): array {
+		$suffix_for = [
+			'tablet:default' => '_tablet',
+			'phone:default'  => '_mobile',
+			'desktop:hover'  => '_hover',
+		];
+		$out = [];
+		foreach ( $canonical as $breakpoint => $states ) {
+			if ( ! is_array( $states ) ) {
+				continue;
+			}
+			foreach ( $states as $state => $props ) {
+				$suffix = $suffix_for[ $breakpoint . ':' . $state ] ?? null;
+				if ( $suffix === null || ! is_array( $props ) ) {
+					continue;
+				}
+				foreach ( $props as $prop => $value ) {
+					$out[ $prop . $suffix ] = $value;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Canonicalize Bricks breakpoint-suffixed settings
+	 * (`_padding:tablet_portrait`).
+	 *
+	 * @param array<string, mixed> $settings Element settings.
+	 * @return array<string, array<string, array<string, mixed>>>|null
+	 */
+	public static function bricks_settings_to_canonical( array $settings ): ?array {
+		$canonical = [];
+		foreach ( $settings as $key => $value ) {
+			foreach ( self::BRICKS_BREAKPOINT_SUFFIXES as $suffix => $breakpoint ) {
+				$len = strlen( $suffix );
+				if ( strlen( $key ) > $len && substr( $key, -$len ) === $suffix ) {
+					$base = substr( $key, 0, -$len );
+					$canonical[ $breakpoint ]['default'][ $base ] = $value;
+					break;
+				}
+			}
+		}
+		return $canonical === [] ? null : $canonical;
+	}
+
+	/**
+	 * Emit Bricks breakpoint-suffixed settings from canonical styles.
+	 *
+	 * @param array<string, array<string, array<string, mixed>>> $canonical Canonical styles.
+	 * @return array<string, mixed>
+	 */
+	public static function canonical_to_bricks_settings( array $canonical ): array {
+		$suffix_for = [ 'tablet' => ':tablet_portrait', 'phone' => ':mobile_portrait' ];
+		$out = [];
+		foreach ( $suffix_for as $breakpoint => $suffix ) {
+			$props = $canonical[ $breakpoint ]['default'] ?? null;
+			if ( is_array( $props ) ) {
+				foreach ( $props as $prop => $value ) {
+					$out[ $prop . $suffix ] = $value;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/**
 	 * Parse a DIVI 5 responsive wrapper into a canonical field entry.
 	 *
 	 * `{"desktop": {"value": X, "hover": H}, "tablet": {"value": Y}}` →

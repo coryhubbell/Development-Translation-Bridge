@@ -9,6 +9,11 @@ from typing import Any, Dict, List, Optional, Union
 import secrets
 from dataclasses import dataclass, field
 
+from translation_bridge.responsive import (
+    canonical_to_elementor_v3_settings,
+    element_responsive,
+)
+
 
 # Upstream framework version this converter is calibrated against.
 # Elementor 4.x ("Atomic Editor") is a full rewrite; it is detect-and-passthrough'd
@@ -128,11 +133,26 @@ class ElementorConverter:
     def _convert_element(self, element: Dict[str, Any]) -> Dict[str, Any]:
         """Convert a single element, preserving structure if already Elementor."""
         if "elType" in element:
-            # Already Elementor format, just ensure IDs
-            return self._ensure_ids(element)
+            # Already Elementor format: ensure IDs and materialize any
+            # canonical responsive data into _tablet/_mobile/_hover suffixes.
+            element = self._ensure_ids(element)
+            self._merge_responsive_settings(element)
+            return element
 
         # Convert to Elementor widget
         return self._convert_component(element)
+
+    def _merge_responsive_settings(self, element: Dict[str, Any]) -> None:
+        """Recursively emit canonical responsive data as suffixed settings."""
+        responsive = element.pop("responsive", None)
+        canonical = responsive.get("styles") if isinstance(responsive, dict) else None
+        if isinstance(canonical, dict):
+            element.setdefault("settings", {}).update(
+                canonical_to_elementor_v3_settings(canonical)
+            )
+        for child in element.get("elements") or []:
+            if isinstance(child, dict):
+                self._merge_responsive_settings(child)
 
     def _convert_component(self, component: Dict[str, Any]) -> Dict[str, Any]:
         """Convert a universal component to Elementor widget."""
@@ -140,6 +160,13 @@ class ElementorConverter:
         widget_type = self.WIDGET_TYPE_MAP.get(comp_type, "text-editor")
 
         settings = self._build_settings(component, widget_type)
+
+        # Responsive round-trip: emit canonical responsive styles as
+        # Elementor `_tablet` / `_mobile` / `_hover` suffixed settings.
+        responsive = element_responsive(component) or {}
+        canonical = responsive.get("styles")
+        if isinstance(canonical, dict):
+            settings.update(canonical_to_elementor_v3_settings(canonical))
 
         return {
             "id": self._generate_id(),

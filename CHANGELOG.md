@@ -9,7 +9,20 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **Responsive canonicalization for Elementor v3 and Bricks** (roadmap 4.7+
+  item 3): both frameworks now feed the canonical responsive model
+  (desktop/tablet/phone × default/hover), completing coverage across all six
+  responsive-capable paths.
+  - Elementor v3: `_tablet`/`_mobile`/`_hover` setting suffixes canonicalize
+    on parse (PHP + Python parsers) and re-emit on convert (PHP + Python
+    converters).
+  - Bricks: `:tablet_portrait`/`:mobile_portrait` setting-key suffixes
+    canonicalize on parse and re-emit on convert (both engines);
+    `mobile_landscape` passes through verbatim.
+  - Cross-framework transfer works both directions (e.g. Elementor tablet
+    overrides → Bricks `:tablet_portrait` keys), covered by 4 new PHP and 5
+    new Python round-trip tests.
 
 ## [4.8.0] — 2026-07-03
 

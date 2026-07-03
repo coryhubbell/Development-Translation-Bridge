@@ -256,4 +256,108 @@ class ResponsiveRoundTripTest extends TestCase {
 		$this->assertSame( '24px', $design['font-size']['breakpoint_tablet_portrait'] ?? null );
 		$this->assertSame( '18px', $design['font-size']['breakpoint_phone_portrait'] ?? null );
 	}
+
+	// -----------------------------------------------------------------
+	// Elementor v3 — _tablet/_mobile/_hover setting suffixes
+	// -----------------------------------------------------------------
+
+	private function elementorV3WidgetWithSuffixes(): array {
+		return [
+			[
+				'id'       => 'sec1',
+				'elType'   => 'section',
+				'settings' => [],
+				'elements' => [
+					[
+						'id'       => 'col1',
+						'elType'   => 'column',
+						'settings' => [ '_column_size' => 100 ],
+						'elements' => [
+							[
+								'id'         => 'w1',
+								'elType'     => 'widget',
+								'widgetType' => 'heading',
+								'settings'   => [
+									'title'         => 'Hi',
+									'align'         => 'left',
+									'align_tablet'  => 'center',
+									'align_mobile'  => 'right',
+									'color_hover'   => '#ff0000',
+								],
+								'elements'   => [],
+							],
+						],
+					],
+				],
+			],
+		];
+	}
+
+	public function testElementorV3ParserCanonicalizesSuffixes(): void {
+		$parser     = new \DEVTB\TranslationBridge\Parsers\DEVTB_Elementor_Parser();
+		$components = $parser->parse( wp_json_encode( $this->elementorV3WidgetWithSuffixes() ) );
+
+		$widget = $components[0]->children[0]->children[0];
+		$styles = $widget->metadata[ DEVTB_Responsive_Helper::METADATA_KEY ]['styles'] ?? null;
+
+		$this->assertIsArray( $styles );
+		$this->assertSame( 'center', $styles['tablet']['default']['align'] ?? null );
+		$this->assertSame( 'right', $styles['phone']['default']['align'] ?? null );
+		$this->assertSame( '#ff0000', $styles['desktop']['hover']['color'] ?? null );
+	}
+
+	public function testElementorV3RoundTripReEmitsSuffixes(): void {
+		$parser     = new \DEVTB\TranslationBridge\Parsers\DEVTB_Elementor_Parser();
+		$components = $parser->parse( wp_json_encode( $this->elementorV3WidgetWithSuffixes() ) );
+
+		$converter = new \DEVTB\TranslationBridge\Converters\DEVTB_Elementor_Converter();
+		$output    = $converter->convert( $components );
+		$decoded   = is_string( $output ) ? json_decode( $output, true ) : $output;
+		$flat      = wp_json_encode( $decoded );
+
+		$this->assertStringContainsString( 'align_tablet', $flat );
+		$this->assertStringContainsString( 'align_mobile', $flat );
+		$this->assertStringContainsString( 'color_hover', $flat );
+	}
+
+	// -----------------------------------------------------------------
+	// Bricks — :breakpoint setting-key suffixes
+	// -----------------------------------------------------------------
+
+	public function testBricksParserCanonicalizesBreakpointSuffixes(): void {
+		$input = wp_json_encode( [
+			[
+				'id'       => 'abc123',
+				'name'     => 'heading',
+				'parent'   => 0,
+				'children' => [],
+				'settings' => [
+					'text'                        => 'Hi',
+					'_typography'                 => [ 'font-size' => '32px' ],
+					'_typography:tablet_portrait' => [ 'font-size' => '24px' ],
+					'_typography:mobile_portrait' => [ 'font-size' => '18px' ],
+				],
+			],
+		] );
+
+		$parser     = new \DEVTB\TranslationBridge\Parsers\DEVTB_Bricks_Parser();
+		$components = $parser->parse( $input );
+
+		$this->assertNotEmpty( $components );
+		$styles = $components[0]->metadata[ DEVTB_Responsive_Helper::METADATA_KEY ]['styles'] ?? null;
+		$this->assertIsArray( $styles );
+		$this->assertSame( '24px', $styles['tablet']['default']['_typography']['font-size'] ?? null );
+		$this->assertSame( '18px', $styles['phone']['default']['_typography']['font-size'] ?? null );
+	}
+
+	public function testCrossFrameworkElementorV3ToBricks(): void {
+		$parser     = new \DEVTB\TranslationBridge\Parsers\DEVTB_Elementor_Parser();
+		$components = $parser->parse( wp_json_encode( $this->elementorV3WidgetWithSuffixes() ) );
+
+		$converter = new \DEVTB\TranslationBridge\Converters\DEVTB_Bricks_Converter();
+		$output    = $converter->convert( $components );
+
+		$this->assertStringContainsString( 'align:tablet_portrait', $output, 'Elementor tablet override must become a Bricks breakpoint key' );
+		$this->assertStringContainsString( 'align:mobile_portrait', $output );
+	}
 }

@@ -21,6 +21,7 @@ use DEVTB\TranslationBridge\Core\DEVTB_Parser_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
 use DEVTB\TranslationBridge\Utils\DEVTB_JSON_Helper;
 use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 
 /**
  * Class DEVTB_Bricks_Parser
@@ -255,17 +256,26 @@ class DEVTB_Bricks_Parser implements DEVTB_Parser_Interface {
 		$content    = $this->extract_element_content( $element_name, $settings );
 		$category   = $this->get_category( $universal_type );
 
+		$metadata = [
+			'source_framework' => 'bricks',
+			'original_type'    => $element_name,
+			'bricks_id'        => $element['id'] ?? '',
+			'bricks_settings'  => $settings,
+		];
+
+		// Canonicalize `:tablet_portrait` / `:mobile_portrait` setting-key
+		// suffixes so responsive data survives cross-framework conversions.
+		$responsive = DEVTB_Responsive_Helper::bricks_settings_to_canonical( $settings );
+		if ( $responsive !== null ) {
+			$metadata[ DEVTB_Responsive_Helper::METADATA_KEY ] = [ 'styles' => $responsive ];
+		}
+
 		return new DEVTB_Component([
 			'type'       => $universal_type,
 			'category'   => $category,
 			'attributes' => $attributes,
 			'content'    => $content,
-			'metadata'   => [
-				'source_framework' => 'bricks',
-				'original_type'    => $element_name,
-				'bricks_id'        => $element['id'] ?? '',
-				'bricks_settings'  => $settings,
-			],
+			'metadata'   => $metadata,
 		]);
 	}
 

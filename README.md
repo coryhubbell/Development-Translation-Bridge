@@ -731,11 +731,12 @@ Candidate work for upcoming 4.x releases, roughly in priority order:
    Elementor → Bricks and DIVI → Gutenberg kitchen-sink gates now run through
    both engines on every push/PR alongside the original Elementor → Gutenberg
    gate — and caught seven real content drops on their first run.
-3. **Responsive canonicalization for the remaining frameworks.** The
-   canonical breakpoint model (v4.5.0) covers `divi-5`, `elementor-4`,
-   `oxygen-6`, and classic `oxygen`; Elementor v3's `_tablet`/`_mobile`
-   setting suffixes and Bricks' breakpoint arrays don't feed it yet, so
-   their responsive data still drops in cross-framework conversions.
+3. ~~**Responsive canonicalization for the remaining frameworks.**~~
+   **Done (unreleased):** Elementor v3's `_tablet`/`_mobile`/`_hover` setting
+   suffixes and Bricks' `:breakpoint` setting keys now canonicalize on parse
+   and re-emit on convert, so responsive data survives round trips and
+   transfers across frameworks (e.g. Elementor tablet overrides become
+   Bricks `:tablet_portrait` keys).
 4. **Python parsers for the remaining frameworks.** The Python engine is
    converter-only for nearly everything (Elementor is the lone parser),
    which is half of the eventual engine consolidation below.
