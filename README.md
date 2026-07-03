@@ -551,7 +551,8 @@ Topical guides under [`docs/`](docs):
 | [`claude-integration.md`](docs/claude-integration.md) | AI-assisted editing workflows |
 | [`PLUGIN_CONVERSION.md`](docs/PLUGIN_CONVERSION.md) | Plugin migration cookbook |
 
-Release notes live at [`RELEASE_NOTES_V*.md`](.) and in
+A consolidated version history lives in [`CHANGELOG.md`](CHANGELOG.md);
+detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 [GitHub Releases](https://github.com/coryhubbell/Development-Translation-Bridge/releases).
 
 ---
