@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    4.7.0
+ * @version    4.8.0
  */
 
 class DEVTB_Logger {
