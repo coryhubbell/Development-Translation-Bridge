@@ -25,6 +25,7 @@ namespace DEVTB\TranslationBridge\Converters;
 
 use DEVTB\TranslationBridge\Core\DEVTB_Converter_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 
 /**
  * Class DEVTB_DIVI5_Converter
@@ -238,6 +239,29 @@ class DEVTB_DIVI5_Converter implements DEVTB_Converter_Interface {
 					$module_content['text'] = $this->responsive( $content );
 				}
 				break;
+		}
+
+		// Round-trip responsive data: overlay full multi-breakpoint wrappers
+		// for any field with canonical responsive metadata (tablet/phone
+		// breakpoints, hover states) collected at parse time.
+		$metadata   = is_array( $component->metadata ?? null ) ? $component->metadata : [];
+		$responsive = $metadata[ DEVTB_Responsive_Helper::METADATA_KEY ]['fields'] ?? [];
+		if ( is_array( $responsive ) ) {
+			foreach ( $responsive as $field => $canonical ) {
+				if ( ! is_array( $canonical ) ) {
+					continue;
+				}
+				$wrapper = DEVTB_Responsive_Helper::canonical_to_divi5_wrapper( $canonical );
+				if ( $wrapper === [] ) {
+					continue;
+				}
+				// Preserve the freshly-derived desktop default when the
+				// canonical entry only carries overrides.
+				if ( ! isset( $wrapper['desktop']['value'] ) && isset( $module_content[ $field ]['desktop']['value'] ) ) {
+					$wrapper['desktop']['value'] = $module_content[ $field ]['desktop']['value'];
+				}
+				$module_content[ $field ] = $wrapper;
+			}
 		}
 
 		$result = [];

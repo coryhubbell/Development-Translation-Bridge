@@ -40,6 +40,7 @@ namespace DEVTB\TranslationBridge\Converters;
 
 use DEVTB\TranslationBridge\Core\DEVTB_Converter_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 
 /**
  * Class DEVTB_Oxygen6_Converter
@@ -271,7 +272,18 @@ class DEVTB_Oxygen6_Converter implements DEVTB_Converter_Interface {
 		if ( ! empty( $fields ) ) {
 			$properties['content'] = [ 'content' => $fields ];
 		}
-		if ( ! empty( $styles ) ) {
+
+		// Responsive round-trip: rebuild the design tree with breakpoint_*
+		// leaves from canonical responsive metadata when present; otherwise
+		// fall back to the flat styles bag.
+		$metadata  = is_array( $component->metadata ?? null ) ? $component->metadata : [];
+		$canonical = $metadata[ DEVTB_Responsive_Helper::METADATA_KEY ]['styles'] ?? null;
+		if ( is_array( $canonical ) ) {
+			$design = DEVTB_Responsive_Helper::canonical_to_oxygen6_design( $canonical );
+			if ( $design !== [] ) {
+				$properties['design'] = $design;
+			}
+		} elseif ( ! empty( $styles ) ) {
 			$properties['design'] = $styles;
 		}
 

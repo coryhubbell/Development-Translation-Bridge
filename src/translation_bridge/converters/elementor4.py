@@ -46,6 +46,11 @@ import json
 import secrets
 from typing import Any, Dict, List, Optional
 
+from translation_bridge.responsive import (
+    canonical_to_elementor4_variants,
+    element_responsive,
+)
+
 
 # Upstream framework version this converter is calibrated against.
 TARGET_CMS_VERSION: str = "4.0.0"
@@ -261,22 +266,36 @@ class Elementor4Converter:
         return out
 
     def _build_styles(self, element: Dict[str, Any]) -> Dict[str, Any]:
-        """Emit styles as a real Style_Definition entry with variants."""
-        styles = element.get("styles") if isinstance(element.get("styles"), dict) else {}
-        if not styles:
-            return {}
+        """Emit styles as a real Style_Definition entry with variants.
+
+        With canonical responsive data present, one variant is emitted per
+        breakpoint/state; otherwise a single desktop variant carries the flat
+        styles dict.
+        """
+        responsive = element_responsive(element) or {}
+        canonical = responsive.get("styles")
+        variants: List[Dict[str, Any]] = []
+        if isinstance(canonical, dict):
+            variants = canonical_to_elementor4_variants(canonical)
+
+        if not variants:
+            styles = element.get("styles") if isinstance(element.get("styles"), dict) else {}
+            if not styles:
+                return {}
+            variants = [
+                {
+                    "meta": {"breakpoint": "desktop", "state": None},
+                    "props": styles,
+                }
+            ]
+
         style_id = f"e-{self._generate_id()}"
         return {
             style_id: {
                 "id": style_id,
                 "type": "class",
                 "label": "local",
-                "variants": [
-                    {
-                        "meta": {"breakpoint": "desktop", "state": None},
-                        "props": styles,
-                    }
-                ],
+                "variants": variants,
             }
         }
 

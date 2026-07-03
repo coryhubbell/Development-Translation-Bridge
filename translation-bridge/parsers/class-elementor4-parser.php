@@ -22,10 +22,11 @@
  *   - Widgets: `e-heading`, `e-paragraph`, `e-button`, `e-image`, `e-form`
  *
  * The `settings` and `styles` fields are either an empty array (none defined)
- * or an object. `styles` is the structured, centralised location for local
- * style definitions including responsive variants and pseudo-state styles;
- * v1 reads it verbatim into component metadata so a follow-up patch can
- * surface it as proper responsive breakpoints.
+ * or an object. `styles` holds local style definitions including responsive
+ * variants and pseudo-state styles; variants are kept verbatim in component
+ * metadata AND canonicalized into metadata['responsive']['styles'] (see
+ * DEVTB_Responsive_Helper) so breakpoints/states round-trip through
+ * conversions.
  *
  * @package DevelopmentTranslation_Bridge
  * @subpackage Translation_Bridge
@@ -36,6 +37,7 @@ namespace DEVTB\TranslationBridge\Parsers;
 
 use DEVTB\TranslationBridge\Core\DEVTB_Parser_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 
 /**
  * Class DEVTB_Elementor4_Parser
@@ -147,22 +149,32 @@ class DEVTB_Elementor4_Parser implements DEVTB_Parser_Interface {
 		$content    = $this->extract_content( $el_type, $settings );
 		$attributes = $this->normalize_settings( $el_type, $settings );
 
+		$metadata = [
+			'source_framework'         => 'elementor-4',
+			'original_type'            => $el_type,
+			'elementor4_id'            => $element['id'] ?? '',
+			'elementor4_version'       => $element['version'] ?? null,
+			'elementor4_isInner'       => (bool) ( $element['isInner'] ?? false ),
+			'elementor4_settings'      => $settings,
+			'elementor4_styles'        => $styles,
+			'elementor4_editor'        => $editor_settings,
+			'elementor4_interactions'  => $interactions,
+		];
+
+		// Canonicalize style variants (breakpoints + states) so responsive
+		// styling survives round trips and cross-framework transfers.
+		$canonical_styles = $this->canonicalize_styles( $styles );
+		if ( $canonical_styles !== null ) {
+			$metadata[ DEVTB_Responsive_Helper::METADATA_KEY ] = [ 'styles' => $canonical_styles ];
+		}
+
 		$component = new DEVTB_Component( [
 			'type'       => $universal_type,
 			'category'   => $this->get_category( $universal_type ),
 			'attributes' => $attributes,
 			'content'    => $content,
-			'metadata'   => [
-				'source_framework'         => 'elementor-4',
-				'original_type'            => $el_type,
-				'elementor4_id'            => $element['id'] ?? '',
-				'elementor4_version'       => $element['version'] ?? null,
-				'elementor4_isInner'       => (bool) ( $element['isInner'] ?? false ),
-				'elementor4_settings'      => $settings,
-				'elementor4_styles'        => $styles,
-				'elementor4_editor'        => $editor_settings,
-				'elementor4_interactions'  => $interactions,
-			],
+			'styles'     => $canonical_styles['desktop']['default'] ?? [],
+			'metadata'   => $metadata,
 		] );
 
 		if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
@@ -175,6 +187,36 @@ class DEVTB_Elementor4_Parser implements DEVTB_Parser_Interface {
 		}
 
 		return $component;
+	}
+
+	/**
+	 * Merge every style definition's variants into one canonical styles map.
+	 *
+	 * @param array $styles Element styles (style-definition entries).
+	 * @return array<string, array<string, array<string, mixed>>>|null
+	 */
+	private function canonicalize_styles( array $styles ): ?array {
+		$merged = null;
+
+		foreach ( $styles as $definition ) {
+			if ( ! is_array( $definition ) || ! is_array( $definition['variants'] ?? null ) ) {
+				continue;
+			}
+			$canonical = DEVTB_Responsive_Helper::elementor4_variants_to_canonical( $definition['variants'] );
+			if ( $canonical === null ) {
+				continue;
+			}
+			foreach ( $canonical as $breakpoint => $states ) {
+				foreach ( $states as $state => $props ) {
+					$merged[ $breakpoint ][ $state ] = array_merge(
+						$merged[ $breakpoint ][ $state ] ?? [],
+						$props
+					);
+				}
+			}
+		}
+
+		return $merged;
 	}
 
 	/**

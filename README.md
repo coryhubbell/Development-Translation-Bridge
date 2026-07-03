@@ -634,11 +634,12 @@ as of v4.4.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
-(see [Schema verification status](#schema-verification-status)). Remaining
+(see [Schema verification status](#schema-verification-status)), and
+responsive breakpoint round-tripping landed right after: tablet/phone
+breakpoints and hover states now survive round trips for all three paths and
+transfer across frameworks through a canonical responsive model. Remaining
 4.x.y work:
 
-- Responsive breakpoint round-tripping for DIVI 5 / Elementor 4 / Oxygen 6
-  (v1 reads desktop values only).
 - An Oxygen 6-specific export fixture (vs. the Breakdance one) would close the
   last ~20% of schema uncertainty — contributions welcome.
 

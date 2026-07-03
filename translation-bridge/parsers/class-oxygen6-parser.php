@@ -31,6 +31,7 @@ namespace DEVTB\TranslationBridge\Parsers;
 
 use DEVTB\TranslationBridge\Core\DEVTB_Parser_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 
 /**
  * Class DEVTB_Oxygen6_Parser
@@ -219,17 +220,31 @@ class DEVTB_Oxygen6_Parser implements DEVTB_Parser_Interface {
 		$content    = $this->extract_content( $local_type, $flat );
 		$category   = $this->get_category( $universal_type );
 
+		$metadata = [
+			'source_framework'  => 'oxygen-6',
+			'original_type'     => $type_full,
+			'oxygen6_id'        => $element['id'] ?? '',
+			'oxygen6_properties' => $properties,
+		];
+
+		// Canonicalize the design section (breakpoint_* leaf keys) so
+		// responsive styling survives round trips and cross-framework
+		// transfers. The verbatim section stays in oxygen6_properties.
+		$canonical_styles = null;
+		if ( isset( $properties['design'] ) && is_array( $properties['design'] ) ) {
+			$canonical_styles = DEVTB_Responsive_Helper::oxygen6_design_to_canonical( $properties['design'] );
+			if ( $canonical_styles !== null ) {
+				$metadata[ DEVTB_Responsive_Helper::METADATA_KEY ] = [ 'styles' => $canonical_styles ];
+			}
+		}
+
 		$component = new DEVTB_Component( [
 			'type'       => $universal_type,
 			'category'   => $category,
 			'attributes' => $attributes,
 			'content'    => $content,
-			'metadata'   => [
-				'source_framework'  => 'oxygen-6',
-				'original_type'     => $type_full,
-				'oxygen6_id'        => $element['id'] ?? '',
-				'oxygen6_properties' => $properties,
-			],
+			'styles'     => $canonical_styles['desktop']['default'] ?? [],
+			'metadata'   => $metadata,
 		] );
 
 		if ( isset( $element['children'] ) && is_array( $element['children'] ) ) {
