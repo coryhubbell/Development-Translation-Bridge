@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-4.3.4-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4)
+[![Version](https://img.shields.io/badge/version-4.4.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.4.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.4.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -117,12 +117,16 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v4.3.4 (production-ready)
+## Current release: v4.4.0 (production-ready)
 
-**v4.3.4 is the current production release.** It closes a critical fidelity
-gap in the Elementor → Gutenberg path that was breaking agentic content-
-migration pipelines, and wires an end-to-end smoke harness into CI so
-similar gaps can't ship silently again.
+**v4.4.0 is the current production release.** It closes the last v4.3.0
+roadmap item — the `divi-5`, `elementor-4`, and `oxygen-6` schemas are now
+verified and corrected against real evidence (see
+[Schema verification status](#schema-verification-status)) — and lands the
+release-engineering modernization: Dependabot across five ecosystems,
+reproducible zip packaging, a four-job CI pipeline, and `make verify`.
+Full notes: [v4.4.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.4.0)
+and [`RELEASE_NOTES_V4.4.0.md`](RELEASE_NOTES_V4.4.0.md).
 
 ### What 4.3.4 added (Elementor → Gutenberg widget coverage)
 
@@ -495,9 +499,10 @@ Full local release gate:
 make verify
 ```
 
-As of the v4.3.4 hygiene refresh:
-- PHP: **302 tests / 4,250 assertions / 0 errors / 0 failures / 0 deprecations**,
-  including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`).
+As of v4.4.0:
+- PHP: **311 tests / 4,818 assertions / 0 errors / 0 failures / 0 deprecations**,
+  including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`)
+  and 9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`).
 - Python: 133 tests across converters, parsers, transforms, and project alignment checks.
 - End-to-end smoke (`tests/smoke_gutenberg_e2e.py`): kitchen-sink Elementor
   fixture through both engines, now a CI gate on every push and PR.
@@ -576,7 +581,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.3.4](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4) **(latest)** | 2026-05-20 | Elementor → Gutenberg widget coverage hotfix (compound widgets, marker fallback, settings denormalization); e2e smoke harness now a CI gate |
+| [v4.4.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.4.0) **(latest)** | 2026-07-02 | `divi-5` / `elementor-4` / `oxygen-6` schemas verified against real formats (elementor repo, Divi 5 docs, real Breakdance export); Dependabot, reproducible packaging, four-job CI, `make verify` |
+| [v4.3.4](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4) | 2026-05-20 | Elementor → Gutenberg widget coverage hotfix (compound widgets, marker fallback, settings denormalization); e2e smoke harness now a CI gate |
 | [v4.3.3](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) | 2026-05-19 | `functions.php` admin pages now factory-driven; eliminates drift surface for framework lists |
 | [v4.3.2](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.2) | 2026-05-19 | User-facing copy errata (style.css, admin help, CLI help); 9 → 14 / 72 → 182 |
 | [v4.3.1](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.1) | 2026-05-19 | Production-readiness: CLI fatal fix, matrix consistency, test suite green, PHP 8.1 floor, CVE-2026-24765 cleared |
@@ -590,15 +596,13 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.3.4. Release verification is now automated end to end — Dependabot
+as of v4.4.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
-and PR. Remaining 4.x.y work:
+and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
+(see [Schema verification status](#schema-verification-status)). Remaining
+4.x.y work:
 
-- ~~Verify the v4.3.0 proxy schemas (`oxygen-6`, `divi-5`, `elementor-4`)
-  against real exports~~ — **done**: verified against the open-source
-  elementor repo, the Divi 5 block-format docs, and a real Breakdance export
-  (see [Schema verification status](#schema-verification-status)).
 - Responsive breakpoint round-tripping for DIVI 5 / Elementor 4 / Oxygen 6
   (v1 reads desktop values only).
 - An Oxygen 6-specific export fixture (vs. the Breakdance one) would close the

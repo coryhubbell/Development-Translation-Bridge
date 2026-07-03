@@ -7,7 +7,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage API
- * @version    4.3.4
+ * @version    4.4.0
  */
 
 class DEVTB_API_V2 {
