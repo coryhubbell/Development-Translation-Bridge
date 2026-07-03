@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-4.5.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.5.0)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.5.0)
+[![Version](https://img.shields.io/badge/version-4.6.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -117,15 +117,37 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v4.5.0 (production-ready)
+## Current release: v4.6.0 (production-ready)
 
-**v4.5.0 is the current production release.** It closes the final v4.3.x
-roadmap item: responsive breakpoint round-tripping for `divi-5`,
-`elementor-4`, and `oxygen-6`. Tablet/phone breakpoints and hover states now
-survive round trips and transfer across frameworks through a canonical
-responsive model. Full notes:
-[v4.5.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.5.0)
-and [`RELEASE_NOTES_V4.5.0.md`](RELEASE_NOTES_V4.5.0.md).
+**v4.6.0 is the current production release.** It overhauls classic Oxygen
+(4.x) support end to end: every real storage shape now parses (nested
+`ct_builder_json` tree, wrapper, flat list, shortcodes), both engines emit
+the real element vocabulary in the real root-tree shape, styles pass through
+in full with unit normalization, and responsive `options.media` overrides
+round-trip. Full notes:
+[v4.6.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0)
+and [`RELEASE_NOTES_V4.6.0.md`](RELEASE_NOTES_V4.6.0.md).
+
+### What 4.6.0 added (classic Oxygen hardening)
+
+- **All four real storage shapes parse** — the nested `ct_builder_json` root
+  tree, the `ct_builder_json` wrapper, the flat `ct_parent` list, and
+  `ct_builder_shortcodes` strings. (Previously only the flat list parsed —
+  the committed fixture itself was unreadable.)
+- **Real element vocabulary** — `ct_link`, `ct_new_columns`/`ct_column`,
+  `oxy_rich_text`, `oxy_testimonial_box`, `oxy_map`, `oxy_nav_menu`, and the
+  rest of the genuine `ct_*`/`oxy_*` set; nine fabricated names earlier
+  releases emitted still parse as aliases but are never emitted again.
+- **One output shape across engines** — PHP and Python now emit the identical
+  real root-tree format with correct `ct_id`/`ct_parent` linkage (previously
+  three mutually incompatible shapes).
+- **Style + responsive fidelity** — full `options.original` passthrough
+  (the old allow-list silently dropped `gap`, `border` shorthand, and more),
+  unit normalization both ways (Oxygen unitless ↔ CSS px), and
+  `options.media` breakpoint overrides round-tripping via the canonical
+  responsive model.
+- **Deterministic output** — `time()`-based selectors removed; conversions
+  are byte-reproducible.
 
 ### What 4.5.0 added (responsive breakpoint round-tripping)
 
@@ -549,12 +571,13 @@ Full local release gate:
 make verify
 ```
 
-As of v4.5.0:
-- PHP: **319 tests / 4,861 assertions / 0 errors / 0 failures / 0 deprecations**,
+As of v4.6.0:
+- PHP: **328 tests / 5,627 assertions / 0 errors / 0 failures / 0 deprecations**,
   including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
   9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
-  and 8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`).
-- Python: 139 tests across converters, parsers, transforms, responsive helpers, and project alignment checks.
+  8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`),
+  and 9 classic-Oxygen hardening tests (`tests/Unit/OxygenClassicHardeningTest.php`).
+- Python: 140 tests across converters, parsers, transforms, responsive helpers, and project alignment checks.
 - End-to-end smoke (`tests/smoke_gutenberg_e2e.py`): kitchen-sink Elementor
   fixture through both engines, now a CI gate on every push and PR.
 
@@ -632,7 +655,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.5.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.5.0) **(latest)** | 2026-07-03 | Responsive breakpoint round-tripping: canonical desktop/tablet/phone + hover model for `divi-5` / `elementor-4` / `oxygen-6`, with cross-framework transfer |
+| [v4.6.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0) **(latest)** | 2026-07-03 | Classic Oxygen hardening: all real storage shapes parse, real `ct_*`/`oxy_*` vocabulary, unified root-tree output, full style passthrough, responsive `media` round-tripping |
+| [v4.5.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.5.0) | 2026-07-03 | Responsive breakpoint round-tripping: canonical desktop/tablet/phone + hover model for `divi-5` / `elementor-4` / `oxygen-6`, with cross-framework transfer |
 | [v4.4.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.4.0) | 2026-07-02 | `divi-5` / `elementor-4` / `oxygen-6` schemas verified against real formats (elementor repo, Divi 5 docs, real Breakdance export); Dependabot, reproducible packaging, four-job CI, `make verify` |
 | [v4.3.4](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4) | 2026-05-20 | Elementor → Gutenberg widget coverage hotfix (compound widgets, marker fallback, settings denormalization); e2e smoke harness now a CI gate |
 | [v4.3.3](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) | 2026-05-19 | `functions.php` admin pages now factory-driven; eliminates drift surface for framework lists |
@@ -648,7 +672,7 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.5.0. Release verification is automated end to end — Dependabot
+as of v4.6.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0

@@ -9,6 +9,13 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [4.6.0] — 2026-07-03
+
+Classic Oxygen hardening. Full notes:
+[RELEASE_NOTES_V4.6.0.md](RELEASE_NOTES_V4.6.0.md).
+
 ### Fixed
 - **Classic Oxygen (4.x) support fully hardened** (audit-driven):
   - Parser now accepts every real storage shape: the nested `ct_builder_json`
@@ -229,7 +236,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.5.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.6.0...HEAD
+[4.6.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.5.0...v4.6.0
 [4.5.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.4.0...v4.5.0
 [4.4.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.3.4...v4.4.0
 [4.3.4]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.3.3...v4.3.4
