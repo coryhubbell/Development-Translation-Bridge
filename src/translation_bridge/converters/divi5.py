@@ -4,23 +4,31 @@ Translation Bridge v4 - DIVI 5 Block Converter.
 DIVI 5 abandoned the ``[et_pb_*]`` shortcode track for the WordPress block
 serialization spec under the ``divi`` namespace. Pages look like::
 
-    <!-- wp:divi/section {"module":{...},"builderVersion":"5.0.0"} -->
+    <!-- wp:divi/section {"builderVersion":"5.0.0"} -->
       <!-- wp:divi/row {...} -->
         <!-- wp:divi/column {...} -->
-          <!-- wp:divi/text {"module":{"content":{"innerContent":{"desktop":{"value":"..."}}}}} /-->
+          <!-- wp:divi/text {"content":{"innerContent":{"desktop":{"value":"..."}}},"builderVersion":"5.0.0"} /-->
         <!-- /wp:divi/column -->
       <!-- /wp:divi/row -->
     <!-- /wp:divi/section -->
 
 Container blocks emit opening/closing pairs; leaf blocks self-close. Content
-values are wrapped in DIVI 5's responsive desktop variant; tablet/phone
-overrides are not synthesised in v1.
+values are wrapped in DIVI 5's responsive desktop variant by default; when an
+inbound element carries canonical responsive data (``element["responsive"]``
+or ``element["metadata"]["responsive"]``, see
+``translation_bridge.responsive``), full multi-breakpoint wrappers with
+tablet/phone overrides and hover states are emitted instead.
 """
 
 from __future__ import annotations
 
 import json
 from typing import Any, Dict, List, Optional
+
+from translation_bridge.responsive import (
+    canonical_to_divi5_wrapper,
+    element_responsive,
+)
 
 
 # Upstream framework version this converter is calibrated against.
@@ -195,6 +203,23 @@ class Divi5Converter:
         else:
             if content_text:
                 module_content["text"] = self._responsive(content_text)
+
+        # Round-trip responsive data: overlay full multi-breakpoint wrappers
+        # for any field with canonical responsive data (tablet/phone
+        # breakpoints, hover states).
+        responsive = element_responsive(element) or {}
+        for field, canonical in (responsive.get("fields") or {}).items():
+            if not isinstance(canonical, dict):
+                continue
+            wrapper = canonical_to_divi5_wrapper(canonical)
+            if not wrapper:
+                continue
+            existing = module_content.get(field, {})
+            if "value" not in wrapper.get("desktop", {}) and isinstance(existing, dict):
+                desktop_default = existing.get("desktop", {}).get("value")
+                if desktop_default is not None:
+                    wrapper.setdefault("desktop", {})["value"] = desktop_default
+            module_content[field] = wrapper
 
         attrs: Dict[str, Any] = {}
         if module_content:

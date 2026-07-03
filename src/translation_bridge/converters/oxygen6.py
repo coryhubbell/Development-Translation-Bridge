@@ -43,6 +43,11 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional
 
+from translation_bridge.responsive import (
+    canonical_to_oxygen6_design,
+    element_responsive,
+)
+
 
 # Upstream framework version this converter is calibrated against.
 TARGET_CMS_VERSION: str = "6.0.0"
@@ -191,7 +196,7 @@ class Oxygen6Converter:
             "id": node_id,
             "data": {
                 "type": ELEMENT_NAMESPACE + local_name,
-                "properties": self._build_properties(local_name, settings, content),
+                "properties": self._build_properties(local_name, settings, content, element),
             },
             "children": [],
             "_parentId": parent_id,
@@ -222,7 +227,11 @@ class Oxygen6Converter:
         return el_type
 
     def _build_properties(
-        self, local_name: str, settings: Dict[str, Any], content: str
+        self,
+        local_name: str,
+        settings: Dict[str, Any],
+        content: str,
+        element: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Build the Oxygen 6 ``properties`` bag for an element.
 
@@ -287,7 +296,17 @@ class Oxygen6Converter:
 
         if content_fields:
             properties["content"] = {"content": content_fields}
-        if styles:
+
+        # Responsive round-trip: rebuild the design tree with breakpoint_*
+        # leaves from canonical responsive data when present; otherwise fall
+        # back to the flat styles bag.
+        responsive = element_responsive(element) or {}
+        canonical = responsive.get("styles")
+        if isinstance(canonical, dict):
+            design = canonical_to_oxygen6_design(canonical)
+            if design:
+                properties["design"] = design
+        elif styles:
             properties["design"] = styles
 
         return properties

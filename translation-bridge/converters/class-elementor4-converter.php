@@ -32,6 +32,7 @@ namespace DEVTB\TranslationBridge\Converters;
 
 use DEVTB\TranslationBridge\Core\DEVTB_Converter_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 use DEVTB\TranslationBridge\Utils\DEVTB_JSON_Helper;
 
 /**
@@ -326,24 +327,40 @@ class DEVTB_Elementor4_Converter implements DEVTB_Converter_Interface {
 	 */
 	private function build_styles( DEVTB_Component $component ): array {
 		$styles = is_array( $component->styles ?? null ) ? $component->styles : [];
-		if ( empty( $styles ) ) {
+
+		// Responsive round-trip: emit one variant per breakpoint/state from
+		// canonical responsive metadata when present.
+		$metadata  = is_array( $component->metadata ?? null ) ? $component->metadata : [];
+		$canonical = $metadata[ DEVTB_Responsive_Helper::METADATA_KEY ]['styles'] ?? null;
+
+		$variants = [];
+		if ( is_array( $canonical ) ) {
+			$variants = DEVTB_Responsive_Helper::canonical_to_elementor4_variants( $canonical );
+		}
+
+		if ( $variants === [] && ! empty( $styles ) ) {
+			$variants = [
+				[
+					'meta'  => [
+						'breakpoint' => 'desktop',
+						'state'      => null,
+					],
+					'props' => $styles,
+				],
+			];
+		}
+
+		if ( $variants === [] ) {
 			return [];
 		}
+
 		$style_id = 'e-' . $this->generate_id();
 		return [
 			$style_id => [
 				'id'       => $style_id,
 				'type'     => 'class',
 				'label'    => 'local',
-				'variants' => [
-					[
-						'meta'  => [
-							'breakpoint' => 'desktop',
-							'state'      => null,
-						],
-						'props' => $styles,
-					],
-				],
+				'variants' => $variants,
 			],
 		];
 	}

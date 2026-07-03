@@ -19,10 +19,10 @@
  * the Gutenberg parser) and falls back to a regex tokeniser. Block names are
  * filtered to the `divi/*` namespace and mapped to universal component types.
  *
- * Module attributes use responsive wrappers (`{"desktop":{"value":"..."}}`);
- * for v1 the parser reads desktop values only — tablet/phone overrides are
- * preserved verbatim in component metadata so a follow-up patch can surface
- * them as responsive breakpoints.
+ * Module attributes use responsive wrappers (`{"desktop":{"value":"..."}}`).
+ * Desktop defaults land in content/attributes; tablet/phone breakpoints and
+ * hover states canonicalize into metadata['responsive']['fields'] (see
+ * DEVTB_Responsive_Helper) so they round-trip through conversions.
  *
  * @package DevelopmentTranslation_Bridge
  * @subpackage Translation_Bridge
@@ -33,6 +33,7 @@ namespace DEVTB\TranslationBridge\Parsers;
 
 use DEVTB\TranslationBridge\Core\DEVTB_Parser_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 
 /**
  * Class DEVTB_DIVI5_Parser
@@ -205,17 +206,24 @@ class DEVTB_DIVI5_Parser implements DEVTB_Parser_Interface {
 		$content = $this->extract_content( $local_name, $attrs, $inner_html );
 		$attributes = $this->normalize_attributes( $local_name, $attrs );
 
+		$metadata = [
+			'source_framework' => 'divi-5',
+			'original_type'    => $block_name,
+			'divi5_attrs'      => $attrs,
+			'builder_version'  => $attrs['builderVersion'] ?? null,
+		];
+
+		$responsive_fields = $this->collect_responsive_fields( $attrs );
+		if ( $responsive_fields !== [] ) {
+			$metadata[ DEVTB_Responsive_Helper::METADATA_KEY ] = [ 'fields' => $responsive_fields ];
+		}
+
 		$component = new DEVTB_Component( [
 			'type'       => $universal_type,
 			'category'   => $this->get_category( $universal_type ),
 			'attributes' => $attributes,
 			'content'    => $content,
-			'metadata'   => [
-				'source_framework' => 'divi-5',
-				'original_type'    => $block_name,
-				'divi5_attrs'      => $attrs,
-				'builder_version'  => $attrs['builderVersion'] ?? null,
-			],
+			'metadata'   => $metadata,
 		] );
 
 		// Recurse into innerBlocks (`column` → `text`, etc.)
@@ -235,7 +243,8 @@ class DEVTB_DIVI5_Parser implements DEVTB_Parser_Interface {
 	 * Extract the human-readable content for a block from its attrs / innerHTML.
 	 *
 	 * DIVI 5 wraps content values in a responsive object — `{"desktop":{"value":"..."}}`.
-	 * v1 reads the desktop value only; other breakpoints stay in metadata.
+	 * The desktop default is returned here; tablet/phone breakpoints and hover
+	 * states are canonicalized separately by collect_responsive_fields().
 	 *
 	 * @param string $local_name DIVI 5 local block name (without `divi/` prefix).
 	 * @param array  $attrs      Block attributes.
@@ -259,6 +268,28 @@ class DEVTB_DIVI5_Parser implements DEVTB_Parser_Interface {
 			default:
 				return $inner_html !== '' ? $inner_html : (string) $this->desktop_value( $content['text'] ?? '' );
 		}
+	}
+
+	/**
+	 * Collect canonical responsive field data from a block's content group.
+	 *
+	 * Any content field carrying more than a single desktop default (tablet /
+	 * phone breakpoints, hover states) canonicalizes into
+	 * metadata['responsive']['fields'] so it survives round trips. Desktop
+	 * defaults stay in content/attributes as before.
+	 *
+	 * @param array $attrs Block attributes.
+	 * @return array<string, array<string, array<string, mixed>>>
+	 */
+	private function collect_responsive_fields( array $attrs ): array {
+		$fields = [];
+		foreach ( $this->content_group( $attrs ) as $field => $wrapper ) {
+			$canonical = DEVTB_Responsive_Helper::divi5_wrapper_to_canonical( $wrapper );
+			if ( $canonical !== null ) {
+				$fields[ (string) $field ] = $canonical;
+			}
+		}
+		return $fields;
 	}
 
 	/**

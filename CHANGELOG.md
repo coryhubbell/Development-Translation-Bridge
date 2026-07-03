@@ -9,7 +9,22 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **Responsive breakpoint round-tripping** for `divi-5`, `elementor-4`, and
+  `oxygen-6` (closes the remaining v4.3.x roadmap item). A canonical
+  responsive model (breakpoints `desktop`/`tablet`/`phone`, states
+  `default`/`hover`; `DEVTB_Responsive_Helper` in PHP,
+  `translation_bridge.responsive` in Python) carries breakpoint data through
+  the universal component metadata:
+  - DIVI 5: content-field wrappers (`{"desktop": {"value", "hover"},
+    "tablet": ..., "phone": ...}`) canonicalize on parse and re-emit in full.
+  - Elementor 4: style-definition variants canonicalize per
+    breakpoint/state (`mobile` ↔ `phone`) and re-emit as one variant each.
+  - Oxygen 6: design-tree `breakpoint_*` leaves flatten to canonical props
+    and re-nest on emit.
+  - Responsive styling also transfers **across** frameworks (e.g. Oxygen 6
+    design breakpoints → Elementor 4 variants), covered by 8 PHP + 6 Python
+    round-trip tests.
 
 ## [4.4.0] — 2026-07-02
 
