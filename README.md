@@ -5,6 +5,7 @@ frameworks — Elementor, DIVI, Gutenberg, Bricks, Oxygen, Avada, WPBakery,
 Beaver Builder, Kadence, Thrive, Bootstrap, plus native support for the
 ground-up rewrites (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
+[![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-4.3.4-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4)
 [![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.4)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
@@ -178,8 +179,11 @@ chmod +x devtb
 ```
 
 Release assets named `development-translation-bridge-*.zip` are packaged for
-WordPress theme installation. Clone the repository when you need the standalone
-CLI, Python package, tests, or development tooling.
+WordPress theme installation. They are built reproducibly by
+[`scripts/build-release-package.sh`](scripts/build-release-package.sh), and
+pushing a `v*` tag publishes the release automatically (zip + generated
+changelog) via the release workflow. Clone the repository when you need the
+standalone CLI, Python package, tests, or development tooling.
 
 To run the full local release gate before opening or updating a PR:
 
@@ -452,7 +456,7 @@ Full local release gate:
 make verify
 ```
 
-Current branch:
+As of the v4.3.4 hygiene refresh:
 - PHP: **302 tests / 4,250 assertions / 0 errors / 0 failures / 0 deprecations**,
   including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`).
 - Python: 133 tests across converters, parsers, transforms, and project alignment checks.
@@ -463,6 +467,24 @@ The 41 pre-existing errors and 3 failures that v4.1 / v4.2 / v4.3.0 inherited
 (class-autoload mismatches and missing WP-function mocks) were all resolved in
 v4.3.1 via the shared autoloader + WP function stubs. The full suite is now
 green, including `composer audit`.
+
+### Continuous integration
+
+Every push and PR to `main` / `develop` runs four jobs
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+
+| Job | What it runs |
+|---|---|
+| **PHP tests** | PHPUnit across PHP **8.1 – 8.5**, plus composer validate, syntax check, `composer audit`, PHPCS (WordPress standards), and Codecov coverage upload |
+| **Python tests + Gutenberg e2e smoke** | Full pytest suite, then the kitchen-sink Elementor fixture through both the Python v4 and PHP v3 engines |
+| **Admin build** | ESLint, `tsc --noEmit`, and a production Vite build on Node **20.19.0 / 22.13.0 / 24** |
+| **Release package smoke** | Builds and inspects the WordPress theme zip via `scripts/build-release-package.sh`, so packaging breakage is caught before tagging |
+
+Dependency freshness is automated with
+[Dependabot](.github/dependabot.yml): weekly update PRs for Composer, npm
+(`admin/`), and pip, and monthly for GitHub Actions and Docker Compose images.
+`composer audit` gates every CI run, and `make verify` additionally runs
+`npm audit --omit=dev` on the admin UI.
 
 ---
 
@@ -521,7 +543,10 @@ Release notes live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.3.4. Remaining 4.x.y work:
+as of v4.3.4. Release verification is now automated end to end — Dependabot
+keeps dependencies fresh, `make verify` mirrors the release gate locally, and
+the four-job CI pipeline (including release-package smoke) runs on every push
+and PR. Remaining 4.x.y work:
 
 - Verify the v4.3.0 proxy schemas (`oxygen-6`, `divi-5`, `elementor-4`)
   against real exports and patch the isolated extractor helpers as needed.
