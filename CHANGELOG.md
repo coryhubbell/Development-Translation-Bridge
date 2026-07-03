@@ -9,7 +9,34 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **Two new e2e fidelity smoke gates** (roadmap 4.7+ item 2), each running
+  through both engines as CI gates on every push/PR alongside the original
+  Elementor → Gutenberg gate:
+  - **Elementor → Bricks** (`tests/smoke_bricks_e2e.py`): flat 2.x format
+    integrity (string ids, resolvable parent/child linkage, no nested child
+    objects) plus content survival for every content-bearing widget category.
+  - **DIVI → Gutenberg** (`tests/smoke_divi_e2e.py`): new DIVI kitchen-sink
+    fixture parsed once in PHP, then converted by BOTH Gutenberg converters
+    (the Python engine consumes the exported universal components); asserts
+    content survival, balanced delimiters, and no empty-paragraph collapses.
+  - Shared harness helpers extracted to `tests/smoke_lib.py`;
+    `make e2e-smoke` runs all three gates (wired into `make verify`).
+
+### Fixed
+- **Seven real content drops caught by the new gates on their first run:**
+  - Python Bricks converter: testimonial bodies/names, CTA titles, icon-box,
+    price-table, alert, blockquote, icon-list, gallery, and social-icons
+    settings were silently dropped (no widget branches existed).
+  - PHP Bricks converter: gallery images emitted as a JSON-string blob
+    instead of the real Bricks `images` array.
+  - Python Gutenberg converter: universal container components (from PHP
+    parsers) hit the marker path and dropped ALL their children; DIVI-style
+    attribute names (`label`, `image_url`, `heading`, `author`) now translate
+    to the widget builders' expected keys.
+  - PHP Gutenberg converter: button text from `label` attributes
+    (DIVI/WPBakery sources), single-panel toggle headings/bodies, and DIVI
+    testimonial author/job/company citations were dropped.
 
 ## [4.7.0] — 2026-07-03
 

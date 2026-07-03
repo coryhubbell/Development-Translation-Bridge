@@ -34,6 +34,13 @@ FIXTURE = REPO_ROOT / "tests" / "fixtures" / "elementor" / "kitchen-sink.json"
 
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+sys.path.insert(0, str(REPO_ROOT / "tests"))
+
+from smoke_lib import (  # noqa: E402
+    find_empty_paragraphs,
+    find_unbalanced_delimiters,
+)
+
 from translation_bridge.converters.gutenberg import GutenbergConverter  # noqa: E402
 
 
@@ -99,74 +106,6 @@ def collect_widget_types(elements) -> List[str]:
         if isinstance(el.get("elements"), list):
             out.extend(collect_widget_types(el["elements"]))
     return out
-
-
-def _strip_block_attrs(blocks: str) -> str:
-    """Strip JSON attribute payloads from block comments so a delimiter-only stack
-    analysis can ignore nested-brace content. We can't use a single regex because
-    Gutenberg attrs can have nested objects (e.g. {"style":{"color":{...}}}).
-    """
-    out: List[str] = []
-    i = 0
-    n = len(blocks)
-    while i < n:
-        ch = blocks[i]
-        if ch == "{" and i > 0 and blocks[i - 1] == " " and out and out[-1].endswith(" "):
-            depth = 1
-            j = i + 1
-            while j < n and depth > 0:
-                if blocks[j] == "{":
-                    depth += 1
-                elif blocks[j] == "}":
-                    depth -= 1
-                j += 1
-            # Replace the JSON blob (and the preceding space) with nothing.
-            if out and out[-1].endswith(" "):
-                out[-1] = out[-1][:-1]
-            i = j
-            continue
-        out.append(ch)
-        i += 1
-    return "".join(out)
-
-
-def find_unbalanced_delimiters(blocks: str) -> List[str]:
-    """Walk the block markup and return any unbalanced opening/closing comments."""
-    stripped = _strip_block_attrs(blocks)
-    # After stripping attrs, all delimiters are one of three shapes:
-    #   <!-- wp:NAME -->        opening
-    #   <!-- wp:NAME /-->       self-closing
-    #   <!-- /wp:NAME -->       closing
-    token_re = re.compile(r"<!-- (/?)wp:([a-z0-9/-]+)( /)? -->")
-    stack: List[str] = []
-    problems: List[str] = []
-    for m in token_re.finditer(stripped):
-        is_closing = bool(m.group(1))
-        name = m.group(2)
-        is_self_closing = bool(m.group(3))
-        if is_self_closing:
-            continue
-        if is_closing:
-            if not stack:
-                problems.append(f"closing </wp:{name}> with no opener")
-            elif stack[-1] != name:
-                problems.append(f"closing </wp:{name}> but top of stack is <wp:{stack[-1]}>")
-                stack.pop()
-            else:
-                stack.pop()
-        else:
-            stack.append(name)
-    for unclosed in stack:
-        problems.append(f"unclosed <wp:{unclosed}>")
-    return problems
-
-
-def find_empty_paragraphs(blocks: str) -> int:
-    """Count paragraph blocks whose body is literally an empty <p></p> — the production bug."""
-    pattern = re.compile(
-        r"<!-- wp:paragraph(?: \{[^}]*\})? -->\s*<p>\s*</p>\s*<!-- /wp:paragraph -->"
-    )
-    return len(pattern.findall(blocks))
 
 
 def run_python_converter() -> str:
