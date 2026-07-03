@@ -24,14 +24,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '20.19.0'
           cache: 'npm'
           cache-dependency-path: admin/package-lock.json
 
@@ -53,19 +53,11 @@ jobs:
           fi
 
       - name: Create release package
-        run: |
-          mkdir -p release/development-translation-bridge
-          cp -r includes release/development-translation-bridge/
-          cp -r translation-bridge release/development-translation-bridge/
-          mkdir -p release/development-translation-bridge/admin
-          cp -r admin/dist release/development-translation-bridge/admin/dist
-          cp functions.php style.css index.php release/development-translation-bridge/
-          cp README.md LICENSE release/development-translation-bridge/ 2>/dev/null || true
-          cd release && zip -r ../development-translation-bridge-${{ steps.version.outputs.version }}.zip development-translation-bridge/
+        run: ./scripts/build-release-package.sh "${{ steps.version.outputs.version }}"
 
       - name: Generate changelog
         id: changelog
-        uses: mikepenz/release-changelog-builder-action@v4
+        uses: mikepenz/release-changelog-builder-action@v6
         with:
           configuration: ".github/changelog-config.json"
           failOnError: false
@@ -73,7 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: v${{ steps.version.outputs.version }}
           body: |
@@ -82,9 +74,13 @@ jobs:
             ${{ steps.changelog.outputs.changelog }}
 
             ### Installation
+            This asset is the WordPress theme package.
+
             1. Download the zip file below
             2. Upload to your WordPress themes directory
             3. Activate the theme
+
+            For the standalone CLI, Python package, tests, and development tooling, clone the repository instead of using this release zip.
 
             ### Requirements
             - WordPress 5.8+

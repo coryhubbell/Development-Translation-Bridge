@@ -1,7 +1,7 @@
 {
   "name": "development-translation-bridge",
-  "version": "4.3.3",
-  "description": "AI-Powered WordPress Development Framework",
-  "keywords": ["wordpress", "bootstrap", "claude-ai"],
+  "version": "4.3.4",
+  "description": "Universal WordPress page builder translation system",
+  "keywords": ["wordpress", "page-builder", "translation", "elementor", "divi", "gutenberg", "bootstrap", "rest-api", "cli"],
   "license": "GPL-2.0-or-later"
 }

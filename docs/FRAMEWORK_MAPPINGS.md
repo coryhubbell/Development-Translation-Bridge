@@ -2,7 +2,7 @@
 
 ## **How Components Map Between Frameworks**
 
-This guide shows how Translation Bridge maps components between the 5 supported frameworks.
+This guide shows how Translation Bridge maps components across the 14 supported frameworks.
 
 ---
 

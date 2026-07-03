@@ -2,7 +2,7 @@
 
 ## **See Translation Bridge™ in Action**
 
-Real examples of converting components between the 5 supported frameworks.
+Real examples of converting components between supported Translation Bridge frameworks.
 
 ---
 

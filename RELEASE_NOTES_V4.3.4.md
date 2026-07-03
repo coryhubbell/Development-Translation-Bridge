@@ -46,7 +46,7 @@ All exposed via `GutenbergConverter` which is now exported from `src/translation
 
 ### Tests
 
-- **PHP**: new `tests/Unit/GutenbergWidgetCoverageTest.php` — 16 tests, 111 assertions. Asserts canonical `<!-- wp:X -->` form (no `core/`), compound dispatch produces the expected nested blocks, marker fallback surfaces a visible annotation comment, no widget type collapses silently, `wp-element-button` / `wp-block-heading` / canonical list-item shape preserved.
+- **PHP**: new `tests/Unit/GutenbergWidgetCoverageTest.php` — 17 tests, 113 assertions. Asserts canonical `<!-- wp:X -->` form (no `core/`), compound dispatch produces the expected nested blocks, marker fallback surfaces a visible annotation comment, no widget type collapses silently, existing paragraph HTML is not double-wrapped, `wp-element-button` / `wp-block-heading` / canonical list-item shape preserved.
 - **Python**: `tests/python/test_site_conversion.py::TestGutenbergConverter` extended from 5 to 21 tests — same shape as the PHP suite plus a transform-registration smoke test.
 
 ## Test results

@@ -15,8 +15,8 @@ The Visual Interface is a modern, React-based editor that brings DevelopmentTran
 ## Technology Stack
 
 - **React 19** - Latest React for optimal performance
-- **TypeScript** - Type-safe development
-- **Vite** - Lightning-fast build tool
+- **TypeScript 6** - Type-safe development
+- **Vite 8** - Lightning-fast build tool
 - **Monaco Editor** - VS Code's editor engine
 - **TailwindCSS v4** - Modern utility-first CSS
 - **Zustand** - Lightweight state management
@@ -28,7 +28,7 @@ The Visual Interface is a modern, React-based editor that brings DevelopmentTran
 ### Development
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -37,6 +37,8 @@ The Vite dev server runs on `http://localhost:3000` with hot module replacement.
 ### Production Build
 
 ```bash
+npm ci
+npm run lint
 npm run build
 ```
 

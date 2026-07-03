@@ -24,7 +24,7 @@ Before you begin, ensure you have:
 - **Web Server**: Apache or Nginx
 
 ### Optional (for development)
-- **Node.js 18+** - For Visual Interface development
+- **Node.js 20.19.0, 22.13.0+, or 24+** - For Visual Interface development
 - **Composer 2.0+** - For dependency management
 - **Docker** - For containerized development
 - **Claude AI Account** - For AI-powered editing features
@@ -77,8 +77,9 @@ git clone https://github.com/coryhubbell/development-translation-bridge.git
 cd development-translation-bridge
 
 # Install dependencies (optional)
-npm install
-composer install
+make composer-install
+cd admin && npm ci && npm run build
+cd ..
 ```
 
 ---

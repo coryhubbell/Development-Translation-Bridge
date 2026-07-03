@@ -24,6 +24,7 @@ composer.phar
 
 # PHPUnit
 .phpunit.result.cache
+.phpunit.cache/
 /coverage/
 
 # Session and test files

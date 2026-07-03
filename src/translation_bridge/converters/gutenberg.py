@@ -315,16 +315,16 @@ class GutenbergConverter:
 
     def _build_paragraph_block(self, settings: Dict[str, Any], content: str = "") -> str:
         text = content or settings.get("editor", settings.get("text", ""))
+        if self._should_preserve_rich_text_as_html_block(text):
+            return self._build_block("core/html", {}, str(text).strip())
+
         attrs = self._denormalize_settings(settings)
         align = settings.get("align") or settings.get("text_align")
         if align:
             # core/paragraph uses `textAlign` for text alignment (block-level `align` means
             # full/wide alignment in canonical 6.5+ schema).
             attrs["textAlign"] = align
-        if self._looks_like_html(text):
-            html = f"<p>{text}</p>"
-        else:
-            html = f"<p>{escape(str(text))}</p>"
+        html = self._render_paragraph_html(text)
         return self._build_block("core/paragraph", attrs, html)
 
     def _build_image_block_from_settings(self, settings: Dict[str, Any]) -> str:
@@ -815,6 +815,38 @@ class GutenbergConverter:
         if not isinstance(content, str):
             return False
         return "<" in content and ">" in content
+
+    def _is_paragraph_html(self, content: Any) -> bool:
+        if not isinstance(content, str):
+            return False
+        return bool(re.fullmatch(r"<p(?:\s[^>]*)?>[\s\S]*</p>", content.strip(), re.IGNORECASE))
+
+    def _should_preserve_rich_text_as_html_block(self, content: Any) -> bool:
+        if not isinstance(content, str) or not self._looks_like_html(content):
+            return False
+
+        stripped = content.strip()
+        if len(re.findall(r"<p(?:\s[^>]*)?>", stripped, re.IGNORECASE)) > 1:
+            return True
+
+        return bool(
+            re.search(
+                r"</?(?:address|article|aside|blockquote|div|dl|figure|figcaption|footer|form|"
+                r"h[1-6]|header|hr|li|main|nav|ol|pre|section|table|tbody|td|tfoot|th|thead|"
+                r"tr|ul)\b",
+                stripped,
+                re.IGNORECASE,
+            )
+        )
+
+    def _render_paragraph_html(self, content: Any) -> str:
+        text = "" if content is None else str(content)
+        stripped = text.strip()
+        if self._is_paragraph_html(stripped):
+            return stripped
+        if self._looks_like_html(stripped):
+            return f"<p>{stripped}</p>"
+        return f"<p>{escape(text)}</p>"
 
     def _denormalize_settings(self, settings: Dict[str, Any]) -> Dict[str, Any]:
         """Mirror PHP denormalize_attributes: project Elementor settings onto Gutenberg block attrs."""

@@ -13,7 +13,7 @@
  *
  * @package DevelopmentTranslation_Bridge
  * @subpackage Compat
- * @version 4.3.3
+ * @version 4.3.4
  */
 
 // ---------------------------------------------------------------------------

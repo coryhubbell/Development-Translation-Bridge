@@ -1,46 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd"
-    bootstrap="tests/bootstrap.php"
-    colors="true"
-    verbose="true"
-    failOnWarning="false"
-    failOnRisky="false"
-    stopOnFailure="false">
-
-    <testsuites>
-        <testsuite name="DevelopmentTranslation Bridge Test Suite">
-            <directory>tests</directory>
-        </testsuite>
-        <testsuite name="Unit">
-            <directory>tests/Unit</directory>
-        </testsuite>
-        <testsuite name="Integration">
-            <directory>tests/Integration</directory>
-        </testsuite>
-    </testsuites>
-
-    <coverage processUncoveredFiles="true">
-        <include>
-            <directory suffix=".php">includes</directory>
-            <directory suffix=".php">translation-bridge</directory>
-        </include>
-        <exclude>
-            <directory suffix=".php">vendor</directory>
-            <directory suffix=".php">tests</directory>
-            <file>functions.php</file>
-            <file>index.php</file>
-        </exclude>
-        <report>
-            <clover outputFile="coverage/clover.xml"/>
-            <html outputDirectory="coverage"/>
-            <text outputFile="php://stdout" showUncoveredFiles="false"/>
-        </report>
-    </coverage>
-
-    <php>
-        <const name="DEVTB_TESTING" value="true"/>
-        <const name="DEVTB_TEST_DATA_DIR" value="tests/fixtures"/>
-    </php>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" bootstrap="tests/bootstrap.php" colors="true" failOnWarning="false" failOnRisky="false" stopOnFailure="false" cacheDirectory=".phpunit.cache">
+  <testsuites>
+    <testsuite name="Unit">
+      <directory>tests/Unit</directory>
+    </testsuite>
+    <testsuite name="Integration">
+      <directory>tests/Integration</directory>
+    </testsuite>
+  </testsuites>
+  <coverage>
+    <report>
+      <clover outputFile="coverage/clover.xml"/>
+      <html outputDirectory="coverage"/>
+      <text outputFile="php://stdout" showUncoveredFiles="false"/>
+    </report>
+  </coverage>
+  <php>
+    <const name="DEVTB_TESTING" value="true"/>
+    <const name="DEVTB_TEST_DATA_DIR" value="tests/fixtures"/>
+  </php>
+  <source>
+    <include>
+      <directory suffix=".php">includes</directory>
+      <directory suffix=".php">translation-bridge</directory>
+    </include>
+    <exclude>
+      <directory suffix=".php">vendor</directory>
+      <directory suffix=".php">tests</directory>
+      <file>functions.php</file>
+      <file>index.php</file>
+    </exclude>
+  </source>
 </phpunit>

@@ -1,6 +1,6 @@
 # Test Fixtures
 
-This directory contains test fixtures for all 10 supported page builder frameworks in DevelopmentTranslation Bridge.
+This directory contains representative test fixtures for the supported page builder frameworks in DevelopmentTranslation Bridge.
 
 ## Fixture Files
 

@@ -56,10 +56,10 @@ dev = [
 devtb-py = "translation_bridge.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/coryhubbell/development-translation-bridge"
-Documentation = "https://docs.devtb.io"
-Repository = "https://github.com/coryhubbell/development-translation-bridge"
-Issues = "https://github.com/coryhubbell/development-translation-bridge/issues"
+Homepage = "https://github.com/coryhubbell/Development-Translation-Bridge"
+Documentation = "https://github.com/coryhubbell/Development-Translation-Bridge#readme"
+Repository = "https://github.com/coryhubbell/Development-Translation-Bridge"
+Issues = "https://github.com/coryhubbell/Development-Translation-Bridge/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
