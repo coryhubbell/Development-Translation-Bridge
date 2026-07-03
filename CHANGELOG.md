@@ -9,6 +9,13 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [4.9.0] — 2026-07-03
+
+Responsive canonicalization for Elementor v3 and Bricks. Full notes:
+[RELEASE_NOTES_V4.9.0.md](RELEASE_NOTES_V4.9.0.md).
+
 ### Added
 - **Responsive canonicalization for Elementor v3 and Bricks** (roadmap 4.7+
   item 3): both frameworks now feed the canonical responsive model
@@ -310,7 +317,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.8.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.9.0...HEAD
+[4.9.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.8.0...v4.9.0
 [4.8.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.7.0...v4.8.0
 [4.7.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.6.0...v4.7.0
 [4.6.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.5.0...v4.6.0
