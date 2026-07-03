@@ -18,6 +18,12 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 **[Quick start](#quick-start) · [CLI reference](#cli) · [Python API](#python-api)
 · [REST API](#rest-api) · [Architecture](#architecture) · [Latest release notes](https://github.com/coryhubbell/Development-Translation-Bridge/releases/latest)**
 
+![Visual Interface translating a Bootstrap hero section into Gutenberg blocks, with live preview](docs/images/admin-visual-interface.png)
+
+*The bundled Visual Interface (WordPress Admin → Visual Interface): Monaco-powered
+side-by-side editing, framework selectors, live preview, and one-click
+translate/check/AI actions.*
+
 ---
 
 ## What it does
