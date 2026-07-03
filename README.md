@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-4.8.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0)
+[![Version](https://img.shields.io/badge/version-4.9.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.9.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.9.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -116,15 +116,27 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v4.8.0 (production-ready)
+## Current release: v4.9.0 (production-ready)
 
-**v4.8.0 is the current production release.** The e2e fidelity smoke-gate
-pattern now guards three conversion paths through both engines on every
-push/PR — Elementor → Gutenberg, Elementor → Bricks, and DIVI → Gutenberg —
-and the new gates caught seven real content drops on their first run, all
-fixed in this release. Full notes:
-[v4.8.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0)
-and [`RELEASE_NOTES_V4.8.0.md`](RELEASE_NOTES_V4.8.0.md).
+**v4.9.0 is the current production release.** Elementor v3 and Bricks now
+feed the canonical responsive model — completing responsive coverage across
+all six responsive-capable framework paths. Tablet/phone overrides and hover
+states survive round trips and transfer across frameworks in every
+direction. Full notes:
+[v4.9.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.9.0)
+and [`RELEASE_NOTES_V4.9.0.md`](RELEASE_NOTES_V4.9.0.md).
+
+### What 4.9.0 added (responsive canonicalization completion)
+
+- **Elementor v3:** `_tablet`/`_mobile`/`_hover` setting suffixes
+  canonicalize on parse and re-emit on convert, in both engines.
+- **Bricks:** `:tablet_portrait`/`:mobile_portrait` setting-key suffixes
+  canonicalize and re-emit in both engines; `mobile_landscape` passes
+  through verbatim.
+- **Cross-framework transfer in every direction** — e.g. Elementor tablet
+  overrides become Bricks `:tablet_portrait` keys, and either can land in
+  DIVI 5 wrappers, Elementor 4 variants, or Oxygen `media` bags. Purely
+  additive: non-responsive content converts byte-identically.
 
 ### What 4.8.0 added (e2e fidelity smoke gates)
 
@@ -596,13 +608,13 @@ Full local release gate:
 make verify
 ```
 
-As of v4.8.0:
-- PHP: **328 tests / 5,627 assertions / 0 errors / 0 failures / 0 deprecations**,
+As of v4.9.0:
+- PHP: **332 tests / 5,640 assertions / 0 errors / 0 failures / 0 deprecations**,
   including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
   9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
   8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`),
   and 9 classic-Oxygen hardening tests (`tests/Unit/OxygenClassicHardeningTest.php`).
-- Python: 156 tests across converters, parsers (now including Bricks, classic Oxygen, and Elementor 4 sources), transforms, responsive helpers, and project alignment checks.
+- Python: 161 tests across converters, parsers (now including Bricks, classic Oxygen, and Elementor 4 sources), transforms, responsive helpers, and project alignment checks.
 - End-to-end fidelity smoke gates (`make e2e-smoke`), each running through
   both engines as CI gates on every push and PR: Elementor → Gutenberg
   (`tests/smoke_gutenberg_e2e.py`), Elementor → Bricks
@@ -684,7 +696,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.8.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0) **(latest)** | 2026-07-03 | E2e fidelity smoke gates for Elementor → Bricks and DIVI → Gutenberg; seven content drops caught and fixed |
+| [v4.9.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.9.0) **(latest)** | 2026-07-03 | Responsive canonicalization completed: Elementor v3 suffixes + Bricks breakpoint keys join the canonical model; cross-framework transfer in every direction |
+| [v4.8.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0) | 2026-07-03 | E2e fidelity smoke gates for Elementor → Bricks and DIVI → Gutenberg; seven content drops caught and fixed |
 | [v4.7.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0) | 2026-07-03 | JSON source parsers: Bricks, classic Oxygen, and Elementor 4 Atomic now ride the lossless `transform` path as sources |
 | [v4.6.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.6.0) | 2026-07-03 | Classic Oxygen hardening: all real storage shapes parse, real `ct_*`/`oxy_*` vocabulary, unified root-tree output, full style passthrough, responsive `media` round-tripping |
 | [v4.5.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.5.0) | 2026-07-03 | Responsive breakpoint round-tripping: canonical desktop/tablet/phone + hover model for `divi-5` / `elementor-4` / `oxygen-6`, with cross-framework transfer |
@@ -703,7 +716,7 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.8.0. Release verification is automated end to end — Dependabot
+as of v4.9.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
@@ -732,7 +745,7 @@ Candidate work for upcoming 4.x releases, roughly in priority order:
    both engines on every push/PR alongside the original Elementor → Gutenberg
    gate — and caught seven real content drops on their first run.
 3. ~~**Responsive canonicalization for the remaining frameworks.**~~
-   **Done (unreleased):** Elementor v3's `_tablet`/`_mobile`/`_hover` setting
+   **Done in v4.9.0:** Elementor v3's `_tablet`/`_mobile`/`_hover` setting
    suffixes and Bricks' `:breakpoint` setting keys now canonicalize on parse
    and re-emit on convert, so responsive data survives round trips and
    transfers across frameworks (e.g. Elementor tablet overrides become
