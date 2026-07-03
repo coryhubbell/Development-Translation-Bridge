@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage Admin
- * @version    4.4.0
+ * @version    4.5.0
  */
 
 class DEVTB_Visual_Interface {
@@ -294,7 +294,7 @@ class DEVTB_Visual_Interface {
 					'userId'    => get_current_user_id(),
 					'siteUrl'   => get_site_url(),
 					'adminUrl'  => admin_url(),
-					'version'   => defined( 'DEVTB_THEME_VERSION' ) ? DEVTB_THEME_VERSION : '4.4.0',
+					'version'   => defined( 'DEVTB_THEME_VERSION' ) ? DEVTB_THEME_VERSION : '4.5.0',
 				] ); ?>;
 			</script>
 
