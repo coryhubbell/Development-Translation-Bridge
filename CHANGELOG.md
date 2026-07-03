@@ -9,7 +9,27 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **JSON source parsers for the lossless `transform` path** (roadmap 4.7+
+  item 1): Bricks Builder, classic Oxygen, and Elementor 4 Atomic content now
+  parse into the universal element shape and ride the 100%-metadata Python
+  engine as sources.
+  - `BricksParser` — real 2.x flat page format (string `parent` ids,
+    children id lists), `{"content": [...]}` exports, and the legacy nested
+    shape.
+  - `OxygenParser` — all four classic storage shapes (root tree, wrapper,
+    flat list, shortcodes) with unit normalization and `options.media`
+    responsive canonicalization, mirroring the v4.6.0 PHP hardening.
+  - `Elementor4Parser` — typed-prop unwrapping (`$$type` envelopes,
+    `html-v3` content, `link.destination`), style-variant canonicalization
+    into the shared responsive model.
+  - New transform registrations: `bricks→bootstrap`, `oxygen→gutenberg`,
+    `oxygen→bootstrap`, `elementor4→gutenberg`, `elementor4→bootstrap`
+    (joining the existing `bricks→gutenberg`).
+  - CLI: `devtb transform bricks|oxygen|elementor4 <target> file.json` now
+    works end to end; shared `UniversalDocument` primitives added for future
+    source parsers.
+  - 16 new parser/wiring tests (`tests/python/test_source_parsers.py`).
 
 ## [4.6.0] — 2026-07-03
 

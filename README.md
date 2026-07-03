@@ -60,12 +60,11 @@ flowchart TD
 
 | Path | Engine | Approach | Metadata | Speed | Best for |
 |---|---|---|---|---|---|
-| `transform` | Python (v4) | JSON-native | **100%** | ~0.5s/page | Elementor JSON today; more JSON source parsers planned |
+| `transform` | Python (v4) | JSON-native | **100%** | ~0.5s/page | JSON sources: Elementor, Elementor 4 Atomic, Bricks, classic Oxygen |
 | `translate` | PHP (v3) | HTML intermediate | ~42% | ~30s/page | Any framework, including shortcode-based (WPBakery, DIVI 4, Avada) |
 
 The `transform` path is the recommended default; `translate` is retained for
-HTML-based frameworks that don't have a JSON canonical form and for sources
-whose v4 parser is not production-ready yet.
+HTML-based frameworks that don't have a JSON canonical form.
 
 ---
 
@@ -692,11 +691,10 @@ Oxygen 6-specific deltas.
 
 Candidate work for upcoming 4.x releases, roughly in priority order:
 
-1. **More JSON source parsers for the lossless `transform` path.** Today only
-   Elementor JSON rides the 100%-metadata Python engine; Bricks, Oxygen, and
-   Elementor 4 Atomic are JSON-native formats currently forced through the
-   ~42%-fidelity HTML-intermediate path when used as *sources*. Bringing them
-   onto `transform` is the single biggest fidelity win available.
+1. ~~**More JSON source parsers for the lossless `transform` path.**~~
+   **Done (unreleased):** Bricks, classic Oxygen, and Elementor 4 Atomic now
+   parse into the universal shape and ride the 100%-metadata Python engine as
+   sources (`devtb transform bricks|oxygen|elementor4 <target> file.json`).
 2. **E2e fidelity smoke gates for more targets.** The kitchen-sink smoke that
    guards Elementor → Gutenberg (and caught two real bugs before v4.3.4
    shipped) has no equivalent for other high-traffic targets — Elementor →
