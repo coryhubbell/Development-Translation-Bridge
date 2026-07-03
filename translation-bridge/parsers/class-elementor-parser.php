@@ -21,6 +21,7 @@ use DEVTB\TranslationBridge\Core\DEVTB_Parser_Interface;
 use DEVTB\TranslationBridge\Models\DEVTB_Component;
 use DEVTB\TranslationBridge\Utils\DEVTB_JSON_Helper;
 use DEVTB\TranslationBridge\Utils\DEVTB_CSS_Helper;
+use DEVTB\TranslationBridge\Utils\DEVTB_Responsive_Helper;
 
 /**
  * Class DEVTB_Elementor_Parser
@@ -204,16 +205,22 @@ class DEVTB_Elementor_Parser implements DEVTB_Parser_Interface {
 		$settings = $element['settings'] ?? [];
 		$attributes = $this->normalize_settings( $settings );
 
+		$section_metadata = [
+			'source_framework' => 'elementor',
+			'original_type'    => 'section',
+			'elementor_id'     => $element['id'] ?? '',
+			'elementor_settings' => $settings,
+		];
+		$section_responsive = DEVTB_Responsive_Helper::elementor_v3_settings_to_canonical( $settings );
+		if ( $section_responsive !== null ) {
+			$section_metadata[ DEVTB_Responsive_Helper::METADATA_KEY ] = [ 'styles' => $section_responsive ];
+		}
+
 		$section = new DEVTB_Component([
 			'type'       => 'container',
 			'category'   => 'layout',
 			'attributes' => $attributes,
-			'metadata'   => [
-				'source_framework' => 'elementor',
-				'original_type'    => 'section',
-				'elementor_id'     => $element['id'] ?? '',
-				'elementor_settings' => $settings,
-			],
+			'metadata'   => $section_metadata,
 		]);
 
 		// Parse columns
@@ -286,17 +293,26 @@ class DEVTB_Elementor_Parser implements DEVTB_Parser_Interface {
 		// Extract content based on widget type
 		$content = $this->extract_widget_content( $widget_type, $settings );
 
+		$metadata = [
+			'source_framework'   => 'elementor',
+			'original_type'      => $widget_type,
+			'elementor_id'       => $element['id'] ?? '',
+			'elementor_settings' => $settings,
+		];
+
+		// Canonicalize _tablet/_mobile/_hover setting suffixes so responsive
+		// data survives cross-framework conversions.
+		$responsive = DEVTB_Responsive_Helper::elementor_v3_settings_to_canonical( $settings );
+		if ( $responsive !== null ) {
+			$metadata[ DEVTB_Responsive_Helper::METADATA_KEY ] = [ 'styles' => $responsive ];
+		}
+
 		$component = new DEVTB_Component([
 			'type'       => $universal_type,
 			'category'   => $this->get_category( $universal_type ),
 			'attributes' => $attributes,
 			'content'    => $content,
-			'metadata'   => [
-				'source_framework'   => 'elementor',
-				'original_type'      => $widget_type,
-				'elementor_id'       => $element['id'] ?? '',
-				'elementor_settings' => $settings,
-			],
+			'metadata'   => $metadata,
 		]);
 
 		// Parse nested elements (for tabs, accordion, etc.)

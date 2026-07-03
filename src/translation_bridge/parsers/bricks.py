@@ -31,6 +31,7 @@ from translation_bridge.parsers.universal import (
     analyze_document,
     extract_document_content,
 )
+from translation_bridge.responsive import bricks_settings_to_canonical
 from translation_bridge.transforms.registry import ParserRegistry
 
 
@@ -181,12 +182,18 @@ class BricksParser:
         settings = element.get("settings") if isinstance(element.get("settings"), dict) else {}
         element_id = str(element.get("id", ""))
 
+        # Canonicalize `:tablet_portrait` / `:mobile_portrait` setting-key
+        # suffixes so responsive data survives cross-framework conversions.
+        canonical = bricks_settings_to_canonical(settings)
+        responsive = {"styles": canonical} if canonical else None
+
         if name in _CONTAINER_TYPES:
             return UniversalElement(
                 id=element_id,
                 el_type=_CONTAINER_TYPES[name],
                 settings=self._container_settings(settings),
                 is_inner=is_inner,
+                responsive=responsive,
             )
 
         widget_type = _WIDGET_TYPES.get(name, "text-editor")
@@ -196,6 +203,7 @@ class BricksParser:
             widget_type=widget_type,
             settings=self._widget_settings(name, settings),
             is_inner=is_inner,
+            responsive=responsive,
         )
 
     def _container_settings(self, settings: Dict[str, Any]) -> Dict[str, Any]:

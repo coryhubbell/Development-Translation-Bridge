@@ -9,6 +9,11 @@ from typing import Any, Dict, List, Optional
 import secrets
 import json
 
+from translation_bridge.responsive import (
+    canonical_to_bricks_settings,
+    element_responsive,
+)
+
 
 # Upstream framework version this converter is calibrated against.
 TARGET_CMS_VERSION: str = "2.3.5"
@@ -130,11 +135,13 @@ class BricksConverter:
             parent_el = self._create_container(element, parent)
         elif el_type == "widget" or widget_type:
             parent_el = self._create_widget(element, parent)
+            self._apply_responsive(element, parent_el)
             elements.append(parent_el)
             return elements
         else:
             parent_el = self._create_generic(element, parent)
 
+        self._apply_responsive(element, parent_el)
         elements.append(parent_el)
 
         for child in children:
@@ -147,6 +154,15 @@ class BricksConverter:
                 elements.extend(child_elements)
 
         return elements
+
+    def _apply_responsive(self, element: Dict[str, Any], bricks_element: Dict[str, Any]) -> None:
+        """Emit canonical responsive styles as Bricks `:breakpoint` settings."""
+        responsive = element_responsive(element) or {}
+        canonical = responsive.get("styles")
+        if isinstance(canonical, dict):
+            suffixed = canonical_to_bricks_settings(canonical)
+            if suffixed:
+                bricks_element.setdefault("settings", {}).update(suffixed)
 
     def _create_section(self, element: Dict[str, Any], parent: str) -> Dict[str, Any]:
         """Create a Bricks section element."""

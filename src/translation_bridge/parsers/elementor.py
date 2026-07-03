@@ -12,6 +12,7 @@ from pathlib import Path
 
 from ..transforms.registry import ParserRegistry
 from ..transforms.core import TransformEngine, Zone, ZoneType
+from ..responsive import elementor_v3_settings_to_canonical
 
 
 def is_atomic_v4_payload(data: Any) -> bool:
@@ -51,6 +52,7 @@ class ElementorElement:
     settings: Dict[str, Any] = field(default_factory=dict)
     elements: List["ElementorElement"] = field(default_factory=list)
     is_inner: bool = False
+    responsive: Optional[Dict[str, Any]] = None  # canonical responsive data
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary format."""
@@ -64,6 +66,8 @@ class ElementorElement:
             result["widgetType"] = self.widget_type
         if self.is_inner:
             result["isInner"] = self.is_inner
+        if self.responsive:
+            result["responsive"] = self.responsive
         return result
 
 
@@ -193,12 +197,23 @@ class ElementorParser:
 
     def _parse_element(self, data: Dict[str, Any]) -> ElementorElement:
         """Parse a single Elementor element."""
+        settings = data.get("settings", {}) or {}
+
+        # Canonicalize _tablet/_mobile/_hover setting suffixes so responsive
+        # data survives cross-framework conversions.
+        canonical = (
+            elementor_v3_settings_to_canonical(settings)
+            if isinstance(settings, dict)
+            else None
+        )
+
         element = ElementorElement(
             id=data.get("id", data.get("_id", "")),
             el_type=data.get("elType", "widget"),
             widget_type=data.get("widgetType"),
-            settings=data.get("settings", {}),
+            settings=settings,
             is_inner=data.get("isInner", False),
+            responsive={"styles": canonical} if canonical else None,
         )
 
         # Parse child elements
