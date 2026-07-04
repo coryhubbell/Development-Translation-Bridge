@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/coryhubbell/Development-Translation-Bridge/schema/universal-element.schema.json",
+  "title": "Translation Bridge Universal Element Document",
+  "description": "The canonical interchange schema shared by the PHP and Python engines (RFC 5.0, Phase 1). Every source parser emits this shape; every converter consumes it.",
+  "type": "object",
+  "required": ["elements"],
+  "properties": {
+    "elements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/element" }
+    },
+    "version": { "type": "string" },
+    "title": { "type": "string" },
+    "meta": { "type": "object" }
+  },
+  "$defs": {
+    "element": {
+      "type": "object",
+      "required": ["elType", "settings", "elements"],
+      "properties": {
+        "id": { "type": "string" },
+        "elType": {
+          "enum": ["section", "container", "column", "widget"]
+        },
+        "widgetType": {
+          "type": "string",
+          "description": "Required when elType is widget. Vocabulary: heading, text-editor, button, image, video, audio, icon, icon-box, icon-list, image-gallery, testimonial, call-to-action, price-table, alert, tabs, accordion, slides, counter, progress, countdown, form, nav, google_maps, social-icons, divider, spacer, html."
+        },
+        "settings": {
+          "type": "object",
+          "description": "Elementor-style setting keys: title/header_size (heading), editor (text), text + link{url, is_external} (button), image{url, alt}, testimonial_content/_name/_job, tabs[{tab_title, tab_content}], icon_list[{text}], wp_gallery[{url, alt, id}], html, youtube_url, alert_title/_description, title_text/description_text (icon-box), selected_icon{value}."
+        },
+        "elements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/element" }
+        },
+        "isInner": { "type": "boolean" },
+        "responsive": { "$ref": "#/$defs/responsive" }
+      },
+      "if": { "properties": { "elType": { "const": "widget" } } },
+      "then": { "required": ["elType", "settings", "elements", "widgetType"] }
+    },
+    "responsive": {
+      "type": "object",
+      "description": "Canonical responsive model (v4.5.0): breakpoints desktop/tablet/phone, states default/hover.",
+      "properties": {
+        "styles": { "$ref": "#/$defs/breakpointMap" },
+        "fields": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/breakpointMap" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "breakpointMap": {
+      "type": "object",
+      "propertyNames": { "enum": ["desktop", "tablet", "phone"] },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": { "enum": ["default", "hover"] }
+      }
+    }
+  }
+}

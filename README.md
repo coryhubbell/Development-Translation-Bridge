@@ -779,11 +779,21 @@ Candidate work for upcoming 4.x releases, roughly in priority order:
    shortcodes, and HTML — completing the parser half of the 5.x engine
    consolidation.
 
-### 5.x (speculative)
+### 5.x — engine consolidation (Phase 1 underway)
 
-A 5.x line — if it happens — would consolidate the PHP and Python engines
-onto a single shared schema and drop the legacy HTML-intermediate path.
-Items 1 and 4 above are its stepping stones.
+The 5.x line consolidates both engines onto a single shared schema and
+retires the lossy HTML-intermediate path. The plan lives in
+[`docs/RFC-5.0-engine-consolidation.md`](docs/RFC-5.0-engine-consolidation.md);
+the canonical interchange shape is normatively specified in
+[`schema/universal-element.schema.json`](schema/universal-element.schema.json).
+
+- **Phase 1 (shipped, unreleased):** the schema spec,
+  `DEVTB_Component::to_universal()` on the PHP side, and a dual-engine
+  conformance suite — shared real fixtures parsed by BOTH engines must
+  produce schema-valid, content-equivalent universal documents.
+- **Phase 2:** PHP parsers/converters adopt the universal dict directly.
+- **Phase 3:** every `translate` pair re-routes through the lossless path.
+- **Phase 4:** 5.0 — one schema, two conforming runtimes.
 
 ---
 
