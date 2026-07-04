@@ -3,6 +3,8 @@ Translation Bridge v4 - Gutenberg Block Converter.
 
 Converts Elementor JSON (or universal element dicts) into WordPress Gutenberg
 block markup — the HTML+comment-delimited format that the block editor parses.
+Legacy DEVTB_Component-shaped dicts translate through the shared
+translation_bridge.interchange vocabulary (RFC 5.0) before conversion.
 
 Mirrors the semantics of the PHP DEVTB_Gutenberg_Converter introduced in v4.3.4:
 every widget the Elementor parser produces is either mapped to a native Gutenberg
@@ -24,6 +26,8 @@ from typing import Any, Dict, Iterable, List, Optional
 from html import escape
 import json
 import re
+
+from ..interchange import component_to_element
 
 
 # Upstream framework (WordPress core) version this converter is calibrated against.
@@ -57,6 +61,7 @@ class GutenbergConverter:
         "social-icons": "core/social-links",
         "share-buttons": "core/social-links",
         "nav-menu": "core/navigation",
+        "nav": "core/navigation",
     }
 
     COMPOUND_WIDGETS = {
@@ -210,13 +215,19 @@ class GutenbergConverter:
         return self._convert_as_marker(component)
 
     def _convert_component(self, component: Dict[str, Any]) -> str:
-        comp_type = component.get("type", component.get("widgetType", ""))
-        settings = component.get("attributes", component.get("settings", {})) or {}
-        content = component.get("content", "")
+        # Universal widget elements missing elType: dispatch directly, settings
+        # are already in the shared vocabulary.
+        if "widgetType" in component and "type" not in component:
+            return self._convert_widget({
+                "elType": "widget",
+                "widgetType": component.get("widgetType", ""),
+                "settings": component.get("settings", component.get("attributes", {})) or {},
+                "elements": component.get("elements", component.get("children", [])) or [],
+            })
 
-        # Container-ish universal components: recurse into children inside a
-        # group block (they are not widgets and must never hit the marker path).
-        if comp_type in ("container", "section", "row", "column", "unknown") and component.get("children"):
+        # Unmapped container-ish components: recurse into children inside a
+        # group block (they must never hit the marker path or collapse).
+        if component.get("type") == "unknown" and component.get("children"):
             inner = "".join(
                 self._convert(child)
                 for child in component.get("children", [])
@@ -228,103 +239,15 @@ class GutenbergConverter:
                 "</div>\n<!-- /wp:group -->\n\n"
             )
 
-        universal_to_widget = {
-            "text": "text-editor",
-            "paragraph": "text-editor",
-            "heading": "heading",
-            "image": "image",
-            "button": "button",
-            "list": "icon-list",
-            "gallery": "gallery",
-            "video": "video",
-            "audio": "audio",
-            "divider": "divider",
-            "spacer": "spacer",
-            "blockquote": "blockquote",
-            "quote": "blockquote",
-            "html": "html",
-            "icon": "icon",
-            "card": "card",
-            "cta": "call-to-action",
-            "counter": "counter",
-            "testimonial": "testimonial",
-            "pricing-table": "price-table",
-            "alert": "alert",
-            "tabs": "tabs",
-            "accordion": "accordion",
-            "social-icons": "social-icons",
-            "nav": "nav-menu",
-            "table": "html",
-            "form": "form",
-            "slider": "slider",
-            "countdown": "countdown",
-            "portfolio": "portfolio",
-            "toc": "table-of-contents",
-            "map": "google_maps",
-            "progress": "progress",
-            "rating": "star-rating",
-        }
-        # Translate the universal attribute vocabulary the PHP parsers emit
-        # (label/url/heading/image_url + content) into the Elementor-style
-        # setting keys the widget builders read.
-        synthetic = dict(settings) if isinstance(settings, dict) else {}
-        text = content.strip() if isinstance(content, str) else ""
-
-        def put(key: str, value: Any) -> None:
-            if value not in (None, ""):
-                synthetic.setdefault(key, value)
-
-        if comp_type == "button":
-            put("text", synthetic.get("label"))
-            if synthetic.get("url"):
-                synthetic.setdefault("link", {"url": synthetic["url"]})
-        elif comp_type == "image":
-            if synthetic.get("image_url"):
-                synthetic.setdefault("image", {"url": synthetic["image_url"]})
-            put("alt", synthetic.get("alt_text"))
-        elif comp_type == "card":
-            put("title_text", synthetic.get("heading"))
-            put("description_text", text)
-        elif comp_type == "accordion" and (synthetic.get("heading") or text):
-            synthetic.setdefault(
-                "tabs",
-                [{"tab_title": synthetic.get("heading", ""), "tab_content": text}],
-            )
-        elif comp_type == "counter":
-            put("title", synthetic.get("heading"))
-            put("ending_number", synthetic.get("number"))
-        elif comp_type == "testimonial":
-            put("testimonial_content", text)
-            put("testimonial_name", synthetic.get("author"))
-            job = ", ".join(
-                part
-                for part in (synthetic.get("job_title"), synthetic.get("company_name"))
-                if part
-            )
-            put("testimonial_job", job)
-        elif comp_type == "cta":
-            put("title", synthetic.get("heading"))
-            put("description", text)
-            put("button_text", synthetic.get("label"))
-        elif comp_type in ("countdown", "form", "slider", "portfolio", "toc", "map", "progress", "rating"):
-            put("title", synthetic.get("heading"))
-            put("form_name", synthetic.get("heading"))
-        elif comp_type == "video":
-            put("youtube_url", synthetic.get("image_url") or synthetic.get("url"))
-        elif comp_type == "unknown" and text and not component.get("children"):
-            # Unmapped leaf with raw content — preserve it verbatim as HTML.
-            comp_type = "html"
-            put("html", text)
-
-        widget_type = universal_to_widget.get(comp_type, comp_type)
-        if text and widget_type in ("text-editor", "text"):
-            synthetic.setdefault("editor", content)
-        return self._convert_widget({
-            "elType": "widget",
-            "widgetType": widget_type,
-            "settings": synthetic,
-            "elements": component.get("children", []),
-        })
+        # Shared interchange (RFC 5.0): the component vocabulary translates in
+        # one place, mirrored by DEVTB_Component::to_universal() in PHP.
+        element = component_to_element(component)
+        el_type = element.get("elType")
+        if el_type in ("section", "container"):
+            return self._convert_section(element)
+        if el_type == "column":
+            return self._convert_column(element)
+        return self._convert_widget(element)
 
     # ----- simple 1:1 widgets -----
 
@@ -362,7 +285,7 @@ class GutenbergConverter:
             return self._build_blockquote_block(settings)
         if widget_type in ("social-icons", "share-buttons"):
             return self._build_social_links_block(settings)
-        if widget_type == "nav-menu":
+        if widget_type in ("nav-menu", "nav"):
             return self._build_navigation_block(settings)
 
         return self._convert_as_marker(component)

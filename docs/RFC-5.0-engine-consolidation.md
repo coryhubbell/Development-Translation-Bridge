@@ -1,6 +1,6 @@
 # RFC 5.0 — Engine Consolidation
 
-**Status:** Phase 2 in progress (Phase 1 shipped)
+**Status:** Phases 1–2 shipped; Phase 3 next
 **Created:** 2026-07-03
 
 ## Summary
@@ -70,7 +70,7 @@ is_external}`, `image{url, alt}`, `testimonial_*`, `tabs[]`, `icon_list[]`,
   by BOTH engines; outputs must validate against the schema and agree on
   extracted content. Runs in CI with the Python suite.
 
-### Phase 2 — PHP interchange adoption *(core shipped)*
+### Phase 2 — PHP interchange adoption *(shipped)*
 
 - `DEVTB_Universal` (core) bridges both directions:
   `components_to_document()` and `document_to_components()`.
@@ -80,8 +80,13 @@ is_external}`, `image{url, alt}`, `testimonial_*`, `tabs[]`, `icon_list[]`,
   universal document as input, or receive the parsed document as output.
 - Cross-engine interchange is conformance-tested in both directions
   (Python-parsed → PHP-converted and PHP-parsed → Python-converted).
-- Remaining for Phase 2 completion: migrate the Python Gutenberg
-  converter's ad-hoc component adapter onto the shared vocabulary.
+- The Python Gutenberg converter's ad-hoc component adapter is gone:
+  `translation_bridge.interchange` mirrors
+  `DEVTB_Component::to_universal()` exactly — the conformance suite
+  asserts `component_to_element(to_array()) == to_universal()` on real
+  fixtures — and the converter delegates to it. Collection vocabularies
+  (`icon_list`, `wp_gallery`, `selected_icon`, `alert_*`, CTA links) now
+  survive the component round trip in both engines.
 
 ### Phase 3 — Translate-path deprecation
 
