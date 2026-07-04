@@ -192,3 +192,57 @@ def element_responsive(element: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             if isinstance(responsive, dict):
                 return responsive
     return None
+
+
+def divi5_wrapper_to_canonical(
+    wrapper: Any,
+) -> Optional[Dict[str, Dict[str, Any]]]:
+    """Parse a DIVI 5 responsive wrapper into a canonical field entry.
+
+    Mirror of the PHP helper: returns None when the wrapper holds nothing
+    beyond a single desktop default value.
+    """
+    if not isinstance(wrapper, dict):
+        return None
+
+    canonical: Dict[str, Dict[str, Any]] = {}
+    for breakpoint in BREAKPOINTS:
+        states = wrapper.get(breakpoint)
+        if not isinstance(states, dict):
+            continue
+        for divi_state, canonical_state in DIVI5_STATES.items():
+            if divi_state in states:
+                canonical.setdefault(breakpoint, {})[canonical_state] = states[divi_state]
+
+    if not canonical:
+        return None
+    if list(canonical.keys()) == ["desktop"] and list(canonical["desktop"].keys()) == ["default"]:
+        return None
+    return canonical
+
+
+def oxygen6_design_to_canonical(
+    design: Dict[str, Any],
+) -> Optional[Dict[str, Dict[str, Dict[str, Any]]]]:
+    """Parse an Oxygen 6 design tree into canonical styles.
+
+    Leaves keyed by ``breakpoint_*`` flatten to dot-joined prop paths
+    (mirror of the PHP helper).
+    """
+    canonical: Dict[str, Dict[str, Dict[str, Any]]] = {}
+
+    def walk(node: Dict[str, Any], path: str) -> None:
+        breakpoint_keys = {k: v for k, v in OXYGEN6_BREAKPOINTS.items() if k in node}
+        if breakpoint_keys:
+            for oxygen_key, breakpoint in breakpoint_keys.items():
+                canonical.setdefault(breakpoint, {}).setdefault("default", {})[path] = node[oxygen_key]
+            return
+        for key, value in node.items():
+            child_path = key if path == "" else f"{path}.{key}"
+            if isinstance(value, dict):
+                walk(value, child_path)
+            else:
+                canonical.setdefault("desktop", {}).setdefault("default", {})[child_path] = value
+
+    walk(design, "")
+    return canonical or None

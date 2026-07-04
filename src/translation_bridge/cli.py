@@ -85,6 +85,18 @@ def get_parser_for_framework(framework: str) -> Optional[Any]:
         from .parsers.oxygen import OxygenParser
 
         return OxygenParser()
+    if framework_lower in ("oxygen6", "oxygen-6"):
+        from .parsers.oxygen6 import Oxygen6Parser
+
+        return Oxygen6Parser()
+    if framework_lower in ("divi5", "divi-5"):
+        from .parsers.divi5 import Divi5Parser
+
+        return Divi5Parser()
+    if framework_lower == "gutenberg":
+        from .parsers.gutenberg import GutenbergParser
+
+        return GutenbergParser()
     return None
 
 
