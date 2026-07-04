@@ -246,6 +246,11 @@ class DEVTB_Universal {
 					$attrs['images'] = $settings['wp_gallery'];
 				}
 				break;
+			case 'icon-list':
+				if ( is_array( $settings['icon_list'] ?? null ) ) {
+					$attrs['items'] = $settings['icon_list'];
+				}
+				break;
 			default:
 				$content = (string) ( $settings['text'] ?? ( $settings['title'] ?? '' ) );
 				break;

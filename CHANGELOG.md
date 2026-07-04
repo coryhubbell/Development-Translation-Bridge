@@ -9,7 +9,27 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **RFC 5.0 Phase 2 (complete)** — `translation_bridge.interchange`, the
+  Python mirror of `DEVTB_Component::to_universal()`: legacy
+  component-shaped dicts (`type`/`attributes`/`content`/`children`)
+  translate to canonical universal elements in one shared, spec-aligned
+  module. A new conformance test asserts the two engines translate the
+  component shape identically on real parsed fixtures.
+- Component round-trip vocabulary completed in both engines: `icon_list`,
+  `wp_gallery`, `selected_icon`, `alert_title`/`alert_description`, and
+  call-to-action links now survive universal ⇄ component conversion.
+- Gutenberg converter accepts the schema-canonical `nav` widgetType
+  (alias of `nav-menu`).
+
+### Changed
+
+- The Python Gutenberg converter's ad-hoc component adapter
+  (`_convert_component` attribute-translation layer) is replaced by
+  delegation to `translation_bridge.interchange`; structural components
+  (`row`/`column`) now convert to proper `core/columns`/`core/column`
+  blocks instead of a flat group.
 
 ## [4.12.0] — 2026-07-03
 

@@ -109,6 +109,58 @@ class UniversalInterchangeTest extends TestCase {
 		$this->assertSame( $normalize( $again ), $normalize( $twice ) );
 	}
 
+	public function testCollectionSettingsSurviveTheComponentRoundTrip(): void {
+		$document = [
+			'elements' => [
+				[
+					'id'         => 'w1',
+					'elType'     => 'widget',
+					'widgetType' => 'icon-list',
+					'settings'   => [ 'icon_list' => [ [ 'text' => 'First' ], [ 'text' => 'Second' ] ] ],
+					'elements'   => [],
+				],
+				[
+					'id'         => 'w2',
+					'elType'     => 'widget',
+					'widgetType' => 'image-gallery',
+					'settings'   => [ 'wp_gallery' => [ [ 'url' => 'https://x.test/1.png', 'alt' => 'one' ] ] ],
+					'elements'   => [],
+				],
+				[
+					'id'         => 'w3',
+					'elType'     => 'widget',
+					'widgetType' => 'alert',
+					'settings'   => [
+						'alert_title'       => 'Heads up',
+						'alert_description' => 'Body.',
+					],
+					'elements'   => [],
+				],
+				[
+					'id'         => 'w4',
+					'elType'     => 'widget',
+					'widgetType' => 'icon',
+					'settings'   => [ 'selected_icon' => [ 'value' => 'fas fa-star' ] ],
+					'elements'   => [],
+				],
+			],
+			'version'  => '',
+			'title'    => '',
+			'meta'     => [],
+		];
+
+		$again = DEVTB_Universal::components_to_document(
+			DEVTB_Universal::document_to_components( $document )
+		);
+
+		[ $list, $gallery, $alert, $icon ] = $again['elements'];
+		$this->assertSame( [ [ 'text' => 'First' ], [ 'text' => 'Second' ] ], $list['settings']['icon_list'] );
+		$this->assertSame( 'https://x.test/1.png', $gallery['settings']['wp_gallery'][0]['url'] );
+		$this->assertSame( 'Heads up', $alert['settings']['alert_title'] );
+		$this->assertSame( 'Body.', $alert['settings']['alert_description'] );
+		$this->assertSame( 'fas fa-star', $icon['settings']['selected_icon']['value'] );
+	}
+
 	public function testTranslatorConvertsUniversalToGutenberg(): void {
 		$translator = new DEVTB_Translator();
 		$output     = $translator->translate_universal( $this->universal_document(), 'gutenberg' );

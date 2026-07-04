@@ -217,3 +217,42 @@ class TestCrossEngineInterchange:
 
         for needle in ("DIVI Kitchen Sink", "Start migration", "Maya Chen"):
             assert needle in output, f"content lost crossing engines: {needle}"
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 tail — component→universal translation is engine-identical
+# ---------------------------------------------------------------------------
+
+PHP_MIRROR_HARNESS = r"""
+use DEVTB\TranslationBridge\Parsers\{parser_class};
+
+$content = file_get_contents('{fixture}');
+$components = (new {parser_class}())->parse($content);
+echo json_encode([
+    'components' => array_map(fn($c) => $c->to_array(), $components),
+    'universal'  => array_map(fn($c) => $c->to_universal(), $components),
+]);
+"""
+
+
+@pytest.mark.parametrize("fixture,php_parser,python_parse,sanity", CASES)
+class TestComponentInterchangeMirror:
+    """translation_bridge.interchange must translate the legacy component
+    shape EXACTLY like DEVTB_Component::to_universal() — one vocabulary,
+    two conforming implementations."""
+
+    def test_python_mirror_matches_php_to_universal(self, fixture, php_parser, python_parse, sanity):
+        from translation_bridge.interchange import component_to_element
+
+        source = php_prologue() + PHP_MIRROR_HARNESS.format(
+            parser_class=php_parser, fixture=str(REPO_ROOT / fixture)
+        )
+        payload = json.loads(strip_php_banner(run_php_harness(source, "_mirror_harness.php")))
+
+        assert payload["components"], "PHP engine produced no components"
+        for i, (component, expected) in enumerate(
+            zip(payload["components"], payload["universal"])
+        ):
+            assert component_to_element(component) == expected, (
+                f"engines disagree on component[{i}] ({component.get('type')!r})"
+            )

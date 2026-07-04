@@ -372,6 +372,9 @@ class DEVTB_Component {
 				if ( ! empty( $attrs['label'] ) ) {
 					$out['button_text'] = (string) $attrs['label'];
 				}
+				if ( ! empty( $attrs['url'] ) ) {
+					$out['link'] = [ 'url' => (string) $attrs['url'] ];
+				}
 				break;
 			case 'accordion':
 			case 'tabs':
@@ -397,6 +400,36 @@ class DEVTB_Component {
 				break;
 			case 'video':
 				$out['youtube_url'] = (string) ( $attrs['url'] ?? ( $attrs['src'] ?? ( $attrs['image_url'] ?? '' ) ) );
+				break;
+			case 'alert':
+				$out['alert_title']       = (string) ( $attrs['heading'] ?? ( $attrs['title'] ?? '' ) );
+				$out['alert_description'] = $content !== '' ? $content : (string) ( $attrs['description'] ?? '' );
+				break;
+			case 'icon':
+				$icon = (string) ( $attrs['icon'] ?? '' );
+				if ( $icon !== '' ) {
+					$out['selected_icon'] = [ 'value' => $icon ];
+				}
+				break;
+			case 'image-gallery':
+				$images = $attrs['images'] ?? ( $attrs['wp_gallery'] ?? null );
+				if ( is_string( $images ) ) {
+					$decoded = json_decode( $images, true );
+					$images  = is_array( $decoded ) ? $decoded : null;
+				}
+				if ( is_array( $images ) ) {
+					$out['wp_gallery'] = $images;
+				}
+				break;
+			case 'icon-list':
+				$items = $attrs['items'] ?? ( $attrs['icon_list'] ?? ( $attrs['list_items'] ?? null ) );
+				if ( is_string( $items ) ) {
+					$decoded = json_decode( $items, true );
+					$items   = is_array( $decoded ) ? $decoded : null;
+				}
+				if ( is_array( $items ) ) {
+					$out['icon_list'] = $items;
+				}
 				break;
 			default:
 				if ( $content !== '' ) {
