@@ -791,7 +791,12 @@ the canonical interchange shape is normatively specified in
   `DEVTB_Component::to_universal()` on the PHP side, and a dual-engine
   conformance suite — shared real fixtures parsed by BOTH engines must
   produce schema-valid, content-equivalent universal documents.
-- **Phase 2:** PHP parsers/converters adopt the universal dict directly.
+- **Phase 2 (core shipped, unreleased):** `DEVTB_Universal` bridges both
+  directions; the translator gains `parse_to_universal()` /
+  `translate_universal()`; the REST `/translate` endpoint accepts
+  `universal` as source or target; cross-engine interchange is
+  conformance-tested both ways (a Python-parsed document converts in PHP
+  and vice versa).
 - **Phase 3:** every `translate` pair re-routes through the lossless path.
 - **Phase 4:** 5.0 — one schema, two conforming runtimes.
 

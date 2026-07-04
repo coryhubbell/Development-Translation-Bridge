@@ -299,9 +299,19 @@ class DEVTB_API_V2 {
                 $options['ai_ready'] = true;
             }
 
-            // Perform translation.
-            $start_time   = microtime( true );
-            $result       = $translator->translate( $content, $source, $target, $options );
+            // Perform translation. `universal` on either side selects the
+            // canonical interchange document (RFC 5.0, Phase 2).
+            $start_time = microtime( true );
+            if ( $source === 'universal' ) {
+                $document = is_string( $content ) ? json_decode( $content, true ) : $content;
+                $result   = is_array( $document )
+                    ? $translator->translate_universal( $document, $target )
+                    : false;
+            } elseif ( $target === 'universal' ) {
+                $result = $translator->parse_to_universal( $content, $source );
+            } else {
+                $result = $translator->translate( $content, $source, $target, $options );
+            }
             $elapsed_time = microtime( true ) - $start_time;
 
             if ( ! $result ) {
@@ -802,15 +812,15 @@ class DEVTB_API_V2 {
             'source' => [
                 'required'          => true,
                 'type'              => 'string',
-                'enum'              => $this->frameworks,
-                'description'       => 'Source framework name',
+                'enum'              => array_merge( $this->frameworks, [ 'universal' ] ),
+                'description'       => 'Source framework name (or `universal` for the canonical interchange document)',
                 'sanitize_callback' => 'sanitize_text_field',
             ],
             'target' => [
                 'required'          => true,
                 'type'              => 'string',
-                'enum'              => $this->frameworks,
-                'description'       => 'Target framework name',
+                'enum'              => array_merge( $this->frameworks, [ 'universal' ] ),
+                'description'       => 'Target framework name (or `universal` to receive the parsed interchange document)',
                 'sanitize_callback' => 'sanitize_text_field',
             ],
             'content' => [

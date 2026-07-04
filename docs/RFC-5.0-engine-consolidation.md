@@ -1,6 +1,6 @@
 # RFC 5.0 — Engine Consolidation
 
-**Status:** Phase 1 in progress
+**Status:** Phase 2 in progress (Phase 1 shipped)
 **Created:** 2026-07-03
 
 ## Summary
@@ -60,7 +60,7 @@ is_external}`, `image{url, alt}`, `testimonial_*`, `tabs[]`, `icon_list[]`,
 
 ## Phases
 
-### Phase 1 — Spec + conformance harness *(this change)*
+### Phase 1 — Spec + conformance harness *(shipped)*
 
 - Publish the JSON Schema as the normative spec.
 - Add `DEVTB_Component::to_universal()` so the PHP engine can emit the
@@ -70,13 +70,18 @@ is_external}`, `image{url, alt}`, `testimonial_*`, `tabs[]`, `icon_list[]`,
   by BOTH engines; outputs must validate against the schema and agree on
   extracted content. Runs in CI with the Python suite.
 
-### Phase 2 — PHP interchange adoption
+### Phase 2 — PHP interchange adoption *(core shipped)*
 
-- PHP parsers gain a `parse_to_universal()` surface (parse → components →
-  `to_universal()`), and PHP converters accept the universal dict directly
-  (`convert_universal()`), removing per-converter component/dict adapter
-  code on the Python side.
-- The REST API adds `format=universal` for interchange payloads.
+- `DEVTB_Universal` (core) bridges both directions:
+  `components_to_document()` and `document_to_components()`.
+- Translator entry points: `parse_to_universal($content, $source)` and
+  `translate_universal($document, $target)`.
+- REST: `source`/`target` accept `universal` on `/translate` — send a
+  universal document as input, or receive the parsed document as output.
+- Cross-engine interchange is conformance-tested in both directions
+  (Python-parsed → PHP-converted and PHP-parsed → Python-converted).
+- Remaining for Phase 2 completion: migrate the Python Gutenberg
+  converter's ad-hoc component adapter onto the shared vocabulary.
 
 ### Phase 3 — Translate-path deprecation
 

@@ -97,6 +97,39 @@ class DEVTB_Translator {
 	}
 
 	/**
+	 * Parse source content into the canonical universal document
+	 * (RFC 5.0, Phase 2).
+	 *
+	 * @param string|array $content          Source content.
+	 * @param string       $source_framework Source framework name.
+	 * @return array|false Universal document, or false when nothing parses.
+	 */
+	public function parse_to_universal( $content, string $source_framework ) {
+		$components = $this->parse_content( $content, $source_framework );
+		if ( empty( $components ) ) {
+			return false;
+		}
+		return DEVTB_Universal::components_to_document( $components );
+	}
+
+	/**
+	 * Convert a canonical universal document to a target framework
+	 * (RFC 5.0, Phase 2).
+	 *
+	 * @param array  $document         Universal document (or bare element list).
+	 * @param string $target_framework Target framework name.
+	 * @return string|array|false Converted output, or false on failure.
+	 */
+	public function translate_universal( array $document, string $target_framework ) {
+		$components = DEVTB_Universal::document_to_components( $document );
+		if ( empty( $components ) ) {
+			return false;
+		}
+		$validated = $this->validate_components( $components );
+		return $this->convert_to_framework( $validated, $target_framework );
+	}
+
+	/**
 	 * Translate content from source framework to target framework
 	 *
 	 * Main entry point for all translations with intelligent orchestration.

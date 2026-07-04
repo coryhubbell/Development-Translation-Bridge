@@ -171,3 +171,49 @@ class TestDualEngineConformance:
         for needle in sanity:
             assert needle in php_blob, f"PHP engine lost content: {needle}"
             assert needle in py_blob, f"Python engine lost content: {needle}"
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 — cross-engine interchange
+# ---------------------------------------------------------------------------
+
+PHP_TRANSLATE_UNIVERSAL_HARNESS = r"""
+use DEVTB\TranslationBridge\Core\DEVTB_Translator;
+
+$document = json_decode(file_get_contents('{doc_path}'), true);
+$translator = new DEVTB_Translator();
+echo $translator->translate_universal($document, '{target}');
+"""
+
+
+class TestCrossEngineInterchange:
+    """A document parsed by one engine converts correctly in the other."""
+
+    def test_python_parsed_document_converts_in_php(self, tmp_path):
+        from translation_bridge.parsers.elementor import ElementorParser
+
+        fixture = REPO_ROOT / "tests/fixtures/elementor/kitchen-sink.json"
+        document = ElementorParser().parse(json.loads(fixture.read_text())).to_dict()
+
+        doc_path = tmp_path / "universal-doc.json"
+        doc_path.write_text(json.dumps(document))
+
+        source = php_prologue() + PHP_TRANSLATE_UNIVERSAL_HARNESS.format(
+            doc_path=str(doc_path), target="gutenberg"
+        )
+        output = strip_php_banner(run_php_harness(source, "_cross_engine_harness.php"))
+
+        for needle in ("Kitchen Sink Hero", "Get started", "We cut migration time"):
+            assert needle in output, f"content lost crossing engines: {needle}"
+        assert "<!-- wp:" in output
+
+    def test_php_parsed_document_converts_in_python(self):
+        from translation_bridge.converters.gutenberg import GutenbergConverter
+
+        elements = php_universal(
+            "DEVTB_DIVI_Parser", REPO_ROOT / "tests/fixtures/divi/kitchen-sink.txt"
+        )
+        output = GutenbergConverter().convert({"elements": elements})
+
+        for needle in ("DIVI Kitchen Sink", "Start migration", "Maya Chen"):
+            assert needle in output, f"content lost crossing engines: {needle}"
