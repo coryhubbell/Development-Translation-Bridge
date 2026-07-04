@@ -6,7 +6,7 @@
  * admin interface integration.
  *
  * @package    DevelopmentTranslation_Bridge
- * @version    4.9.0
+ * @version    4.10.0
  * @license    GPL-2.0+
  */
 
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define theme constants
-define('DEVTB_THEME_VERSION', '4.9.0');
+define('DEVTB_THEME_VERSION', '4.10.0');
 define('DEVTB_ROOT', get_template_directory());
 define('DEVTB_THEME_DIR', get_template_directory());
 define('DEVTB_THEME_URL', get_template_directory_uri());
