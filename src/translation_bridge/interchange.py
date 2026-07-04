@@ -233,6 +233,194 @@ def _universal_settings(
     return out
 
 
+# ----- Reverse direction: universal element → component dict -----
+# Mirror of DEVTB_Universal::element_to_component / settings_to_attributes.
+
+# Canonical widgetType → universal component type (reverse of
+# UNIVERSAL_WIDGET_TYPES primaries). Mirror of DEVTB_Universal::COMPONENT_TYPES.
+COMPONENT_TYPES: Dict[str, str] = {
+    "text-editor": "text",
+    "heading": "heading",
+    "image": "image",
+    "button": "button",
+    "icon-list": "list",
+    "image-gallery": "gallery",
+    "video": "video",
+    "audio": "audio",
+    "divider": "divider",
+    "spacer": "spacer",
+    "testimonial": "testimonial",
+    "html": "html",
+    "icon": "icon",
+    "icon-box": "card",
+    "call-to-action": "cta",
+    "counter": "counter",
+    "price-table": "pricing-table",
+    "alert": "alert",
+    "tabs": "tabs",
+    "accordion": "accordion",
+    "slides": "slider",
+    "social-icons": "social-icons",
+    "nav": "nav",
+    "form": "form",
+    "countdown": "countdown",
+    "google_maps": "map",
+    "progress": "progress",
+}
+
+_STRUCTURAL_COMPONENT_TYPES: Dict[str, str] = {
+    "section": "container",
+    "container": "row",
+    "column": "column",
+}
+
+
+def document_to_components(document: Any) -> List[Dict[str, Any]]:
+    """Build component dicts from a universal document (or element list).
+
+    Mirror of DEVTB_Universal::document_to_components().
+    """
+    if isinstance(document, dict) and "elType" in document:
+        elements = [document]
+    elif isinstance(document, dict) and isinstance(document.get("elements"), list):
+        elements = document["elements"]
+    elif isinstance(document, list):
+        elements = document
+    else:
+        return []
+
+    components = []
+    for element in elements:
+        if isinstance(element, dict):
+            component = element_to_component(element)
+            if component is not None:
+                components.append(component)
+    return components
+
+
+def element_to_component(element: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Convert a single universal element to a component dict (recursive).
+
+    Mirror of DEVTB_Universal::element_to_component().
+    """
+    el_type = _to_str(element.get("elType"))
+    settings = element.get("settings")
+    settings = settings if isinstance(settings, dict) else {}
+
+    if el_type in _STRUCTURAL_COMPONENT_TYPES:
+        comp_type = _STRUCTURAL_COMPONENT_TYPES[el_type]
+        attributes: Dict[str, Any] = {}
+        content = ""
+    elif el_type == "widget":
+        widget_type = _to_str(element.get("widgetType"))
+        comp_type = COMPONENT_TYPES.get(widget_type, "html")
+        attributes, content = _settings_to_attributes(widget_type, settings)
+    else:
+        return None
+
+    metadata: Dict[str, Any] = {
+        "source_framework": "universal",
+        "original_type": element.get("widgetType") or el_type,
+    }
+    responsive = element.get("responsive")
+    if isinstance(responsive, dict):
+        metadata["responsive"] = responsive
+
+    component: Dict[str, Any] = {
+        "type": comp_type,
+        "category": "general",
+        "attributes": attributes,
+        "styles": {},
+        "content": content,
+        "metadata": metadata,
+        "children": [],
+    }
+    if element.get("id"):
+        component["id"] = _to_str(element["id"])
+
+    for child in element.get("elements") or []:
+        if isinstance(child, dict):
+            child_component = element_to_component(child)
+            if child_component is not None:
+                component["children"].append(child_component)
+
+    return component
+
+
+def _settings_to_attributes(widget_type: str, settings: Dict[str, Any]):
+    """Reverse the settings vocabulary into universal attributes + content.
+
+    Mirror of DEVTB_Universal::settings_to_attributes().
+    """
+    attrs: Dict[str, Any] = {}
+    content = ""
+
+    if widget_type == "heading":
+        content = _to_str(settings.get("title", ""))
+        size = _to_str(settings.get("header_size") or "h2")
+        attrs["level"] = _php_int(size.lstrip("h")) or 2
+    elif widget_type == "text-editor":
+        content = _first_str(settings, "editor", "text")
+    elif widget_type == "button":
+        content = _to_str(settings.get("text", ""))
+        link = settings.get("link")
+        if isinstance(link, dict) and _filled(link.get("url")):
+            attrs["url"] = _to_str(link["url"])
+            if _filled(link.get("is_external")):
+                attrs["target"] = "_blank"
+    elif widget_type == "image":
+        image = settings.get("image")
+        if isinstance(image, dict):
+            attrs["image_url"] = _to_str(image.get("url", ""))
+            if _filled(image.get("alt")):
+                attrs["alt_text"] = _to_str(image["alt"])
+    elif widget_type == "testimonial":
+        content = _to_str(settings.get("testimonial_content", ""))
+        if _filled(settings.get("testimonial_name")):
+            attrs["author"] = _to_str(settings["testimonial_name"])
+        if _filled(settings.get("testimonial_job")):
+            attrs["job_title"] = _to_str(settings["testimonial_job"])
+    elif widget_type == "icon-box":
+        attrs["heading"] = _to_str(settings.get("title_text", ""))
+        content = _to_str(settings.get("description_text", ""))
+    elif widget_type == "call-to-action":
+        attrs["heading"] = _to_str(settings.get("title", ""))
+        content = _to_str(settings.get("description", ""))
+        if _filled(settings.get("button_text")):
+            attrs["label"] = _to_str(settings["button_text"])
+        link = settings.get("link")
+        if isinstance(link, dict) and _filled(link.get("url")):
+            attrs["url"] = _to_str(link["url"])
+    elif widget_type in ("tabs", "accordion"):
+        if isinstance(settings.get("tabs"), list):
+            attrs["tabs"] = settings["tabs"]
+    elif widget_type == "counter":
+        attrs["heading"] = _to_str(settings.get("title", ""))
+        if _filled(settings.get("ending_number")):
+            attrs["number"] = _to_str(settings["ending_number"])
+    elif widget_type == "html":
+        content = _to_str(settings.get("html", ""))
+    elif widget_type == "video":
+        attrs["url"] = _to_str(settings.get("youtube_url", ""))
+    elif widget_type == "alert":
+        attrs["heading"] = _to_str(settings.get("alert_title", ""))
+        content = _to_str(settings.get("alert_description", ""))
+    elif widget_type == "icon":
+        icon = settings.get("selected_icon")
+        if isinstance(icon, dict) and _filled(icon.get("value")):
+            attrs["icon"] = _to_str(icon["value"])
+    elif widget_type == "image-gallery":
+        if isinstance(settings.get("wp_gallery"), list):
+            attrs["images"] = settings["wp_gallery"]
+    elif widget_type == "icon-list":
+        if isinstance(settings.get("icon_list"), list):
+            attrs["items"] = settings["icon_list"]
+    else:
+        content = _first_str(settings, "text", "title")
+
+    return attrs, content
+
+
 # ----- PHP-semantics helpers -----
 
 

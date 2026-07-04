@@ -14,11 +14,100 @@ from html import escape
 import json
 import hashlib
 
+from ..interchange import document_to_components
+
 
 # Upstream framework version (Kadence Blocks plugin) this converter is
 # calibrated against. Theme template parts (Kadence Theme 1.5.x) share the
 # same kadence/* namespace and are emitted through the same code path.
 TARGET_CMS_VERSION: str = "3.7.2"
+
+
+# Settings keys that carry user-visible content (mirror of the CLI fidelity
+# probe). Used to rescue strings the reverse interchange has no slot for.
+_CONTENT_KEY_PARTS: tuple = (
+    "text", "title", "content", "description", "heading", "editor",
+    "caption", "label", "alt", "html", "name", "job", "address", "url", "date",
+)
+
+# elTypes the reverse interchange converts (everything else it skips).
+_UNIVERSAL_EL_TYPES: tuple = ("section", "container", "column", "widget")
+
+
+def _is_universal_element(value: Any) -> bool:
+    return isinstance(value, dict) and "elType" in value
+
+
+def _element_content_strings(settings: Any) -> List[str]:
+    """Content-bearing strings in one element's settings (children excluded)."""
+    out: List[str] = []
+
+    def maybe(key: str, value: Any) -> None:
+        if isinstance(value, str) and value.strip() and any(
+            part in key.lower() for part in _CONTENT_KEY_PARTS
+        ):
+            out.append(value.strip())
+
+    if not isinstance(settings, dict):
+        return out
+    for key, value in settings.items():
+        if isinstance(value, dict):
+            for sub_key, sub in value.items():
+                maybe(sub_key, sub)
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    for sub_key, sub in item.items():
+                        maybe(sub_key, sub)
+        else:
+            maybe(key, value)
+    return out
+
+
+def _component_kept_strings(component: Dict[str, Any]) -> str:
+    """Every string the component can still express, for extras diffing."""
+    parts: List[str] = [str(component.get("content") or "")]
+
+    def collect(value: Any) -> None:
+        if isinstance(value, str):
+            parts.append(value)
+        elif isinstance(value, dict):
+            for sub in value.values():
+                collect(sub)
+        elif isinstance(value, list):
+            for sub in value:
+                collect(sub)
+
+    collect(component.get("attributes") or {})
+    return "\n".join(parts)
+
+
+def _graft_universal_extras(
+    elements: List[Any], components: List[Dict[str, Any]]
+) -> None:
+    """Attach settings strings the reverse interchange dropped (no attribute
+    slot, e.g. price-table rows) so the converted output never loses them."""
+    index = 0
+    for element in elements:
+        if not _is_universal_element(element):
+            continue
+        if str(element.get("elType") or "") not in _UNIVERSAL_EL_TYPES:
+            continue
+        if index >= len(components):
+            break
+        component = components[index]
+        index += 1
+        kept = _component_kept_strings(component)
+        extras = [
+            value
+            for value in _element_content_strings(element.get("settings"))
+            if value not in kept
+        ]
+        if extras:
+            component["_universal_extras"] = extras
+        _graft_universal_extras(
+            element.get("elements") or [], component.get("children") or []
+        )
 
 
 class KadenceConverter:
@@ -43,14 +132,19 @@ class KadenceConverter:
         "tabs": "kadence/tabs",
         "accordion": "kadence/accordion",
         "posts": "kadence/posts",
+        "cta": "kadence/infobox",
+        "alert": "kadence/infobox",
+        "counter": "kadence/countup",
         # No Kadence-namespace equivalent — fall through to core/*.
         "text": "core/paragraph",
         "paragraph": "core/paragraph",
         "list": "core/list",
         "quote": "core/quote",
+        "testimonial": "core/quote",
         "code": "core/code",
         "html": "core/html",
         "video": "core/video",
+        "gallery": "core/gallery",
     }
 
     def __init__(self) -> None:
@@ -60,13 +154,9 @@ class KadenceConverter:
 
     def convert(self, data: Any) -> str:
         """Convert universal data to a Kadence Blocks markup string."""
-        if isinstance(data, dict):
-            if "elements" in data and isinstance(data["elements"], list):
-                return "".join(self._convert_component(c) for c in data["elements"])
-            return self._convert_component(data)
-        if isinstance(data, list):
-            return "".join(self._convert_component(c) for c in data)
-        return ""
+        return "".join(
+            self._convert_component(c) for c in self._normalize_input(data)
+        )
 
     def get_framework(self) -> str:
         return "kadence"
@@ -75,18 +165,60 @@ class KadenceConverter:
         return [
             "row", "container", "column",
             "heading", "button", "icon", "image", "spacer", "divider",
-            "infobox", "card", "tabs", "accordion", "posts",
-            "text", "paragraph", "list", "quote", "code", "html", "video",
+            "infobox", "card", "cta", "alert", "counter",
+            "tabs", "accordion", "posts",
+            "text", "paragraph", "list", "quote", "testimonial",
+            "code", "html", "video", "gallery",
         ]
 
     def supports_type(self, type_name: str) -> bool:
         return type_name in self.get_supported_types()
 
     def get_fallback(self, component: Dict[str, Any]) -> str:
-        content = component.get("content", "")
-        return f"<!-- wp:html -->\n{content}\n<!-- /wp:html -->\n\n"
+        parts: List[str] = []
+        content = component.get("content", "") or ""
+        if content:
+            parts.append(str(content))
+        attrs = component.get("attributes", {}) or {}
+        for key in ("heading", "title", "label", "number", "url", "author", "job_title"):
+            value = attrs.get(key)
+            if isinstance(value, str) and value.strip():
+                parts.append(value.strip())
+        for key in ("tabs", "items", "images"):
+            value = attrs.get(key)
+            if not isinstance(value, list):
+                continue
+            for item in value:
+                if isinstance(item, dict):
+                    parts.extend(
+                        str(sub).strip()
+                        for sub in item.values()
+                        if isinstance(sub, str) and sub.strip()
+                    )
+        body = "\n".join(parts)
+        return f"<!-- wp:html -->\n{body}\n<!-- /wp:html -->\n\n"
 
     # --- Internal -------------------------------------------------------
+
+    def _normalize_input(self, data: Any) -> List[Dict[str, Any]]:
+        """Normalize input to component dicts; universal elements route
+        through the reverse interchange (plus dropped-content grafting)."""
+        if isinstance(data, list):
+            elements = data
+        elif _is_universal_element(data):
+            elements = [data]
+        elif isinstance(data, dict) and isinstance(data.get("elements"), list):
+            elements = data["elements"]
+        elif isinstance(data, dict):
+            return [data]
+        else:
+            return []
+
+        if any(_is_universal_element(e) for e in elements):
+            components = document_to_components(elements)
+            _graft_universal_extras(elements, components)
+            return components
+        return [e for e in elements if isinstance(e, dict)]
 
     def _convert_component(self, component: Dict[str, Any]) -> str:
         if not isinstance(component, dict):
@@ -95,10 +227,19 @@ class KadenceConverter:
         comp_type = component.get("type", "")
 
         if comp_type in ("container", "row"):
-            return self._convert_rowlayout(component)
-        if comp_type == "column":
-            return self._convert_column(component)
-        return self._convert_block(component)
+            markup = self._convert_rowlayout(component)
+        elif comp_type == "column":
+            markup = self._convert_column(component)
+        else:
+            markup = self._convert_block(component)
+        return markup + self._render_universal_extras(component)
+
+    def _render_universal_extras(self, component: Dict[str, Any]) -> str:
+        extras = component.get("_universal_extras") or []
+        if not extras:
+            return ""
+        body = "\n".join(extras)
+        return f"<!-- wp:html -->\n{body}\n<!-- /wp:html -->\n\n"
 
     def _convert_rowlayout(self, component: Dict[str, Any]) -> str:
         children = component.get("children", []) or []
@@ -151,20 +292,26 @@ class KadenceConverter:
         block_name = self.BLOCK_TYPE_MAP.get(comp_type)
 
         if not block_name:
-            return self.get_fallback(component)
+            markup = self.get_fallback(component)
+        else:
+            attrs = self._denormalize_attributes(component.get("attributes", {}))
+            attrs = self._lift_content_fields(block_name, attrs, component)
 
-        attrs = self._denormalize_attributes(component.get("attributes", {}))
-        attrs = self._lift_content_fields(block_name, attrs, component)
+            # Every kadence/* block requires a uniqueID.
+            if block_name.startswith("kadence/"):
+                attrs = {"uniqueID": self._next_unique_id(), **attrs}
 
-        # Every kadence/* block requires a uniqueID.
-        if block_name.startswith("kadence/"):
-            attrs = {"uniqueID": self._next_unique_id(), **attrs}
+            inner_html = self._inner_html(block_name, component, attrs)
 
-        inner_html = self._inner_html(block_name, component, attrs)
+            opening = self._delimiter(block_name, attrs)
+            closing = self._closing(block_name)
+            markup = f"{opening}\n{inner_html}\n{closing}\n\n"
 
-        opening = self._delimiter(block_name, attrs)
-        closing = self._closing(block_name)
-        return f"{opening}\n{inner_html}\n{closing}\n\n"
+        # Leaf components can still carry children (universal sources nest
+        # freely) — never drop them.
+        for child in component.get("children", []) or []:
+            markup += self._convert_component(child)
+        return markup
 
     def _lift_content_fields(
         self, block_name: str, attrs: Dict[str, Any], component: Dict[str, Any]
@@ -173,22 +320,19 @@ class KadenceConverter:
 
         if block_name == "kadence/advancedheading":
             attrs["level"] = int(comp_attrs.get("level", 2))
-        elif block_name == "kadence/image":
-            if comp_attrs.get("src"):
-                attrs["url"] = comp_attrs["src"]
-            if comp_attrs.get("alt"):
-                attrs["alt"] = comp_attrs["alt"]
+        elif block_name in ("kadence/image", "core/image"):
+            url = comp_attrs.get("image_url") or comp_attrs.get("src")
+            if url:
+                attrs["url"] = url
+            alt = comp_attrs.get("alt_text") or comp_attrs.get("alt")
+            if alt:
+                attrs["alt"] = alt
         elif block_name == "kadence/spacer":
             attrs["spacerHeight"] = int(comp_attrs.get("height", 40))
         elif block_name == "kadence/icon":
             icon_name = comp_attrs.get("icon")
             if icon_name:
                 attrs["icons"] = [{"icon": str(icon_name)}]
-        elif block_name == "core/image":
-            if comp_attrs.get("src"):
-                attrs["url"] = comp_attrs["src"]
-            if comp_attrs.get("alt"):
-                attrs["alt"] = comp_attrs["alt"]
 
         return attrs
 
@@ -207,7 +351,7 @@ class KadenceConverter:
             )
 
         if block_name == "kadence/advancedbtn":
-            url = comp_attrs.get("href", "#")
+            url = comp_attrs.get("url") or comp_attrs.get("href") or "#"
             return (
                 '<div class="wp-block-kadence-advancedbtn kb-btns-outer-wrap '
                 'kt-btn-align-inherit">'
@@ -223,8 +367,8 @@ class KadenceConverter:
             )
 
         if block_name == "kadence/image":
-            url = comp_attrs.get("src", "")
-            alt = comp_attrs.get("alt", "")
+            url = comp_attrs.get("image_url") or comp_attrs.get("src") or ""
+            alt = comp_attrs.get("alt_text") or comp_attrs.get("alt") or ""
             return (
                 f'<figure class="wp-block-kadence-image kb-image-{escape(unique)}">'
                 f'<img src="{escape(url)}" alt="{escape(alt)}"/></figure>'
@@ -238,21 +382,46 @@ class KadenceConverter:
             )
 
         if block_name == "kadence/infobox":
-            return (
+            title = comp_attrs.get("heading") or comp_attrs.get("title") or ""
+            label = comp_attrs.get("label") or ""
+            url = comp_attrs.get("url") or comp_attrs.get("href") or ""
+            parts = [
                 f'<div class="wp-block-kadence-infobox kt-info-box-{escape(unique)}">'
-                f'<div class="kt-blocks-info-box-text">{escape(content)}</div></div>'
+            ]
+            if title:
+                parts.append(
+                    f'<div class="kt-blocks-info-box-title">{escape(str(title))}</div>'
+                )
+            parts.append(
+                f'<div class="kt-blocks-info-box-text">{escape(content)}</div>'
+            )
+            if label or url:
+                parts.append(
+                    f'<a class="kt-blocks-info-box-learnmore" href="{escape(str(url) or "#")}">'
+                    f"{escape(str(label))}</a>"
+                )
+            parts.append("</div>")
+            return "".join(parts)
+
+        if block_name == "kadence/countup":
+            title = comp_attrs.get("heading") or comp_attrs.get("title") or content
+            number = comp_attrs.get("number", "")
+            return (
+                f'<div class="wp-block-kadence-countup kt-countup-{escape(unique)}">'
+                f'<div class="kt-countup-number">{escape(str(number))}</div>'
+                f'<div class="kt-countup-title">{escape(str(title))}</div></div>'
             )
 
         if block_name == "kadence/tabs":
             return (
                 '<div class="wp-block-kadence-tabs kt-tabs-wrap '
-                f'kt-tabs-id-{escape(unique)}"></div>'
+                f'kt-tabs-id-{escape(unique)}">{self._tab_panes(comp_attrs)}</div>'
             )
 
         if block_name == "kadence/accordion":
             return (
                 '<div class="wp-block-kadence-accordion kt-accordion-wrap '
-                f'kt-accordion-id-{escape(unique)}"></div>'
+                f'kt-accordion-id-{escape(unique)}">{self._tab_panes(comp_attrs)}</div>'
             )
 
         if block_name == "kadence/posts":
@@ -263,24 +432,68 @@ class KadenceConverter:
 
         # core/* fall-through
         if block_name == "core/paragraph":
-            return f"<p>{escape(content)}</p>"
+            # Rich-text sources ship ready-made HTML; keep it verbatim.
+            return content if "<" in content else f"<p>{escape(content)}</p>"
         if block_name == "core/list":
-            return f'<ul class="wp-block-list"><li>{escape(content)}</li></ul>'
+            items = comp_attrs.get("items")
+            if isinstance(items, list) and items:
+                lis = "".join(
+                    f"<li>{escape(str(item.get('text', '') or ''))}</li>"
+                    for item in items
+                    if isinstance(item, dict)
+                )
+            else:
+                lis = f"<li>{escape(content)}</li>"
+            return f'<ul class="wp-block-list">{lis}</ul>'
         if block_name == "core/quote":
-            return f'<blockquote class="wp-block-quote"><p>{escape(content)}</p></blockquote>'
+            cite_parts = [
+                str(comp_attrs[key]).strip()
+                for key in ("author", "cite", "job_title")
+                if comp_attrs.get(key)
+            ]
+            cite = (
+                f"<cite>{escape(', '.join(cite_parts))}</cite>" if cite_parts else ""
+            )
+            return (
+                f'<blockquote class="wp-block-quote"><p>{escape(content)}</p>'
+                f"{cite}</blockquote>"
+            )
         if block_name == "core/code":
             return f'<pre class="wp-block-code"><code>{escape(content)}</code></pre>'
         if block_name == "core/html":
             return content
         if block_name == "core/video":
-            url = comp_attrs.get("src", "")
+            url = comp_attrs.get("url") or comp_attrs.get("src") or ""
             return f'<figure class="wp-block-video"><video controls src="{escape(url)}"></video></figure>'
         if block_name == "core/image":
-            url = comp_attrs.get("src", "")
-            alt = comp_attrs.get("alt", "")
+            url = comp_attrs.get("image_url") or comp_attrs.get("src") or ""
+            alt = comp_attrs.get("alt_text") or comp_attrs.get("alt") or ""
             return f'<figure class="wp-block-image"><img src="{escape(url)}" alt="{escape(alt)}"/></figure>'
+        if block_name == "core/gallery":
+            figures = "".join(
+                '<figure class="wp-block-image">'
+                f'<img src="{escape(str(image.get("url", "") or ""))}" '
+                f'alt="{escape(str(image.get("alt", "") or ""))}"/></figure>'
+                for image in (comp_attrs.get("images") or [])
+                if isinstance(image, dict)
+            )
+            return f'<figure class="wp-block-gallery has-nested-images">{figures}</figure>'
 
         return escape(content)
+
+    def _tab_panes(self, comp_attrs: Dict[str, Any]) -> str:
+        panes = []
+        for item in comp_attrs.get("tabs") or []:
+            if not isinstance(item, dict):
+                continue
+            title = str(item.get("tab_title", "") or "")
+            body = str(item.get("tab_content", "") or "")
+            # tab_content is rich text — keep it verbatim.
+            panes.append(
+                '<div class="kt-tab-inner-content">'
+                f'<div class="kt-tab-title">{escape(title)}</div>{body}</div>'
+            )
+        return "".join(panes)
 
     def _denormalize_attributes(self, attributes: Dict[str, Any]) -> Dict[str, Any]:
         out: Dict[str, Any] = {}

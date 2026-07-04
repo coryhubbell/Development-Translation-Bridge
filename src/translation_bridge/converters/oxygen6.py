@@ -86,6 +86,7 @@ class Oxygen6Converter:
         "column": "Div",
         "heading": "Heading",
         "text": "Text",
+        "text-editor": "Text",
         "paragraph": "Text",
         "image": "Image",
         "button": "Button",
@@ -96,24 +97,35 @@ class Oxygen6Converter:
         "divider": "Divider",
         "spacer": "Spacer",
         "list": "List",
+        "icon-list": "List",
         "accordion": "Accordion",
         "tabs": "Tabs",
         "form": "Form",
         "gallery": "Gallery",
+        "image-gallery": "Gallery",
         "slider": "Slider",
+        "slides": "Slider",
         "carousel": "Slider",
         "card": "Card",
         "icon-box": "Card",
+        "call-to-action": "Card",
+        "cta": "Card",
         "testimonial": "Testimonial",
+        "blockquote": "Testimonial",
+        "quote": "Testimonial",
+        "price-table": "PricingTable",
         "pricing-table": "PricingTable",
         "counter": "Counter",
         "progress": "ProgressBar",
         "map": "Map",
+        "google_maps": "Map",
         "alert": "Alert",
         "social-icons": "SocialIcons",
         "countdown": "Countdown",
         "code": "CodeBlock",
+        "html": "CodeBlock",
         "nav": "Menu",
+        "nav-menu": "Menu",
         "menu": "Menu",
     }
 
@@ -182,11 +194,13 @@ class Oxygen6Converter:
             or self._normalize_el_type(element.get("elType"))
         )
         if not universal_type:
-            return None
+            if element.get("elType") != "widget":
+                return None
+            universal_type = "text"  # widget without widgetType
 
-        local_name = self.ELEMENT_TYPE_MAP.get(universal_type)
-        if local_name is None:
-            return None
+        # Unknown widget vocabularies fall back to the text primitive so
+        # their content-bearing settings survive (never drop an element).
+        local_name = self.ELEMENT_TYPE_MAP.get(universal_type, "Text")
 
         settings = element.get("settings", element.get("attributes", {})) or {}
         content = element.get("content", "")
@@ -243,6 +257,9 @@ class Oxygen6Converter:
         properties: Dict[str, Any] = {}
         content_fields: Dict[str, Any] = {}
         styles = settings.get("styles") or settings.get("_design") or {}
+        # Setting keys consumed by the branches below (under a different
+        # content-field name), so the pass-through loop must skip them.
+        consumed = {"styles", "_design", "link", "image", "selected_icon"}
 
         if local_name == "Heading":
             content_fields["text"] = content or settings.get("title", settings.get("text", ""))
@@ -283,15 +300,63 @@ class Oxygen6Converter:
             # Real CodeBlock exports carry php_code / javascript_code fields;
             # php_code accepts raw HTML too.
             content_fields["php_code"] = content or settings.get("code", settings.get("html", ""))
+        elif local_name in ("Tabs", "Accordion"):
+            items = settings.get("tabs", settings.get("items"))
+            consumed.update(("tabs", "items"))
+            content_fields["items"] = [
+                {
+                    "title": item.get("tab_title", item.get("title", "")),
+                    "text": item.get("tab_content", item.get("text", "")),
+                }
+                for item in (items if isinstance(items, list) else [])
+                if isinstance(item, dict)
+            ]
+        elif local_name == "Gallery":
+            images = settings.get("wp_gallery", settings.get("gallery"))
+            consumed.update(("wp_gallery", "gallery"))
+            content_fields["images"] = [
+                {"url": img.get("url", ""), "alt": img.get("alt", ""), "id": img.get("id", "")}
+                for img in (images if isinstance(images, list) else [])
+                if isinstance(img, dict)
+            ]
+        elif local_name == "List":
+            items = settings.get("icon_list", settings.get("items"))
+            consumed.update(("icon_list", "items"))
+            content_fields["items"] = [
+                {"text": item.get("text", "")}
+                for item in (items if isinstance(items, list) else [])
+                if isinstance(item, dict)
+            ]
+        elif local_name == "PricingTable":
+            features = settings.get("features", settings.get("items"))
+            consumed.update(("features", "items"))
+            content_fields["features"] = [
+                {"text": item.get("item_text", item.get("text", ""))}
+                for item in (features if isinstance(features, list) else [])
+                if isinstance(item, dict)
+            ]
         elif content:
             content_fields["text"] = content
 
-        # Pass through any extra scalar settings we didn't explicitly handle so
-        # they aren't silently dropped (preserves round-trip fidelity).
+        # Any element can carry a link or image the branches above did not
+        # consume (audio files, card links/images, ...) — preserve them.
+        link = settings.get("link")
+        if "link" not in content_fields and isinstance(link, dict) and link.get("url"):
+            content_fields["link"] = {"url": link["url"], "target": link.get("target", "_self")}
+        image = settings.get("image")
+        if "src" not in content_fields and isinstance(image, dict) and image.get("url"):
+            content_fields["image"] = {"src": image["url"], "alt": image.get("alt", "")}
+
+        # Pass through any extra settings we didn't explicitly handle so they
+        # aren't silently dropped (preserves round-trip fidelity). Item lists
+        # (feature rows, social icons, ...) are JSON-safe and pass through
+        # wholesale.
         for key, value in settings.items():
-            if key in content_fields or key in ("styles", "_design", "link", "image", "selected_icon"):
+            if key in content_fields or key in consumed:
                 continue
             if isinstance(value, (str, int, float, bool)):
+                content_fields[key] = value
+            elif isinstance(value, list) and any(isinstance(item, dict) for item in value):
                 content_fields[key] = value
 
         if content_fields:

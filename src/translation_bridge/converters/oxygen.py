@@ -37,6 +37,47 @@ TARGET_CMS_VERSION: str = "4.8.3"
 # Canonical breakpoint -> classic Oxygen `options.media` key.
 MEDIA_BREAKPOINTS = {"tablet": "tablet", "phone": "phone-portrait"}
 
+# Setting keys that carry user-visible content (matches the fidelity
+# convention in transforms/core.py; the exclusion list wins so keys like
+# title_color never count as content).
+CONTENT_KEY_PARTS = (
+    "text", "title", "content", "description", "heading", "editor",
+    "caption", "label", "alt", "html", "name", "job", "address", "url", "date",
+)
+NON_CONTENT_KEY_PARTS = (
+    "color", "size", "typography", "weight", "align", "style", "position",
+    "gap", "width", "height", "radius", "spacing", "margin", "padding",
+    "font", "shadow", "border", "opacity", "hover",
+)
+
+
+def _is_content_key(key: str) -> bool:
+    key_lower = str(key).lower()
+    if any(part in key_lower for part in NON_CONTENT_KEY_PARTS):
+        return False
+    return any(part in key_lower for part in CONTENT_KEY_PARTS)
+
+
+def _content_strings(settings: Dict[str, Any]) -> List[str]:
+    """Collect content-bearing strings from settings (one level into dicts/lists)."""
+    out: List[str] = []
+    for key, value in settings.items():
+        if isinstance(value, str) and value.strip() and _is_content_key(key):
+            out.append(value.strip())
+        elif isinstance(value, dict):
+            for sub_key, sub in value.items():
+                if isinstance(sub, str) and sub.strip() and _is_content_key(sub_key):
+                    out.append(sub.strip())
+        elif isinstance(value, list):
+            for item in value:
+                if not isinstance(item, dict):
+                    continue
+                for sub_key, sub in item.items():
+                    if isinstance(sub, str) and sub.strip() and _is_content_key(sub_key):
+                        out.append(sub.strip())
+    return out
+
+
 # Length props classic Oxygen stores unitless (px implied).
 UNITLESS_PX_PROPS = frozenset(
     [
@@ -73,6 +114,7 @@ class OxygenConverter:
         "column": "ct_column",
         "heading": "ct_headline",
         "text": "ct_text_block",
+        "text-editor": "ct_text_block",
         "paragraph": "ct_text_block",
         "image": "ct_image",
         "link": "ct_link",
@@ -82,9 +124,13 @@ class OxygenConverter:
         "icon": "ct_fancy_icon",
         "icon-box": "oxy_icon_box",
         "card": "oxy_icon_box",
+        "icon-list": "ct_text_block",
         "video": "ct_video",
+        "audio": "ct_code_block",
         "gallery": "oxy_gallery",
+        "image-gallery": "oxy_gallery",
         "slider": "ct_slider",
+        "slides": "ct_slider",
         "slide": "ct_slide",
         "carousel": "ct_slider",
         "tabs": "oxy_tabs",
@@ -92,14 +138,23 @@ class OxygenConverter:
         "accordion": "oxy_toggle",
         "toggle": "oxy_toggle",
         "testimonial": "oxy_testimonial_box",
+        "blockquote": "oxy_testimonial_box",
+        "quote": "oxy_testimonial_box",
         "counter": "ct_text_block",
         "progress": "oxy_progress_bar",
+        "countdown": "ct_text_block",
+        "alert": "ct_text_block",
+        "call-to-action": "ct_text_block",
+        "cta": "ct_text_block",
         "form": "ct_div_block",
         "nav": "oxy_nav_menu",
+        "nav-menu": "oxy_nav_menu",
         "menu": "oxy_nav_menu",
         "html": "ct_code_block",
         "code": "ct_code_block",
         "map": "oxy_map",
+        "google_maps": "oxy_map",
+        "price-table": "oxy_pricing_box",
         "pricing-table": "oxy_pricing_box",
         "social-icons": "oxy_share_box",
         "posts": "oxy_posts_grid",
@@ -166,13 +221,40 @@ class OxygenConverter:
         settings = element.get("settings", element.get("attributes", {})) or {}
         content = element.get("content", "")
 
+        widget_options = self._build_widget_options(universal, element_name, settings, content)
+
+        children_src = list(element.get("elements", element.get("children", [])) or [])
+        children_src += self._composite_children(universal, settings)
+        children = [
+            child
+            for item in children_src
+            if isinstance(item, dict) and (child := self._convert_element(item, element_id))
+        ]
+
+        # A content-carrying widget mapped onto a container element (forms,
+        # unknown vocabularies) must not lose its text: leaf widgets become a
+        # text block; container-shaped ones get a text-block child instead.
+        if widget_options.get("ct_content") and element_name in self.CONTAINER_ELEMENTS:
+            if children:
+                text = widget_options.pop("ct_content")
+                widget_options.pop("text", None)
+                children.insert(
+                    0,
+                    self._convert_element(
+                        {"elType": "widget", "widgetType": "text-editor", "settings": {"editor": text}},
+                        element_id,
+                    ),
+                )
+            else:
+                element_name = "ct_text_block"
+
         options: Dict[str, Any] = {
             "ct_id": element_id,
             "ct_parent": parent_id,
             "selector": self._selector(element_name, element_id),
             "nicename": f"{(universal or 'element').capitalize()} (#{element_id})",
         }
-        options.update(self._build_widget_options(universal, element_name, settings, content))
+        options.update(widget_options)
 
         original = self._build_original(element, settings)
         if original:
@@ -181,13 +263,6 @@ class OxygenConverter:
         media = self._build_media(element)
         if media:
             options["media"] = media
-
-        children_src = element.get("elements", element.get("children", [])) or []
-        children = [
-            child
-            for item in children_src
-            if isinstance(item, dict) and (child := self._convert_element(item, element_id))
-        ]
 
         return {
             "id": element_id,
@@ -283,13 +358,96 @@ class OxygenConverter:
             icon = settings.get("selected_icon", {})
             if isinstance(icon, dict) and icon.get("value"):
                 options["icon"] = icon["value"]
+            if settings.get("button_text"):
+                options["button_text"] = settings["button_text"]
+            link = settings.get("link", {})
+            if isinstance(link, dict) and link.get("url"):
+                options["url"] = link["url"]
+            image = settings.get("image", {})
+            if isinstance(image, dict) and image.get("url"):
+                options["image_src"] = image["url"]
+                if image.get("alt"):
+                    options["image_alt"] = image["alt"]
 
-        elif universal == "testimonial":
+        elif universal in ("testimonial", "blockquote", "quote"):
             options["testimonial_text"] = content or settings.get(
-                "testimonial_content", settings.get("quote", "")
+                "testimonial_content",
+                settings.get("blockquote_content", settings.get("quote", "")),
             )
             options["author"] = settings.get("testimonial_name", settings.get("author", ""))
             options["title"] = settings.get("testimonial_job", settings.get("author_title", ""))
+
+        elif universal == "alert":
+            parts = []
+            if settings.get("alert_title"):
+                parts.append(f"<strong>{settings['alert_title']}</strong>")
+            body = content or settings.get("alert_description", "")
+            if body:
+                parts.append(f"<p>{body}</p>")
+            if parts:
+                options["ct_content"] = "".join(parts)
+
+        elif universal in ("call-to-action", "cta"):
+            parts = []
+            if settings.get("title"):
+                parts.append(f"<h2>{settings['title']}</h2>")
+            body = content or settings.get("description", "")
+            if body:
+                parts.append(f"<p>{body}</p>")
+            link = settings.get("link", {})
+            url = link.get("url", "") if isinstance(link, dict) else settings.get("url", "")
+            button_text = settings.get("button_text", "")
+            if button_text or url:
+                parts.append(f'<a href="{url}">{button_text}</a>')
+            if parts:
+                options["ct_content"] = "".join(parts)
+
+        elif universal in ("price-table", "pricing-table"):
+            options["heading"] = settings.get("heading", settings.get("title", ""))
+            price = settings.get("price", "")
+            if price != "":
+                options["price"] = f"{settings.get('currency_symbol', '')}{price}"
+            if settings.get("period"):
+                options["period"] = settings["period"]
+            features = settings.get("features", settings.get("items", []))
+            texts = [
+                item.get("item_text", item.get("text", ""))
+                for item in features
+                if isinstance(item, dict)
+            ]
+            if any(texts):
+                options["features"] = texts
+            if settings.get("button_text"):
+                options["button_text"] = settings["button_text"]
+            link = settings.get("link", {})
+            button_url = settings.get("button_url", "") or (
+                link.get("url", "") if isinstance(link, dict) else ""
+            )
+            if button_url:
+                options["button_url"] = button_url
+
+        elif universal == "icon-list":
+            items = settings.get("icon_list", settings.get("items", []))
+            lis = "".join(
+                f"<li>{item['text']}</li>"
+                for item in items
+                if isinstance(item, dict) and item.get("text")
+            )
+            if lis:
+                options["ct_content"] = f"<ul>{lis}</ul>"
+
+        elif universal in ("tabs", "accordion", "toggle"):
+            pass  # tab items expand into child elements (_composite_children)
+
+        elif universal == "audio":
+            link = settings.get("link", {})
+            url = link.get("url", "") if isinstance(link, dict) else (link or settings.get("url", ""))
+            if url:
+                options["code"] = f'<audio controls src="{url}"></audio>'
+
+        elif universal in ("map", "google_maps"):
+            if settings.get("address"):
+                options["address"] = settings["address"]
 
         elif universal == "progress":
             percent = settings.get("percent", {})
@@ -300,24 +458,62 @@ class OxygenConverter:
         elif universal in ("html", "code"):
             options["code"] = content or settings.get("html", settings.get("code", ""))
 
-        elif universal in ("gallery", "carousel", "slider"):
+        elif universal in ("gallery", "image-gallery", "carousel", "slider"):
             gallery = settings.get("gallery", settings.get("wp_gallery", []))
             images = [
-                {"url": img.get("url", ""), "id": img.get("id", "")}
+                {"url": img.get("url", ""), "alt": img.get("alt", ""), "id": img.get("id", "")}
                 for img in gallery
                 if isinstance(img, dict)
             ]
             if images:
                 options["images"] = images
+            if settings.get("title"):
+                options["title"] = settings["title"]
 
-        elif content and element_name not in self.CONTAINER_ELEMENTS:
-            options["ct_content"] = content
+        elif universal not in ("section", "container", "column", "row"):
+            # No native classic-Oxygen equivalent: preserve every
+            # content-bearing setting rather than dropping it.
+            strings = _content_strings(settings)
+            if content and content.strip() and content.strip() not in strings:
+                strings.insert(0, content.strip())
+            if strings:
+                text = "\n".join(strings)
+                options["text"] = text
+                options["ct_content"] = text
 
         # Common options.
         if settings.get("align"):
             options["text-align"] = settings["align"]
 
         return options
+
+    def _composite_children(self, universal: str, settings: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Expand item-list composites (tabs/accordion) into pseudo-universal
+        children so each pane survives as real classic-Oxygen elements."""
+        if universal not in ("tabs", "accordion", "toggle"):
+            return []
+        children: List[Dict[str, Any]] = []
+        items = settings.get("tabs", settings.get("items", []))
+        for item in items if isinstance(items, list) else []:
+            if not isinstance(item, dict):
+                continue
+            if item.get("tab_title"):
+                children.append(
+                    {
+                        "elType": "widget",
+                        "widgetType": "heading",
+                        "settings": {"title": item["tab_title"], "header_size": "h4"},
+                    }
+                )
+            if item.get("tab_content"):
+                children.append(
+                    {
+                        "elType": "widget",
+                        "widgetType": "text-editor",
+                        "settings": {"editor": item["tab_content"]},
+                    }
+                )
+        return children
 
     def _generate_id(self) -> int:
         """Generate unique Oxygen element ID."""

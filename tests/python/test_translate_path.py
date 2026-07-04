@@ -154,12 +154,35 @@ class TestUniversalRouteGate:
         assert "falling back" not in result.stdout
         assert "Fidelity:" in result.stdout
 
-    def test_low_fidelity_pair_falls_back_to_content_extraction(self):
-        result = run_cli(
-            "transform", "divi", "kadence",
-            "tests/fixtures/divi/kitchen-sink.txt", "-n",
+    def test_low_fidelity_conversion_falls_back_to_content_extraction(
+        self, monkeypatch, capsys, tmp_path
+    ):
+        # No real pair is low-fidelity anymore (the converters are hardened),
+        # so pin the gate with a converter that loses everything.
+        import argparse
+
+        from translation_bridge import cli
+
+        class LossyConverter:
+            def convert(self, data):
+                return "<div>nothing survives</div>"
+
+        monkeypatch.setattr(cli, "get_converter_for_framework", lambda target: LossyConverter())
+        monkeypatch.setattr(
+            cli.TransformRegistry, "get_transform", classmethod(lambda cls, s, t: None)
         )
-        assert result.returncode == 0, result.stderr
-        assert "universal route" in result.stdout
-        assert "falling back to content extraction" in result.stdout
-        assert "devtb translate" in result.stdout
+
+        args = argparse.Namespace(
+            source="divi",
+            target="kadence",
+            file=str(REPO_ROOT / "tests/fixtures/divi/kitchen-sink.txt"),
+            output=str(tmp_path / "out.html"),
+            dry_run=True,
+            debug=False,
+            command="transform",
+        )
+        assert cli.cmd_transform(args) == 0
+        stdout = capsys.readouterr().out
+        assert "universal route" in stdout
+        assert "falling back to content extraction" in stdout
+        assert "devtb translate" in stdout

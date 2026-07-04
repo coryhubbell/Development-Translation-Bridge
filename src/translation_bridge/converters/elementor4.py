@@ -42,7 +42,6 @@ a ``{"$$type": <prop-type-key>, "value": ...}`` envelope:
 
 from __future__ import annotations
 
-import json
 import secrets
 from typing import Any, Dict, List, Optional
 
@@ -57,6 +56,47 @@ TARGET_CMS_VERSION: str = "4.0.0"
 
 # Per-element schema version emitted on each atomic node.
 ATOMIC_SCHEMA_VERSION: str = "0.0"
+
+
+# Content-bearing settings keys (fidelity convention shared with cli.py /
+# transforms: the exclusion list wins so keys like title_color never count).
+_CONTENT_KEY_PARTS = (
+    "text", "title", "content", "description", "heading", "editor",
+    "caption", "label", "alt", "html", "name", "job", "address", "url", "date",
+)
+_NON_CONTENT_KEY_PARTS = (
+    "color", "size", "typography", "weight", "align", "style", "position",
+    "gap", "width", "height", "radius", "spacing", "margin", "padding",
+    "font", "shadow", "border", "opacity", "hover",
+)
+
+
+def _is_content_key(key: str) -> bool:
+    key_lower = key.lower()
+    if any(part in key_lower for part in _NON_CONTENT_KEY_PARTS):
+        return False
+    return any(part in key_lower for part in _CONTENT_KEY_PARTS)
+
+
+def _content_setting_strings(settings: Dict[str, Any]) -> List[str]:
+    """Every content-bearing string in a canonical settings dict (one level
+    of dict nesting and list items, matching the fidelity collector)."""
+    out: List[str] = []
+    for key, value in settings.items():
+        if isinstance(value, str):
+            if value.strip() and _is_content_key(key):
+                out.append(value.strip())
+        elif isinstance(value, dict):
+            for sub_key, sub in value.items():
+                if isinstance(sub, str) and sub.strip() and _is_content_key(sub_key):
+                    out.append(sub.strip())
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    for sub_key, sub in item.items():
+                        if isinstance(sub, str) and sub.strip() and _is_content_key(sub_key):
+                            out.append(sub.strip())
+    return out
 
 
 class Elementor4Converter:
@@ -86,9 +126,32 @@ class Elementor4Converter:
         "spacer": "e-div-block",
     }
 
-    def convert(self, data: Any) -> str:
-        """Convert parsed data to an atomic v4 JSON string."""
-        return json.dumps(self.convert_to_list(data), indent=2)
+    # Canonical universal widgetType → atomic elType (universal documents,
+    # schema/universal-element.schema.json). Only real atomic widgets appear
+    # here; unlisted widget types fall back to a content-preserving
+    # ``e-paragraph`` (atomic v4 has no dedicated widgets for them yet).
+    UNIVERSAL_WIDGET_MAP: Dict[str, str] = {
+        "heading": "e-heading",
+        "text-editor": "e-paragraph",
+        "text": "e-paragraph",
+        "paragraph": "e-paragraph",
+        "html": "e-paragraph",
+        "button": "e-button",
+        "image": "e-image",
+        "video": "e-youtube",
+        "icon": "e-svg",
+        "divider": "e-divider",
+        "spacer": "e-div-block",
+        "form": "e-form",
+    }
+
+    def convert(self, data: Any) -> List[Dict[str, Any]]:
+        """Convert parsed data to atomic v4 elements (JSON-serializable).
+
+        Returns the structured node list rather than a pre-encoded string so
+        consumers (CLI writer, fidelity metric) control the JSON encoding.
+        """
+        return self.convert_to_list(data)
 
     def convert_to_list(self, data: Any) -> List[Dict[str, Any]]:
         """Convert parsed data to a list of atomic v4 element dicts."""
@@ -115,23 +178,34 @@ class Elementor4Converter:
 
     def _build_node(self, element: Dict[str, Any], is_inner: bool) -> Optional[Dict[str, Any]]:
         """Build a single atomic v4 node, recursing through children."""
-        universal_type = (
-            element.get("type")
-            or element.get("widgetType")
-            or self._normalize_el_type(element.get("elType"))
-        )
-        if not universal_type:
-            return None
-
-        el_type = self.ELEMENT_TYPE_MAP.get(universal_type)
-        if el_type is None:
-            return None
-
         settings = element.get("settings", element.get("attributes", {})) or {}
         content = element.get("content", "")
+        widget_type = element.get("widgetType", "")
+
+        if "type" not in element and widget_type:
+            # Universal widget (canonical settings vocabulary): native atomic
+            # widget where one exists, content-preserving paragraph otherwise.
+            el_type = self.UNIVERSAL_WIDGET_MAP.get(widget_type)
+            if el_type is None:
+                el_type = "e-paragraph"
+                node_settings = {"paragraph": self._html_prop(self._settings_content_html(settings))}
+            else:
+                node_settings = self._build_settings(el_type, settings, content)
+        else:
+            universal_type = (
+                element.get("type")
+                or widget_type
+                or self._normalize_el_type(element.get("elType"))
+            )
+            if not universal_type:
+                return None
+
+            el_type = self.ELEMENT_TYPE_MAP.get(universal_type)
+            if el_type is None:
+                return None
+            node_settings = self._build_settings(el_type, settings, content)
 
         styles = self._build_styles(element)
-        node_settings = self._build_settings(el_type, settings, content)
         if styles:
             # Local styles apply through the classes prop referencing the
             # style definition id (see atomic-widgets/styles).
@@ -228,13 +302,16 @@ class Elementor4Converter:
             tag = settings.get("header_size", settings.get("tag", settings.get("level", "h2")))
             out["tag"] = self._string_prop(tag)
         elif el_type == "e-paragraph":
-            text = content or settings.get("editor", settings.get("text", ""))
+            text = content or settings.get(
+                "editor", settings.get("text", settings.get("html", ""))
+            )
             out["paragraph"] = self._html_prop(text)
         elif el_type == "e-button":
             out["text"] = self._html_prop(content or settings.get("text", settings.get("label", "")))
             link = settings.get("link")
             if isinstance(link, dict):
-                out["link"] = self._link_prop(link.get("url", ""), link.get("target", "_self"))
+                target = "_blank" if (link.get("is_external") or link.get("target") == "_blank") else "_self"
+                out["link"] = self._link_prop(link.get("url", ""), target)
             elif isinstance(link, str):
                 out["link"] = self._link_prop(link)
             elif "url" in settings:
@@ -248,6 +325,10 @@ class Elementor4Converter:
                     settings.get("src", ""),
                     settings.get("alt", settings.get("alt_text", "")),
                 )
+        elif el_type == "e-form":
+            title = content or settings.get("title", "")
+            if title:
+                out["title"] = self._string_prop(title)
         elif el_type == "e-svg" and (settings.get("selected_icon") or settings.get("icon")):
             icon = settings.get("selected_icon") or settings.get("icon") or ""
             if isinstance(icon, dict):
@@ -258,12 +339,24 @@ class Elementor4Converter:
 
         # Pass through scalar settings we didn't explicitly handle, wrapped.
         for key, value in settings.items():
-            if key in out or key in ("link", "image", "selected_icon", "title", "text", "editor"):
+            if key in out or key in ("link", "image", "selected_icon", "title", "text", "editor", "html"):
                 continue
             if isinstance(value, (str, int, float, bool)):
                 out[key] = self._wrap_scalar(value)
 
         return out
+
+    def _settings_content_html(self, settings: Dict[str, Any]) -> str:
+        """HTML blob carrying every content-bearing setting — the lossless
+        fallback body for widgets without an atomic v4 equivalent."""
+        parts: List[str] = []
+        seen = set()
+        for value in _content_setting_strings(settings):
+            if value in seen:
+                continue
+            seen.add(value)
+            parts.append(value if "<" in value else f"<p>{value}</p>")
+        return "\n".join(parts)
 
     def _build_styles(self, element: Dict[str, Any]) -> Dict[str, Any]:
         """Emit styles as a real Style_Definition entry with variants.

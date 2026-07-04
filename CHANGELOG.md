@@ -9,7 +9,36 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Pre-5.0 converter hardening** — every Python converter now consumes a
+  universal document from ANY source parser without losing content. A new
+  cross-source fidelity matrix (`tests/python/test_universal_matrix.py`,
+  3 real fixtures × 14 targets) gates it in CI: 34 of 39 pairs failed at
+  baseline; all 39 now pass, almost all at 100% content survival.
+- Bidirectional interchange: `translation_bridge.interchange` gains the
+  reverse direction (`element_to_component` / `document_to_components`),
+  the Python mirror of `DEVTB_Universal::document_to_components()`.
+- Structural recursion everywhere: nested `section > container > column`
+  shapes (DIVI/Oxygen sources) convert correctly in all targets; bare
+  widgets under sections get valid column wrappers.
+- Canonical widget vocabulary coverage across all 14 converters, with
+  content-preserving fallbacks — no converter emits an empty element for
+  an unmapped widget anymore.
+
+### Changed
+
+- `Elementor4Converter.convert()` returns the structured atomic node list
+  (JSON-serializable) instead of a pre-encoded JSON string; the CLI
+  serializes it on write as before.
+
+### Fixed
+
+- Fidelity metric: style-value keys (e.g. `title_color`) no longer count
+  as content; JSON-shaped outputs compare via decoded string scalars so
+  escaping and multi-line strings never read as content loss.
+- Gallery conversions preserve image URLs/alts (media-library ids are
+  source-site-local and render nothing after migration).
 
 ## [4.14.0] — 2026-07-04
 

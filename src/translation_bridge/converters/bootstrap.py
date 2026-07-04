@@ -60,6 +60,14 @@ class BootstrapConverter:
         "media-carousel": "_convert_carousel",
         "star-rating": "_convert_star_rating",
         "rating": "_convert_star_rating",
+        # Universal-vocabulary widget converters (RFC 5.0 hardening)
+        "nav": "_convert_nav_menu",
+        "slides": "_convert_carousel",
+        "price-table": "_convert_price_table",
+        "audio": "_convert_audio",
+        "blockquote": "_convert_blockquote",
+        "countdown": "_convert_countdown",
+        "google_maps": "_convert_google_maps",
     }
 
     # Animation class mapping from Elementor to CSS animations
@@ -412,10 +420,21 @@ class BootstrapConverter:
         converter_name = self.WIDGET_MAP.get(widget_type)
         if converter_name and hasattr(self, converter_name):
             converter = getattr(self, converter_name)
-            return converter(element, depth)
+            html = converter(element, depth)
+        else:
+            # Fallback for unknown widgets
+            html = self._convert_generic_widget(element, depth)
 
-        # Fallback for unknown widgets
-        return self._convert_generic_widget(element, depth)
+        # Some sources (e.g. DIVI social follows) nest content widgets inside
+        # other widgets — recurse so their content is never dropped.
+        children = element.get("elements", [])
+        if children:
+            child_html = "\n".join(
+                self._convert_element(child, depth + 1) for child in children
+            )
+            html = f"{html}\n{child_html}"
+
+        return html
 
     def _convert_heading(self, element: Dict[str, Any], depth: int = 0) -> str:
         """Convert heading widget with full typography support."""
@@ -622,6 +641,27 @@ class BootstrapConverter:
         # Build title style
         title_style = f"color: {title_color}; font-size: {title_size_val}px; font-weight: {title_font_weight}; margin: 0"
 
+        # Optional image and button/link (universal icon-box vocabulary)
+        image = settings.get("image", {})
+        image_url = image.get("url", "") if isinstance(image, dict) else ""
+        image_alt = image.get("alt", "") if isinstance(image, dict) else ""
+        img_html = (
+            f'\n{indent}  <img src="{escape(image_url)}" alt="{escape(image_alt)}" class="img-fluid mb-2">'
+            if image_url
+            else ""
+        )
+
+        button_text = settings.get("button_text", "")
+        link = settings.get("link", {})
+        link_url = link.get("url", "") if isinstance(link, dict) else ""
+        btn_html = (
+            f'\n{indent}  <a href="{escape(link_url or "#")}" class="btn btn-link px-0">{escape(button_text or "Learn more")}</a>'
+            if button_text or link_url
+            else ""
+        )
+
+        desc_html = f'\n{indent}  <p class="text-muted">{escape(description)}</p>' if description else ""
+
         if position == "left":
             # Horizontal layout with icon on left
             return f"""{indent}<div class="icon-box-horizontal">
@@ -629,14 +669,14 @@ class BootstrapConverter:
 {indent}    <i class="{icon_value}" style="{icon_style}"></i>
 {indent}  </div>
 {indent}  <div class="icon-box-content">
-{indent}    <h6 style="{title_style}">{escape(title)}</h6>
+{indent}    <h6 style="{title_style}">{escape(title)}</h6>{desc_html}{btn_html}
 {indent}  </div>
 {indent}</div>"""
         elif position == "right":
             # Horizontal layout with icon on right
             return f"""{indent}<div class="icon-box-horizontal">
 {indent}  <div class="icon-box-content">
-{indent}    <h6 style="{title_style}">{escape(title)}</h6>
+{indent}    <h6 style="{title_style}">{escape(title)}</h6>{desc_html}{btn_html}
 {indent}  </div>
 {indent}  <div class="icon-wrapper">
 {indent}    <i class="{icon_value}" style="{icon_style}"></i>
@@ -644,10 +684,9 @@ class BootstrapConverter:
 {indent}</div>"""
         else:
             # Vertical layout (top - default)
-            desc_html = f'\n{indent}  <p class="text-muted">{escape(description)}</p>' if description else ""
-            return f"""{indent}<div class="icon-box-vertical text-center">
+            return f"""{indent}<div class="icon-box-vertical text-center">{img_html}
 {indent}  <i class="{icon_value}" style="{icon_style}; margin-bottom: 10px;"></i>
-{indent}  <h6 style="{title_style}">{escape(title)}</h6>{desc_html}
+{indent}  <h6 style="{title_style}">{escape(title)}</h6>{desc_html}{btn_html}
 {indent}</div>"""
 
     def _convert_image_box(self, element: Dict[str, Any], depth: int = 0) -> str:
@@ -902,8 +941,8 @@ class BootstrapConverter:
                 video_id = youtube_url.split("/")[-1]
 
         if video_id:
-            return f"""{indent}<div class="ratio ratio-16x9">
-{indent}  <iframe src="https://www.youtube.com/embed/{video_id}" allowfullscreen></iframe>
+            return f"""{indent}<div class="ratio ratio-16x9" data-source-url="{escape(youtube_url)}">
+{indent}  <iframe src="https://www.youtube.com/embed/{video_id}" title="{escape(youtube_url)}" allowfullscreen></iframe>
 {indent}</div>"""
 
         return f'{indent}<!-- Video: {escape(youtube_url)} -->'
@@ -964,7 +1003,12 @@ class BootstrapConverter:
         fields_html = "\n".join(field_html)
         button_text = settings.get("button_text", "Submit")
 
-        return f"""{indent}<form>
+        title = settings.get("title", "")
+        title_html = f'\n{indent}  <h4>{escape(title)}</h4>' if title else ""
+        form_name = settings.get("form_name", "")
+        name_attr = f' name="{escape(form_name)}"' if form_name else ""
+
+        return f"""{indent}<form{name_attr}>{title_html}
 {fields_html}
 {indent}  <button type="submit" class="btn btn-primary">{escape(button_text)}</button>
 {indent}</form>"""
@@ -975,17 +1019,114 @@ class BootstrapConverter:
         widget_type = element.get("widgetType", "unknown")
         indent = self.indent_str * depth
 
-        # Try to extract any text content
-        content = ""
-        for key in ["title", "text", "content", "editor", "description"]:
-            if key in settings:
-                content = settings[key]
-                break
+        # Extract every text content setting (not just the first) so unknown
+        # widgets never silently drop content.
+        parts = []
+        for key in ["title", "text", "content", "editor", "description", "html"]:
+            value = settings.get(key)
+            if isinstance(value, str) and value.strip():
+                parts.append(value)
 
-        if content:
+        if parts:
+            content = " ".join(parts)
             return f'{indent}<div class="widget-{widget_type}">{content}</div>'
 
         return f'{indent}<!-- Widget: {widget_type} -->'
+
+    # ========================================================================
+    # Universal Vocabulary Converters (RFC 5.0 hardening)
+    # ========================================================================
+
+    def _convert_price_table(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert price-table widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        heading = settings.get("heading", "")
+        currency = settings.get("currency_symbol", "")
+        price = settings.get("price", "")
+        period = settings.get("period", "")
+        button_text = settings.get("button_text", "")
+        link = settings.get("link", {})
+        button_url = settings.get("button_url", "") or (
+            link.get("url", "") if isinstance(link, dict) else ""
+        )
+
+        feature_items = "\n".join(
+            f'{indent}    <li class="list-group-item">{escape(item.get("item_text", ""))}</li>'
+            for item in settings.get("features", [])
+            if isinstance(item, dict)
+        )
+        period_html = f' <small class="text-muted">/ {escape(str(period))}</small>' if period else ""
+        button_html = (
+            f'\n{indent}  <a href="{escape(button_url or "#")}" class="btn btn-primary">{escape(button_text)}</a>'
+            if button_text or button_url
+            else ""
+        )
+
+        return f"""{indent}<div class="card text-center p-3">
+{indent}  <h4 class="card-title">{escape(heading)}</h4>
+{indent}  <h2 class="display-6">{escape(str(currency))}{escape(str(price))}{period_html}</h2>
+{indent}  <ul class="list-group list-group-flush">
+{feature_items}
+{indent}  </ul>{button_html}
+{indent}</div>"""
+
+    def _convert_audio(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert audio widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        link = settings.get("link", {})
+        url = link.get("url", "") if isinstance(link, dict) else ""
+
+        return f'{indent}<audio controls src="{escape(url)}" class="w-100"></audio>'
+
+    def _convert_blockquote(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert blockquote widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        content = settings.get("blockquote_content", "")
+        author = settings.get("author", "")
+        footer = (
+            f'\n{indent}  <figcaption class="blockquote-footer">{escape(author)}</figcaption>'
+            if author
+            else ""
+        )
+
+        return f"""{indent}<figure>
+{indent}  <blockquote class="blockquote">
+{indent}    <p>{content}</p>
+{indent}  </blockquote>{footer}
+{indent}</figure>"""
+
+    def _convert_countdown(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert countdown widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        title = settings.get("title", "")
+        due_date = settings.get("due_date", "")
+        title_html = f'\n{indent}  <h4>{escape(title)}</h4>' if title else ""
+
+        return f"""{indent}<div class="countdown text-center">{title_html}
+{indent}  <time datetime="{escape(str(due_date))}">{escape(str(due_date))}</time>
+{indent}</div>"""
+
+    def _convert_google_maps(self, element: Dict[str, Any], depth: int = 0) -> str:
+        """Convert google_maps widget."""
+        settings = element.get("settings", {})
+        indent = self.indent_str * depth
+
+        address = settings.get("address", "")
+
+        return f"""{indent}<div class="map-wrapper">
+{indent}  <address>{escape(address)}</address>
+{indent}  <div class="ratio ratio-16x9">
+{indent}    <iframe src="https://www.google.com/maps?q={escape(address)}&output=embed" title="{escape(address)}"></iframe>
+{indent}  </div>
+{indent}</div>"""
 
     # ========================================================================
     # New Widget Converters (Phase 1)
@@ -998,7 +1139,7 @@ class BootstrapConverter:
 
         title = settings.get("title", "")
         description = settings.get("description", "")
-        button_text = settings.get("button", "Click Here")
+        button_text = settings.get("button_text") or settings.get("button", "Click Here")
         link = settings.get("link", {})
         url = link.get("url", "#") if isinstance(link, dict) else "#"
 
