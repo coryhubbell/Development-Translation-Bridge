@@ -9,7 +9,7 @@
  *
  * @package DevelopmentTranslation_Bridge
  * @subpackage Autoload
- * @version 4.11.0
+ * @version 4.12.0
  */
 
 if ( ! function_exists( 'devtb_class_autoload' ) ) {

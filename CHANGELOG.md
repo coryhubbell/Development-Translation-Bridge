@@ -9,6 +9,14 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [4.12.0] — 2026-07-03
+
+RFC 5.0 opens: the canonical schema, dual-engine conformance, and universal
+interchange in the PHP engine. Full notes:
+[RELEASE_NOTES_V4.12.0.md](RELEASE_NOTES_V4.12.0.md).
+
 ### Added
 - **RFC 5.0 Phase 2 (core) — universal interchange in the PHP engine**:
   - `DEVTB_Universal` (core): `components_to_document()` /
@@ -401,7 +409,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.11.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.12.0...HEAD
+[4.12.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.11.0...v4.12.0
 [4.11.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.10.0...v4.11.0
 [4.10.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.9.0...v4.10.0
 [4.9.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.8.0...v4.9.0
