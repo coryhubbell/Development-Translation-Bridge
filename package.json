@@ -1,6 +1,6 @@
 {
   "name": "development-translation-bridge",
-  "version": "4.15.0",
+  "version": "5.0.0",
   "description": "Universal WordPress page builder translation system",
   "keywords": ["wordpress", "page-builder", "translation", "elementor", "divi", "gutenberg", "bootstrap", "rest-api", "cli"],
   "license": "GPL-2.0-or-later"

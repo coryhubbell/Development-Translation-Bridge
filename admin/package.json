@@ -1,7 +1,7 @@
 {
   "name": "admin",
   "private": true,
-  "version": "4.15.0",
+  "version": "5.0.0",
   "type": "module",
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24"
