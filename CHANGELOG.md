@@ -9,6 +9,14 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [4.10.0] — 2026-07-03
+
+Python source parsers tranche 2 — all JSON/block-markup formats now parse
+natively in Python. Full notes:
+[RELEASE_NOTES_V4.10.0.md](RELEASE_NOTES_V4.10.0.md).
+
 ### Added
 - **Python source parsers, tranche 2: Oxygen 6, DIVI 5, and Gutenberg**
   (roadmap 4.7+ item 4, in progress) — seven frameworks now parse natively
@@ -336,7 +344,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.9.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.10.0...HEAD
+[4.10.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.9.0...v4.10.0
 [4.9.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.8.0...v4.9.0
 [4.8.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.7.0...v4.8.0
 [4.7.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.6.0...v4.7.0
