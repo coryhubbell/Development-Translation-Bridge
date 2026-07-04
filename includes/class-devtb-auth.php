@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage API
- * @version    4.11.0
+ * @version    4.12.0
  */
 
 class DEVTB_Auth {
