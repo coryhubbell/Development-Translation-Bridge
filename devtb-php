@@ -19,6 +19,7 @@ if (php_sapi_name() !== 'cli') {
 }
 
 // Define constants
+if (!defined('DEVTB_CLI'))                 { define('DEVTB_CLI', true); }
 if (!defined('DEVTB_VERSION'))             { define('DEVTB_VERSION', '4.13.0'); }
 if (!defined('DEVTB_ROOT'))                { define('DEVTB_ROOT', __DIR__); }
 if (!defined('DEVTB_INCLUDES'))            { define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes'); }

@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -128,11 +129,126 @@ def get_parser_for_framework(framework: str) -> Optional[Any]:
     return None
 
 
+def get_converter_for_framework(framework: str) -> Optional[Any]:
+    """Get the appropriate converter for a target framework.
+
+    Backs the universal route (RFC 5.0 Phase 3): any parsed document can
+    convert to any framework without a registered pair.
+    """
+    framework_lower = framework.lower()
+    converters = {
+        "elementor": ("elementor", "ElementorConverter"),
+        "elementor4": ("elementor4", "Elementor4Converter"),
+        "elementor-4": ("elementor4", "Elementor4Converter"),
+        "elementor-atomic": ("elementor4", "Elementor4Converter"),
+        "bootstrap": ("bootstrap", "BootstrapConverter"),
+        "gutenberg": ("gutenberg", "GutenbergConverter"),
+        "bricks": ("bricks", "BricksConverter"),
+        "oxygen": ("oxygen", "OxygenConverter"),
+        "oxygen6": ("oxygen6", "Oxygen6Converter"),
+        "oxygen-6": ("oxygen6", "Oxygen6Converter"),
+        "divi": ("divi", "DiviConverter"),
+        "divi5": ("divi5", "Divi5Converter"),
+        "divi-5": ("divi5", "Divi5Converter"),
+        "wpbakery": ("wpbakery", "WPBakeryConverter"),
+        "avada": ("avada", "AvadaConverter"),
+        "kadence": ("kadence", "KadenceConverter"),
+        "beaver-builder": ("beaver", "BeaverConverter"),
+        "beaver": ("beaver", "BeaverConverter"),
+        "thrive": ("thrive", "ThriveConverter"),
+    }
+    entry = converters.get(framework_lower)
+    if entry is None:
+        return None
+    module_name, class_name = entry
+    import importlib
+
+    module = importlib.import_module(f".converters.{module_name}", package=__package__)
+    return getattr(module, class_name)()
+
+
+# Setting keys that carry user-visible content (matches the convention in
+# transforms/core.py). Style/layout enums are excluded from fidelity.
+_CONTENT_KEY_PARTS = (
+    "text", "title", "content", "description", "heading", "editor",
+    "caption", "label", "alt", "html", "name", "job", "address", "url", "date",
+)
+
+
+def _is_content_key(key: str) -> bool:
+    key_lower = key.lower()
+    return any(part in key_lower for part in _CONTENT_KEY_PARTS)
+
+
+def collect_content_strings(element: Any, out: list) -> None:
+    """Collect trimmed content-bearing text values from a universal element tree."""
+    if not isinstance(element, dict):
+        return
+    for key, value in element.get("settings", {}).items():
+        if isinstance(value, str) and value.strip() and _is_content_key(key):
+            out.append(value.strip())
+        elif isinstance(value, dict):
+            for sub_key, sub in value.items():
+                if isinstance(sub, str) and sub.strip() and _is_content_key(sub_key):
+                    out.append(sub.strip())
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    for sub_key, sub in item.items():
+                        if isinstance(sub, str) and sub.strip() and _is_content_key(sub_key):
+                            out.append(sub.strip())
+    for child in element.get("elements", []) or []:
+        collect_content_strings(child, out)
+
+
+def measure_fidelity(document: Any, output: Any) -> dict:
+    """Measure content fidelity of a conversion (RFC 5.0 Phase 3).
+
+    Advisory per-conversion metric: how many of the parsed document's
+    content strings appear in the converted output.
+    """
+    needles: list = []
+    if isinstance(document, dict):
+        for element in document.get("elements", []) or []:
+            collect_content_strings(element, needles)
+    total = len(needles)
+    if total == 0:
+        return {"content_total": 0, "content_preserved": 0, "ratio": 1.0}
+
+    raw = output if isinstance(output, str) else json.dumps(output, ensure_ascii=False)
+    haystack = re.sub(r"<[^>]+>", " ", raw)
+
+    preserved = sum(1 for needle in needles if needle in raw or needle in haystack)
+    return {
+        "content_total": total,
+        "content_preserved": preserved,
+        "ratio": round(preserved / total, 4),
+    }
+
+
+def print_fidelity(fidelity: dict) -> None:
+    """Print the per-conversion fidelity metric."""
+    if fidelity["content_total"] == 0:
+        return
+    line = (
+        f"Fidelity: {fidelity['content_preserved']}/{fidelity['content_total']} "
+        f"content strings preserved ({fidelity['ratio'] * 100:.1f}%)"
+    )
+    if fidelity["ratio"] >= 1.0:
+        print_success(line)
+    else:
+        print_warning(line)
+
+
 def cmd_transform(args: argparse.Namespace) -> int:
-    """Handle the transform command."""
+    """Handle the transform command (and its deprecated 'translate' alias)."""
     source = args.source.lower()
     target = args.target.lower()
     input_file = Path(args.file)
+
+    if getattr(args, "command", "") == "translate":
+        print_warning("'translate' is deprecated and will be removed in 5.0 — use 'devtb transform'.")
+        print_info("Routing through the lossless universal path (RFC 5.0 Phase 3).")
 
     if not input_file.exists():
         print_error(f"File not found: {input_file}")
@@ -161,22 +277,40 @@ def cmd_transform(args: argparse.Namespace) -> int:
 
         # Initialize transform engine
         engine = TransformEngine()
+        doc_dict = doc.to_dict() if hasattr(doc, "to_dict") else doc
 
         # Get transform function
         transform_fn = TransformRegistry.get_transform(source, target)
 
         if transform_fn:
             # Use registered transform
-            result_data = transform_fn(doc.to_dict() if hasattr(doc, "to_dict") else doc)
+            result_data = transform_fn(doc_dict)
         else:
-            # Fallback: extract content zones
-            print_warning(f"No specific transform for {source} → {target}, extracting content")
-            if hasattr(parser, "extract_content"):
-                result_data = parser.extract_content(doc)
-            else:
-                result_data = engine.extract_content(
-                    doc.to_dict() if hasattr(doc, "to_dict") else doc
-                )
+            # Universal route (RFC 5.0 Phase 3): every parsed document is a
+            # universal document, so any target converter can consume it.
+            # Content extraction remains only as the fidelity-gated fallback.
+            result_data = None
+            converter = get_converter_for_framework(target)
+            if converter is not None:
+                print_info(f"No registered pair for {source} → {target}; using the universal route")
+                candidate = converter.convert(doc_dict)
+                fidelity = measure_fidelity(doc_dict, candidate)
+                if fidelity["content_total"] == 0 or fidelity["ratio"] >= 0.5:
+                    result_data = candidate
+                else:
+                    print_warning(
+                        f"Universal route preserved only {fidelity['ratio'] * 100:.0f}% of content "
+                        f"for {source} → {target}; falling back to content extraction."
+                    )
+                    print_info("The PHP engine ('devtb translate') supports this pair natively.")
+            if result_data is None:
+                # Last resort: extract content zones (HTML content extraction).
+                if converter is None:
+                    print_warning(f"No converter for {target}, extracting content")
+                if hasattr(parser, "extract_content"):
+                    result_data = parser.extract_content(doc)
+                else:
+                    result_data = engine.extract_content(doc_dict)
 
         # Determine output file
         if args.output:
@@ -212,8 +346,10 @@ def cmd_transform(args: argparse.Namespace) -> int:
             print_info(f"Elements processed: {stats.get('total_elements', 'N/A')}")
             print_info(f"Content items: {stats.get('content_items', 'N/A')}")
 
+        # Per-conversion fidelity metric (RFC 5.0 Phase 3).
+        print_fidelity(measure_fidelity(doc_dict, result_data))
+
         print_success("Transformation complete!")
-        print_info("Metadata preservation: 100% (JSON-native)")
 
         return 0
 
@@ -799,9 +935,11 @@ For more information, visit: https://github.com/coryhubbell/development-translat
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # transform command
+    # transform command ('translate' kept as a deprecated alias — RFC 5.0 Phase 3)
     transform_parser = subparsers.add_parser(
-        "transform", help="Transform a file between frameworks"
+        "transform",
+        aliases=["translate"],
+        help="Transform a file between frameworks",
     )
     transform_parser.add_argument("source", help="Source framework (e.g., elementor)")
     transform_parser.add_argument("target", help="Target framework (e.g., bootstrap)")
@@ -857,7 +995,7 @@ For more information, visit: https://github.com/coryhubbell/development-translat
         parser.print_help()
         return 0
 
-    if args.command == "transform":
+    if args.command in ("transform", "translate"):
         return cmd_transform(args)
     elif args.command == "transform-site":
         return cmd_transform_site(args)

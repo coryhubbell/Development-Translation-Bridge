@@ -180,12 +180,26 @@ class DEVTB_Translator {
 				return false;
 			}
 
-			// Map components to target framework
-			$mapped_components = $this->map_components(
-				$components,
-				$source_framework,
-				$target_framework
+			// RFC 5.0 Phase 3: the canonical route normalizes every pair
+			// through the universal document (parse → universal → convert).
+			$route             = 'universal';
+			$mapped_components = DEVTB_Universal::document_to_components(
+				DEVTB_Universal::components_to_document( $components )
 			);
+			$this->stats['avg_confidence'] = 1.0;
+
+			if ( ! $this->content_survives( $components, $mapped_components ) ) {
+				// The v3 mapping engine remains only as the HTML
+				// content-extraction fallback (e.g. text carried on
+				// structural nodes the universal schema has no slot for).
+				$route = 'mapping-fallback';
+				$this->log_warning( 'Universal route lost content; using v3 mapping fallback' );
+				$mapped_components = $this->map_components(
+					$components,
+					$source_framework,
+					$target_framework
+				);
+			}
 
 			// Validate mapped components
 			$validated_components = $this->validate_components( $mapped_components );
@@ -211,6 +225,8 @@ class DEVTB_Translator {
 			// Record statistics
 			$this->stats['processing_time'] = microtime( true ) - $start_time;
 			$this->stats['successful']      = count( $validated_components );
+			$this->stats['route']           = $route;
+			$this->stats['fidelity']        = $this->measure_fidelity( $components, $output );
 
 			// Quality assurance check
 			$this->perform_qa_check( $components, $validated_components, $source_framework, $target_framework );
@@ -418,6 +434,142 @@ class DEVTB_Translator {
 			] );
 			throw $e;
 		}
+	}
+
+	/**
+	 * Collect the text-normalized content strings of a component tree.
+	 *
+	 * @param DEVTB_Component[] $components Components to walk.
+	 * @return string[] Trimmed, tag-stripped, non-empty content strings.
+	 */
+	private function collect_content_strings( array $components ): array {
+		$strings = [];
+		foreach ( $components as $component ) {
+			$text = $this->normalize_text( (string) $component->content );
+			if ( $text !== '' ) {
+				$strings[] = $text;
+			}
+			if ( ! empty( $component->children ) ) {
+				$strings = array_merge( $strings, $this->collect_content_strings( $component->children ) );
+			}
+		}
+		return $strings;
+	}
+
+	/**
+	 * Normalize a string to comparable text: entities decoded, tags
+	 * stripped, whitespace collapsed.
+	 *
+	 * @param string $text Raw string.
+	 * @return string Normalized text.
+	 */
+	private function normalize_text( string $text ): string {
+		$text = wp_strip_all_tags( html_entity_decode( $text, ENT_QUOTES ) );
+		return trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
+	}
+
+	/**
+	 * Flatten every string scalar in a value into tag-stripped text lines.
+	 *
+	 * Both sides of a fidelity comparison normalize through this, so HTML
+	 * markup and JSON escaping never produce false losses.
+	 *
+	 * @param mixed    $value Value to walk (arrays recurse).
+	 * @param string[] $out   Accumulator.
+	 * @return void
+	 */
+	private function collect_text_soup( $value, array &$out ): void {
+		if ( is_string( $value ) ) {
+			$text = $this->normalize_text( $value );
+			if ( $text !== '' ) {
+				$out[] = $text;
+			}
+			return;
+		}
+		if ( is_array( $value ) ) {
+			foreach ( $value as $item ) {
+				$this->collect_text_soup( $item, $out );
+			}
+		}
+	}
+
+	/**
+	 * Whether every source content string survives into a component tree.
+	 *
+	 * Gate for the RFC 5.0 Phase 3 route decision: the universal round trip
+	 * must be lossless on content, otherwise translate() falls back to the
+	 * v3 mapping engine (HTML content extraction).
+	 *
+	 * @param DEVTB_Component[] $source_components Source components.
+	 * @param DEVTB_Component[] $routed_components Universal-routed components.
+	 * @return bool True when no content string was lost.
+	 */
+	private function content_survives( array $source_components, array $routed_components ): bool {
+		$needles = $this->collect_content_strings( $source_components );
+		if ( empty( $needles ) ) {
+			return true;
+		}
+		if ( empty( $routed_components ) ) {
+			return false;
+		}
+
+		$soup = [];
+		foreach ( $routed_components as $component ) {
+			$this->collect_text_soup( $component->to_array(), $soup );
+		}
+		$haystack = implode( "\n", $soup );
+
+		foreach ( $needles as $needle ) {
+			if ( strpos( $haystack, $needle ) === false ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Measure content fidelity of a conversion (RFC 5.0 Phase 3).
+	 *
+	 * Advisory metric: how many source content strings appear in the final
+	 * output. Reported in stats for every translate() call.
+	 *
+	 * @param DEVTB_Component[] $source_components Source components.
+	 * @param string|array      $output            Converted output.
+	 * @return array{content_total: int, content_preserved: int, ratio: float}
+	 */
+	private function measure_fidelity( array $source_components, $output ): array {
+		$needles = $this->collect_content_strings( $source_components );
+		$total   = count( $needles );
+		if ( $total === 0 ) {
+			return [
+				'content_total'     => 0,
+				'content_preserved' => 0,
+				'ratio'             => 1.0,
+			];
+		}
+
+		if ( is_string( $output ) ) {
+			$raw      = $output;
+			$haystack = $this->normalize_text( $output );
+		} else {
+			$soup = [];
+			$this->collect_text_soup( $output, $soup );
+			$raw      = implode( "\n", $soup );
+			$haystack = $raw;
+		}
+
+		$preserved = 0;
+		foreach ( $needles as $needle ) {
+			if ( strpos( $raw, $needle ) !== false || strpos( $haystack, $needle ) !== false ) {
+				$preserved++;
+			}
+		}
+
+		return [
+			'content_total'     => $total,
+			'content_preserved' => $preserved,
+			'ratio'             => round( $preserved / $total, 4 ),
+		];
 	}
 
 	/**

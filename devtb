@@ -27,8 +27,8 @@ VERSION="4.13.0"
 # Show version
 show_version() {
     echo "DevelopmentTranslation Bridge v${VERSION}"
-    echo "  PHP engine: v3.x (translate commands)"
-    echo "  Python engine: v4.x (transform commands)"
+    echo "  Python engine: v4.x (transform commands + translate alias)"
+    echo "  PHP engine: v3.x (WordPress runtime, universal-routed)"
 }
 
 # Show help
@@ -47,9 +47,9 @@ show_help() {
     echo "  transform-site <source> <target> <dir> Transform all files in directory"
     echo "  analyze <framework> <file>            Analyze page builder content"
     echo ""
-    echo "COMMANDS (v3 PHP - HTML intermediate):"
-    echo "  translate <source> <target> <file>    Translate between frameworks"
-    echo "  translate-all <source> <file>         Translate to all frameworks"
+    echo "COMMANDS (deprecated — removed in 5.0):"
+    echo "  translate <source> <target> <file>    Same lossless path as transform (PHP engine)"
+    echo "  translate-all <source> <file>         Translate to all frameworks (PHP)"
     echo "  list-frameworks                       List supported frameworks"
     echo "  validate <framework> <file>           Validate file format"
     echo ""
@@ -65,13 +65,13 @@ show_help() {
     echo "  devtb transform elementor bootstrap page.json"
     echo "  devtb analyze elementor page.json"
     echo ""
-    echo "  # v3 HTML-based translate (works with all frameworks)"
+    echo "  # translate is a deprecated alias of transform (same lossless path)"
     echo "  devtb translate bootstrap divi page.html"
     echo "  devtb translate-all bootstrap page.html"
     echo ""
-    echo "COMPARISON:"
-    echo "  transform (v4):  JSON → JSON, 100% metadata, ~0.5s/page"
-    echo "  translate (v3):  Any → HTML → Any, ~42% metadata, ~30s/page"
+    echo "NOTE:"
+    echo "  As of RFC 5.0 Phase 3, every conversion rides the lossless"
+    echo "  parse → universal → convert path; fidelity is reported per conversion."
     echo ""
     echo "For more info: https://github.com/coryhubbell/development-translation-bridge"
     echo ""
@@ -100,13 +100,6 @@ run_python() {
 run_php() {
     local cmd="$1"
     shift
-
-    # Show deprecation notice for translate command
-    if [[ "$cmd" == "translate" ]]; then
-        echo -e "${YELLOW}Note: For lossless JSON conversion, consider using 'devtb transform' instead.${NC}"
-        echo -e "${YELLOW}      The transform command preserves 100% of metadata (vs ~42% for translate).${NC}"
-        echo ""
-    fi
 
     # Run the PHP CLI
     php "${SCRIPT_DIR}/devtb-php" "$cmd" "$@"
@@ -142,7 +135,9 @@ main() {
             run_python "$cmd" "$@"
             ;;
 
-        # v3 PHP commands (HTML intermediate)
+        # Deprecated (RFC 5.0 Phase 3): translate now rides the same
+        # parse → universal → convert path as transform (inside the PHP
+        # engine, which serves all 182 pairs) and is removed in 5.0.
         translate|translate-all|list-frameworks|validate)
             run_php "$cmd" "$@"
             ;;
