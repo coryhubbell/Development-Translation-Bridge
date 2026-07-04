@@ -2,7 +2,7 @@
     "name": "coryhubbell/development-translation-bridge",
     "description": "Universal WordPress page builder translation system with AI optimization",
     "type": "wordpress-theme",
-    "version": "4.15.0",
+    "version": "5.0.0",
     "license": "GPL-2.0-or-later",
     "authors": [
         {

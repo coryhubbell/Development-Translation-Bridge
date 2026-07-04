@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-4.15.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.15.0)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.15.0)
+[![Version](https://img.shields.io/badge/version-5.0.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -114,16 +114,26 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v4.15.0 (production-ready)
+## Current release: v5.0.0 (production-ready)
 
-**v4.15.0 brings the Python engine to cross-source parity.** Every Python
-converter now consumes a universal document from any source parser without
-losing content, held to a 39-cell cross-source fidelity matrix in CI —
-almost every pair at 100% content survival (baseline: 34 of 39 failed).
-The interchange layer is now fully bidirectional in both engines. This was
-the last prerequisite for the 5.0.0 release. Full notes:
-[v4.15.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.15.0)
-and [`RELEASE_NOTES_V4.15.0.md`](RELEASE_NOTES_V4.15.0.md).
+**5.0.0 completes the RFC 5.0 engine consolidation: one schema, two
+conforming runtimes.** Every conversion rides parse → universal document →
+convert; the legacy v3 mapping engine is removed (−962 lines), verified
+safe by the 182-pair matrix passing before and after. All CLI/REST/API
+surfaces are unchanged; the `translate` alias survives until 5.1. Full
+notes:
+[v5.0.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0)
+and [`RELEASE_NOTES_V5.0.0.md`](RELEASE_NOTES_V5.0.0.md) (with migration
+guide).
+
+### What 5.0.0 changed (RFC 5.0 complete)
+
+- **Removed (breaking):** the v3 mapping engine and its fallback branch;
+  the `DEVTB_Component` shape as a public interchange format.
+- **Unchanged:** every CLI command, REST endpoint, and API signature.
+- **Migration:** direct `DEVTB_Mapping_Engine` users move to
+  `parse_to_universal()` / `translate_universal()`; stats `route` is
+  always `universal`.
 
 ### What 4.15.0 added (pre-5.0 converter hardening)
 
@@ -681,7 +691,7 @@ Full local release gate:
 make verify
 ```
 
-As of v4.15.0:
+As of v5.0.0:
 - PHP: **344 tests / 5,691 assertions / 0 errors / 0 failures / 0 deprecations**,
   including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
   9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
@@ -769,7 +779,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.15.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.15.0) **(latest)** | 2026-07-04 | Pre-5.0 converter hardening: Python cross-source parity, 39-cell fidelity matrix in CI, bidirectional interchange |
+| [v5.0.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0) **(latest)** | 2026-07-04 | RFC 5.0 complete — one schema, two conforming runtimes; v3 mapping engine removed (breaking); migration guide in release notes |
+| [v4.15.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.15.0) | 2026-07-04 | Pre-5.0 converter hardening: Python cross-source parity, 39-cell fidelity matrix in CI, bidirectional interchange |
 | [v4.14.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.14.0) | 2026-07-04 | RFC 5.0 Phase 3 complete: universal route everywhere, fidelity metrics per conversion, `translate` deprecated, silent-exit CLI fix |
 | [v4.13.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.13.0) | 2026-07-03 | RFC 5.0 Phase 2 complete: shared component interchange in Python, exact-mirror conformance gate, round-trip vocabulary completed in both engines |
 | [v4.12.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.12.0) | 2026-07-03 | RFC 5.0 Phases 1–2: canonical schema, dual-engine conformance in CI, universal interchange in the PHP engine + REST |
@@ -795,7 +806,7 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.15.0. Release verification is automated end to end — Dependabot
+as of v5.0.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0

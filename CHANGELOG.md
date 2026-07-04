@@ -9,6 +9,15 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [5.0.0] — 2026-07-04
+
+**The RFC 5.0 engine consolidation is complete: one schema, two conforming
+runtimes.** Every conversion rides parse → universal → convert; the v3
+mapping engine is gone. Full notes:
+[`RELEASE_NOTES_V5.0.0.md`](RELEASE_NOTES_V5.0.0.md).
+
 ### Removed (BREAKING — RFC 5.0 Phase 4)
 
 - **The v3 mapping engine** (`translation-bridge/core/class-mapping-engine.php`)
@@ -529,7 +538,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.15.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v5.0.0...HEAD
+[5.0.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.15.0...v5.0.0
 [4.15.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.14.0...v4.15.0
 [4.14.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.13.0...v4.14.0
 [4.13.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.12.0...v4.13.0
