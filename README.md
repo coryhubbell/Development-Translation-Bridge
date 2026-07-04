@@ -47,24 +47,23 @@ Typical situations it solves:
 - **No silent data loss.** Elements without a native equivalent in the target
   framework are preserved and visibly annotated rather than dropped.
 
-Two transformation paths — pick by your source format:
+One conversion semantics — every pair rides the lossless universal path
+(RFC 5.0 Phase 3):
 
 ```mermaid
 flowchart TD
-    IN(["Your content"]) --> Q{"Source format?"}
-    Q -->|"Any of the 14 frameworks<br/>(JSON, block markup,<br/>shortcodes, HTML)"| T["<b>transform</b> — Python v4 engine<br/>100% metadata preserved · ~0.5s/page"]
-    Q -->|"Shortcodes / HTML<br/>(DIVI 4, WPBakery, Avada, ...)"| L["<b>translate</b> — PHP v3 engine<br/>HTML intermediate · ~30s/page"]
-    T --> OUT(["Any of the 14 target frameworks"])
-    L --> OUT
+    IN(["Your content<br/>(any of the 14 frameworks)"]) --> P["parse → <b>universal document</b> → convert"]
+    P --> OUT(["Any of the 14 target frameworks"])
+    P -.->|"per conversion"| F["fidelity metrics"]
 ```
 
-| Path | Engine | Approach | Metadata | Speed | Best for |
-|---|---|---|---|---|---|
-| `transform` | Python (v4) | JSON-native | **100%** | ~0.5s/page | **All 14 frameworks parse as sources** (JSON, block markup, shortcodes, and HTML) |
-| `translate` | PHP (v3) | HTML intermediate | ~42% | ~30s/page | Any framework, including shortcode-based (WPBakery, DIVI 4, Avada) |
+| Command | Engine | Status | Notes |
+|---|---|---|---|
+| `transform` | Python (v4) | **Recommended** | JSON-native, 100% metadata, ~0.5s/page |
+| `translate` | PHP (v3 runtime) | **Deprecated — removed in 5.0** | Same parse → universal → convert path as of RFC 5.0 Phase 3; fidelity reported per conversion |
 
-The `transform` path is the recommended default; `translate` is retained for
-HTML-based frameworks that don't have a JSON canonical form.
+The v3 mapping engine survives only as an HTML content-extraction fallback
+when a conversion would otherwise lose content.
 
 ---
 
@@ -405,7 +404,7 @@ make verify
 # JSON-native transform (recommended for JSON-based frameworks)
 ./devtb transform elementor bootstrap input.json -o output.html
 
-# HTML-intermediate translate (works with shortcode-based frameworks)
+# translate is deprecated (removed in 5.0) — same lossless path, PHP engine
 ./devtb translate divi avada input.html -o output.html
 
 # Transform an entire site export

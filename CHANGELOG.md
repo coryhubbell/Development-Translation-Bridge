@@ -9,7 +9,33 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **RFC 5.0 Phase 3 (complete)** — the `translate` path is deprecated and
+  re-routed: `DEVTB_Translator::translate()` now sends every pair through
+  parse → universal → convert (the same lossless semantics as `transform`),
+  with the v3 mapping engine retained only as a content-extraction fallback
+  behind a content-survival gate.
+- **Fidelity metrics per conversion**: translator stats (and both CLIs)
+  report the route taken and how many source content strings survived into
+  the output.
+- Python CLI: `translate` accepted as a deprecated alias of `transform`;
+  unregistered pairs convert through the universal route (any parsed
+  document → any of the 14 converters) behind a runtime fidelity gate,
+  with content extraction only as last resort.
+
+### Fixed
+
+- `devtb-php` never defined the `DEVTB_CLI` constant, so CLI translations
+  touching the responsive helper (e.g. Bricks targets) exited silently
+  mid-conversion.
+- The PHP CLI translation-statistics block read stat keys that never
+  existed (`components_parsed`/`components_converted`).
+
+### Deprecated
+
+- `devtb translate` — same universal path as `transform` since this
+  release; the command is removed in 5.0.
 
 ## [4.13.0] — 2026-07-03
 

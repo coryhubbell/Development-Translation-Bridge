@@ -300,6 +300,9 @@ class DEVTB_CLI {
         $ai_ready = $this->has_option('ai-ready', 'a');
 
         try {
+            $this->warning("'translate' is deprecated and will be removed in 5.0 — use 'devtb transform'.");
+            $this->info("Conversions now ride the lossless universal path (RFC 5.0 Phase 3).");
+            echo PHP_EOL;
             $this->info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             $this->info("  Translation Bridge - Framework Translation");
             $this->info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -367,8 +370,18 @@ class DEVTB_CLI {
             if (!empty($stats)) {
                 echo PHP_EOL;
                 $this->info("📊 Translation Statistics:");
-                $this->info("   Components parsed:    " . ($stats['components_parsed'] ?? 'N/A'));
-                $this->info("   Components converted: " . ($stats['components_converted'] ?? 'N/A'));
+                $this->info("   Components parsed:    " . ($stats['total_components'] ?? 'N/A'));
+                $this->info("   Components converted: " . ($stats['successful'] ?? 'N/A'));
+                $this->info("   Route:               " . ($stats['route'] ?? 'N/A'));
+                $fidelity = $stats['fidelity'] ?? null;
+                if (is_array($fidelity) && ($fidelity['content_total'] ?? 0) > 0) {
+                    $this->info(sprintf(
+                        "   Fidelity:            %d/%d content strings preserved (%.1f%%)",
+                        $fidelity['content_preserved'],
+                        $fidelity['content_total'],
+                        $fidelity['ratio'] * 100
+                    ));
+                }
                 $this->info("   Warnings:            " . ($stats['warnings'] ?? 0));
             }
 

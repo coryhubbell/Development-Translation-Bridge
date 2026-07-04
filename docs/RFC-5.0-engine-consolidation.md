@@ -1,6 +1,6 @@
 # RFC 5.0 — Engine Consolidation
 
-**Status:** Phases 1–2 shipped; Phase 3 next
+**Status:** Phases 1–3 shipped; Phase 4 (5.0 release) next
 **Created:** 2026-07-03
 
 ## Summary
@@ -88,13 +88,18 @@ is_external}`, `image{url, alt}`, `testimonial_*`, `tabs[]`, `icon_list[]`,
   (`icon_list`, `wp_gallery`, `selected_icon`, `alert_*`, CTA links) now
   survive the component round trip in both engines.
 
-### Phase 3 — Translate-path deprecation
+### Phase 3 — Translate-path deprecation *(shipped)*
 
-- Every `translate` (HTML-intermediate) pair is re-routed through
-  parse→universal→convert. The v3 mapping engine remains only for the
-  HTML *content extraction* fallback.
-- `devtb translate` becomes an alias for `transform` with a deprecation
-  notice; fidelity metrics reported per conversion.
+- `DEVTB_Translator::translate()` routes every pair through
+  parse → universal → convert (all 182 pairs green through the matrix).
+  The v3 mapping engine survives only as the content-extraction fallback,
+  gated by a content-survival check on the universal round trip.
+- `devtb translate` is a deprecated alias riding the same lossless path
+  (removed in 5.0); the Python CLI accepts `translate` as an alias of
+  `transform`, and unregistered Python pairs go through the universal
+  route behind a runtime fidelity gate.
+- Fidelity metrics (content strings preserved / total, route used) are
+  reported per conversion in translator stats and both CLIs.
 
 ### Phase 4 — 5.0 release
 
