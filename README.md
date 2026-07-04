@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-4.10.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.10.0)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.10.0)
+[![Version](https://img.shields.io/badge/version-4.11.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.11.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.11.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -116,14 +116,25 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v4.10.0 (production-ready)
+## Current release: v4.11.0 (production-ready)
 
-**v4.10.0 is the current production release.** Seven frameworks now parse
-natively in Python — every JSON/block-markup format — including Gutenberg
-itself as a lossless `transform` source (`devtb transform gutenberg bricks
-page.html`). Full notes:
-[v4.10.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.10.0)
-and [`RELEASE_NOTES_V4.10.0.md`](RELEASE_NOTES_V4.10.0.md).
+**v4.11.0 is the current production release — and it completes the 4.7+
+roadmap.** All 14 frameworks now parse natively in Python (JSON, block
+markup, shortcodes, and HTML), so any framework can be a source on the
+lossless `transform` path — including Bootstrap output re-entering the
+loop. Full notes:
+[v4.11.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.11.0)
+and [`RELEASE_NOTES_V4.11.0.md`](RELEASE_NOTES_V4.11.0.md).
+
+### What 4.11.0 added (Python parsers final tranche)
+
+- **Seven new parsers:** DIVI 4, WPBakery, and Avada (shared shortcode
+  tokenizer with self-closing-leaf handling); Kadence (extends the
+  Gutenberg parser); Beaver Builder (flat node registry); Thrive and
+  Bootstrap (shared HTML walker).
+- **13 new transform pairs** and CLI resolution; verified against the
+  committed DIVI kitchen-sink fixture and the repo's real Bootstrap hero
+  example. Purely additive.
 
 ### What 4.10.0 added (Python parsers tranche 2)
 
@@ -619,13 +630,13 @@ Full local release gate:
 make verify
 ```
 
-As of v4.10.0:
+As of v4.11.0:
 - PHP: **332 tests / 5,640 assertions / 0 errors / 0 failures / 0 deprecations**,
   including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
   9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
   8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`),
   and 9 classic-Oxygen hardening tests (`tests/Unit/OxygenClassicHardeningTest.php`).
-- Python: 175 tests across converters, parsers (seven native source parsers), transforms, responsive helpers, and project alignment checks.
+- Python: 185 tests across converters, parsers (all 14 frameworks parse natively), transforms, responsive helpers, and project alignment checks.
 - End-to-end fidelity smoke gates (`make e2e-smoke`), each running through
   both engines as CI gates on every push and PR: Elementor → Gutenberg
   (`tests/smoke_gutenberg_e2e.py`), Elementor → Bricks
@@ -707,7 +718,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.10.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.10.0) **(latest)** | 2026-07-03 | Python parsers tranche 2: Oxygen 6, DIVI 5, and Gutenberg sources — all JSON/block-markup formats parse natively in Python |
+| [v4.11.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.11.0) **(latest)** | 2026-07-03 | Python parsers final tranche: all 14 frameworks parse natively — the 4.7+ roadmap is complete |
+| [v4.10.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.10.0) | 2026-07-03 | Python parsers tranche 2: Oxygen 6, DIVI 5, and Gutenberg sources — all JSON/block-markup formats parse natively in Python |
 | [v4.9.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.9.0) | 2026-07-03 | Responsive canonicalization completed: Elementor v3 suffixes + Bricks breakpoint keys join the canonical model; cross-framework transfer in every direction |
 | [v4.8.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.8.0) | 2026-07-03 | E2e fidelity smoke gates for Elementor → Bricks and DIVI → Gutenberg; seven content drops caught and fixed |
 | [v4.7.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.7.0) | 2026-07-03 | JSON source parsers: Bricks, classic Oxygen, and Elementor 4 Atomic now ride the lossless `transform` path as sources |
@@ -728,7 +740,7 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.10.0. Release verification is automated end to end — Dependabot
+as of v4.11.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
@@ -762,7 +774,7 @@ Candidate work for upcoming 4.x releases, roughly in priority order:
    and re-emit on convert, so responsive data survives round trips and
    transfers across frameworks (e.g. Elementor tablet overrides become
    Bricks `:tablet_portrait` keys).
-4. ~~**Python parsers for the remaining frameworks.**~~ **Done (unreleased):**
+4. ~~**Python parsers for the remaining frameworks.**~~ **Done in v4.11.0:**
    all 14 frameworks now parse natively in Python — JSON, block markup,
    shortcodes, and HTML — completing the parser half of the 5.x engine
    consolidation.
