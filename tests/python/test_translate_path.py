@@ -1,9 +1,9 @@
-"""RFC 5.0 Phase 3 — translate-path deprecation (Python surfaces).
+"""Transform-path behavior (RFC 5.0 Phase 3 + 5.1).
 
-'devtb translate' is a deprecated alias riding the same lossless path as
-transform; unregistered pairs go through the universal route (any parsed
-document → any converter) behind a fidelity gate; fidelity metrics are
-reported per conversion.
+The 'translate' alias was removed in 5.1; unregistered pairs go through
+the universal route (any parsed document → any converter) behind a
+fidelity gate; fidelity metrics are reported per conversion; transform-all
+fans one source out to every other framework.
 """
 
 import json
@@ -122,16 +122,24 @@ class TestFidelityMetric:
         assert strings == ["T1", "Body 1"]
 
 
-class TestTranslateAlias:
-    def test_translate_is_a_deprecated_alias_of_transform(self):
+class TestTranslateRemoval:
+    def test_translate_is_gone(self):
         result = run_cli(
             "translate", "elementor", "gutenberg",
             "tests/fixtures/elementor/kitchen-sink.json", "-n",
         )
+        assert result.returncode != 0
+
+    def test_transform_all_fans_out_with_fidelity_table(self, tmp_path):
+        result = run_cli(
+            "transform-all", "divi",
+            "tests/fixtures/divi/kitchen-sink.txt", "-o", str(tmp_path),
+        )
         assert result.returncode == 0, result.stderr
-        assert "deprecated" in result.stdout
-        assert "Fidelity:" in result.stdout
-        assert "Kitchen Sink Hero" in result.stdout
+        assert "All targets transformed!" in result.stdout
+        outputs = list(tmp_path.iterdir())
+        assert len(outputs) == 13, [p.name for p in outputs]
+        assert result.stdout.count("content strings") == 13
 
     def test_transform_reports_fidelity_per_conversion(self):
         result = run_cli(
@@ -185,4 +193,3 @@ class TestUniversalRouteGate:
         stdout = capsys.readouterr().out
         assert "universal route" in stdout
         assert "falling back to content extraction" in stdout
-        assert "devtb translate" in stdout

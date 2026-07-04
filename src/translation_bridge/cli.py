@@ -4,12 +4,14 @@ Translation Bridge v4 CLI - JSON-native transform commands.
 
 Commands:
     transform       Transform a single file between frameworks
+    transform-all   Transform a file to every other framework
     transform-site  Transform all files in a directory or site export
     analyze         Analyze page builder content
     analyze-site    Analyze a complete site export
 
 Usage:
     devtb transform <source> <target> <file> [options]
+    devtb transform-all <source> <file> [options]
     devtb transform-site <source> <target> <directory> [options]
     devtb analyze <framework> <file> [options]
     devtb analyze-site <framework> <path> [options]
@@ -280,14 +282,10 @@ def print_fidelity(fidelity: dict) -> None:
 
 
 def cmd_transform(args: argparse.Namespace) -> int:
-    """Handle the transform command (and its deprecated 'translate' alias)."""
+    """Handle the transform command."""
     source = args.source.lower()
     target = args.target.lower()
     input_file = Path(args.file)
-
-    if getattr(args, "command", "") == "translate":
-        print_warning("'translate' is deprecated and will be removed in 5.1 — use 'devtb transform'.")
-        print_info("Routing through the lossless universal path (RFC 5.0 Phase 3).")
 
     if not input_file.exists():
         print_error(f"File not found: {input_file}")
@@ -341,7 +339,7 @@ def cmd_transform(args: argparse.Namespace) -> int:
                         f"Universal route preserved only {fidelity['ratio'] * 100:.0f}% of content "
                         f"for {source} → {target}; falling back to content extraction."
                     )
-                    print_info("The PHP engine ('devtb translate') supports this pair natively.")
+                    print_info("Content extraction preserves text only — please report this pair.")
             if result_data is None:
                 # Last resort: extract content zones (HTML content extraction).
                 if converter is None:
@@ -401,6 +399,93 @@ def cmd_transform(args: argparse.Namespace) -> int:
             import traceback
             traceback.print_exc()
         return 1
+
+
+# Canonical framework keys for transform-all fan-out.
+ALL_FRAMEWORKS = [
+    "elementor", "elementor-4", "bootstrap", "gutenberg", "bricks",
+    "oxygen", "oxygen-6", "divi", "divi-5", "wpbakery", "avada",
+    "kadence", "beaver-builder", "thrive",
+]
+
+
+def cmd_transform_all(args: argparse.Namespace) -> int:
+    """Handle the transform-all command: one source → every other framework."""
+    source = args.source.lower()
+    input_file = Path(args.file)
+
+    if not input_file.exists():
+        print_error(f"File not found: {input_file}")
+        return 1
+
+    parser = get_parser_for_framework(source)
+    if parser is None:
+        print_error(f"No parser available for framework: {source}")
+        return 1
+
+    print_header(f"Translation Bridge v{__version__} - Transform All")
+    print_info(f"Source: {source}")
+    print_info(f"Input: {input_file}")
+
+    try:
+        if hasattr(parser, "parse_file"):
+            doc = parser.parse_file(str(input_file))
+        else:
+            with open(input_file, "r", encoding="utf-8") as f:
+                doc = parser.parse(json.load(f))
+        doc_dict = doc.to_dict() if hasattr(doc, "to_dict") else doc
+    except Exception as e:
+        print_error(f"Parse failed: {e}")
+        if args.debug:
+            import traceback
+            traceback.print_exc()
+        return 1
+
+    output_dir = Path(args.output_dir) if args.output_dir else input_file.parent
+    normalize = lambda key: key.replace("-", "").lower()
+    failures = 0
+
+    for target in ALL_FRAMEWORKS:
+        if normalize(target) == normalize(source):
+            continue
+        try:
+            transform_fn = TransformRegistry.get_transform(source, target)
+            if transform_fn:
+                result_data = transform_fn(doc_dict)
+            else:
+                result_data = get_converter_for_framework(target).convert(doc_dict)
+
+            fidelity = measure_fidelity(doc_dict, result_data)
+            output_file = output_dir / f"{input_file.stem}-{target}{get_extension_for_framework(target)}"
+            if not args.dry_run:
+                with open(output_file, "w", encoding="utf-8") as f:
+                    if isinstance(result_data, str):
+                        f.write(result_data)
+                    else:
+                        json.dump(result_data, f, indent=2, ensure_ascii=False)
+
+            ratio = fidelity["ratio"] * 100
+            marker = "✓" if fidelity["ratio"] >= 0.9 else "⚠"
+            print(
+                f"  {marker} {target:15s} "
+                f"{fidelity['content_preserved']}/{fidelity['content_total']} "
+                f"content strings ({ratio:.0f}%)"
+                + ("" if args.dry_run else f" → {output_file.name}")
+            )
+        except Exception as e:
+            failures += 1
+            print_error(f"  {target}: {e}")
+            if args.debug:
+                import traceback
+                traceback.print_exc()
+
+    if args.dry_run:
+        print_info("Dry run — no files written")
+    if failures:
+        print_warning(f"{failures} target(s) failed")
+        return 1
+    print_success("All targets transformed!")
+    return 0
 
 
 def cmd_transform_site(args: argparse.Namespace) -> int:
@@ -940,11 +1025,16 @@ def get_extension_for_framework(framework: str) -> str:
     """Get the appropriate file extension for a framework."""
     extensions = {
         "elementor": ".json",
+        "elementor-4": ".json",
         "bricks": ".json",
         "oxygen": ".json",
+        "oxygen-6": ".json",
         "beaver-builder": ".json",
         "gutenberg": ".html",
+        "kadence": ".html",
+        "divi-5": ".html",
         "bootstrap": ".html",
+        "thrive": ".html",
         "divi": ".txt",
         "wpbakery": ".txt",
         "avada": ".html",
@@ -974,11 +1064,9 @@ For more information, visit: https://github.com/coryhubbell/development-translat
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # transform command ('translate' kept as a deprecated alias — RFC 5.0 Phase 3)
+    # transform command (the 'translate' alias was removed in 5.1)
     transform_parser = subparsers.add_parser(
-        "transform",
-        aliases=["translate"],
-        help="Transform a file between frameworks",
+        "transform", help="Transform a file between frameworks"
     )
     transform_parser.add_argument("source", help="Source framework (e.g., elementor)")
     transform_parser.add_argument("target", help="Target framework (e.g., bootstrap)")
@@ -988,6 +1076,20 @@ For more information, visit: https://github.com/coryhubbell/development-translat
         "-n", "--dry-run", action="store_true", help="Preview without writing"
     )
     transform_parser.add_argument(
+        "-d", "--debug", action="store_true", help="Show debug information"
+    )
+
+    # transform-all command
+    all_parser = subparsers.add_parser(
+        "transform-all", help="Transform a file to every other framework"
+    )
+    all_parser.add_argument("source", help="Source framework (e.g., elementor)")
+    all_parser.add_argument("file", help="Input file path")
+    all_parser.add_argument("-o", "--output-dir", help="Output directory (default: input's)")
+    all_parser.add_argument(
+        "-n", "--dry-run", action="store_true", help="Preview without writing"
+    )
+    all_parser.add_argument(
         "-d", "--debug", action="store_true", help="Show debug information"
     )
 
@@ -1034,8 +1136,10 @@ For more information, visit: https://github.com/coryhubbell/development-translat
         parser.print_help()
         return 0
 
-    if args.command in ("transform", "translate"):
+    if args.command == "transform":
         return cmd_transform(args)
+    elif args.command == "transform-all":
+        return cmd_transform_all(args)
     elif args.command == "transform-site":
         return cmd_transform_site(args)
     elif args.command == "analyze":

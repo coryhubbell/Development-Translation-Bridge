@@ -62,7 +62,7 @@ flowchart TD
 | Command | Engine | Status | Notes |
 |---|---|---|---|
 | `transform` | Python | **Recommended** | JSON-native, 100% metadata, ~0.5s/page |
-| `translate` | PHP (WordPress runtime) | **Deprecated — removed in 5.1** | Identical universal pipeline; fidelity reported per conversion |
+| `transform-all` | Python | Supported | One source → every other framework, per-target fidelity table |
 
 ---
 
@@ -389,7 +389,7 @@ v4.3.1 → v4.3.3 notes: [v4.3.3 release](https://github.com/coryhubbell/Develop
 
 ### Requirements
 
-- PHP **8.1+** (for the `translate` path, theme install, and REST API)
+- PHP **8.1+** (for the WordPress runtime, theme install, and REST API)
 - Python **3.9+** (for the `transform` path and CLI); local verification is pinned to **3.11** via `.python-version`
 - Node **20.19.0**, **22.13.0+**, or **24+** + npm (only to rebuild the React admin UI from source)
 - Composer 2.0+ and pip (only if installing from source)
@@ -438,8 +438,8 @@ make verify
 # JSON-native transform (recommended for JSON-based frameworks)
 ./devtb transform elementor bootstrap input.json -o output.html
 
-# translate is deprecated (removed in 5.1) — same lossless path, PHP engine
-./devtb translate divi avada input.html -o output.html
+# fan out to every framework at once (per-target fidelity table)
+./devtb transform-all divi input.html
 
 # Transform an entire site export
 ./devtb transform-site elementor bootstrap ./export-kit/
