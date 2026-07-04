@@ -9,6 +9,15 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [5.1.0] — 2026-07-04
+
+The deprecation window closes: `transform-all` ships as the fan-out
+replacement, `translate`/`translate-all` are removed on schedule, and the
+README is restructured for ease of use. Full notes:
+[`RELEASE_NOTES_V5.1.0.md`](RELEASE_NOTES_V5.1.0.md).
+
 ### Added
 
 - **`devtb transform-all <source> <file>`** (Python engine) — fan one
@@ -27,6 +36,13 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 - `devtb` help no longer lists `list-frameworks` and `validate` as
   deprecated — they were never deprecated and remain supported PHP-engine
   utilities.
+
+### Changed
+
+- README restructured for ease of use: a 30-second start above the fold,
+  a choosing-a-command table, usage sections before release history, and
+  the v4.x release narrative collapsed into a details block (screenshots
+  and Mermaid diagrams retained).
 
 ## [5.0.0] — 2026-07-04
 
@@ -555,7 +571,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v5.0.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v5.1.0...HEAD
+[5.1.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v5.0.0...v5.1.0
 [5.0.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.15.0...v5.0.0
 [4.15.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.14.0...v4.15.0
 [4.14.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.13.0...v4.14.0

@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-5.0.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0)
+[![Version](https://img.shields.io/badge/version-5.1.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.1.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.1.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -23,6 +23,22 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 *The bundled Visual Interface (WordPress Admin → Visual Interface): Monaco-powered
 side-by-side editing, framework selectors, live preview, and one-click
 translate/check/AI actions.*
+
+---
+
+## ⚡ 30-second start
+
+```bash
+git clone https://github.com/coryhubbell/Development-Translation-Bridge.git
+cd Development-Translation-Bridge && pip install -e .
+./devtb transform elementor gutenberg your-page.json
+```
+
+That's it — `your-page-gutenberg.html` appears next to your input, with a
+per-conversion fidelity report like `✓ Fidelity: 60/60 content strings
+preserved (100.0%)`. Convert to **every** framework at once with
+`./devtb transform-all elementor your-page.json`. Full setup (WordPress
+theme, REST API, admin UI): see [Quick start](#quick-start).
 
 ---
 
@@ -114,17 +130,427 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v5.0.0 (production-ready)
+## Quick start
 
-**5.0.0 completes the RFC 5.0 engine consolidation: one schema, two
-conforming runtimes.** Every conversion rides parse → universal document →
-convert; the legacy v3 mapping engine is removed (−962 lines), verified
-safe by the 182-pair matrix passing before and after. All CLI/REST/API
-surfaces are unchanged; the `translate` alias survives until 5.1. Full
-notes:
-[v5.0.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0)
-and [`RELEASE_NOTES_V5.0.0.md`](RELEASE_NOTES_V5.0.0.md) (with migration
-guide).
+### Requirements
+
+- PHP **8.1+** (for the WordPress runtime, theme install, and REST API)
+- Python **3.9+** (for the `transform` path and CLI); local verification is pinned to **3.11** via `.python-version`
+- Node **20.19.0**, **22.13.0+**, or **24+** + npm (only to rebuild the React admin UI from source)
+- Composer 2.0+ and pip (only if installing from source)
+
+### Install
+
+```bash
+git clone https://github.com/coryhubbell/Development-Translation-Bridge.git
+cd Development-Translation-Bridge
+
+# PHP dependencies
+make composer-install
+
+# Python package
+pip install -e .
+
+# Build the React admin UI (required for the Visual Interface in production).
+# admin/dist/ is gitignored, so this step is needed after every clone or pull
+# that touches admin/. In WP_DEBUG mode the Vite dev server is used instead;
+# see admin/README.md for the dev workflow.
+cd admin
+npm ci
+npm run build
+cd ..
+
+# Make the CLI executable
+chmod +x devtb
+```
+
+Release assets named `development-translation-bridge-*.zip` are packaged for
+WordPress theme installation. They are built reproducibly by
+[`scripts/build-release-package.sh`](scripts/build-release-package.sh), and
+pushing a `v*` tag publishes the release automatically (zip + generated
+changelog) via the release workflow. Clone the repository when you need the
+standalone CLI, Python package, tests, or development tooling.
+
+To run the full local release gate before opening or updating a PR:
+
+```bash
+make verify
+```
+
+### Choosing a command
+
+| You want to… | Run |
+|---|---|
+| Convert one file to one framework | `./devtb transform <source> <target> <file>` |
+| Convert one file to **all 13 other frameworks** | `./devtb transform-all <source> <file>` |
+| Convert a whole directory or site export | `./devtb transform-site <source> <target> <dir>` |
+| Inspect content without converting | `./devtb analyze <framework> <file>` |
+| List the 14 framework keys | `./devtb list-frameworks` |
+| Check a file parses as a framework | `./devtb validate <framework> <file>` |
+
+Every conversion prints a fidelity line (content strings preserved). If a
+target has no native slot for something, it is preserved and visibly
+annotated — never silently dropped.
+
+### Translate a file
+
+```bash
+# JSON-native transform (recommended for JSON-based frameworks)
+./devtb transform elementor bootstrap input.json -o output.html
+
+# fan out to every framework at once (per-target fidelity table)
+./devtb transform-all divi input.html
+
+# Transform an entire site export
+./devtb transform-site elementor bootstrap ./export-kit/
+
+# Analyze content without converting
+./devtb analyze elementor input.json
+```
+
+### From Python
+
+```python
+from translation_bridge.converters.bootstrap import BootstrapConverter
+from translation_bridge.converters.elementor4 import Elementor4Converter
+
+# Parse Elementor JSON, emit Bootstrap HTML
+elementor_data = [...]  # parsed JSON
+html = BootstrapConverter().convert(elementor_data)
+
+# Build Atomic Editor JSON from any parsed universal data
+atomic_json = Elementor4Converter().convert(elementor_data)
+```
+
+### As a WordPress plugin
+
+```bash
+# Activate by copying or symlinking into wp-content/themes/
+ln -s "$PWD" /path/to/wp-content/themes/development-translation-bridge
+
+# Then activate "DevelopmentTranslation Bridge" in WordPress Admin → Themes.
+```
+
+The REST API mounts at `/wp-json/devtb/v2/*` after activation (see
+[REST API](#rest-api) below).
+
+---
+
+## CLI
+
+The `devtb` CLI is a bash wrapper that routes commands to the Python engine
+(conversions) or the PHP engine (WordPress runtime utilities).
+
+```text
+COMMANDS (Python engine — JSON-native, lossless):
+  transform <source> <target> <file>      Transform a file (100% metadata preserved)
+  transform-all <source> <file>           Transform to every other framework
+  transform-site <source> <target> <dir>  Transform every file in a directory
+  analyze <framework> <file>              Inspect parsed content without converting
+
+COMMANDS (PHP engine utilities):
+  list-frameworks                         List supported frameworks
+  validate <framework> <file>             Validate file format
+
+OPTIONS:
+  -h, --help                              Show this help message
+  -v, --version                           Show version information
+  -n, --dry-run                           Preview without writing files
+  -d, --debug                             Show debug information
+  -o, --output <file>                     Specify output file path
+```
+
+Run `./devtb --help` for the current up-to-date command list.
+
+### Common workflows
+
+```bash
+# Migrate Elementor → Bricks
+./devtb transform elementor bricks page.json -o page-bricks.json
+
+# Modernize legacy DIVI 4 → DIVI 5 block markup
+./devtb transform divi divi-5 page.txt -o page-divi5.html
+
+# Detect format, then route to the right path
+./devtb analyze elementor mystery.json  # tells you elType, version, etc.
+
+# Generate every framework's version from one input (fidelity table included)
+./devtb transform-all bootstrap landing.html
+```
+
+---
+
+## Python API
+
+Direct module imports for programmatic use:
+
+```python
+from translation_bridge.converters.bootstrap import BootstrapConverter
+from translation_bridge.converters.elementor   import ElementorConverter
+from translation_bridge.converters.elementor4  import Elementor4Converter
+from translation_bridge.converters.divi        import DiviConverter
+from translation_bridge.converters.divi5       import Divi5Converter
+from translation_bridge.converters.gutenberg   import GutenbergConverter
+from translation_bridge.converters.bricks      import BricksConverter
+from translation_bridge.converters.oxygen      import OxygenConverter
+from translation_bridge.converters.oxygen6    import Oxygen6Converter
+from translation_bridge.converters.wpbakery    import WPBakeryConverter
+from translation_bridge.converters.beaver      import BeaverConverter
+from translation_bridge.converters.avada       import AvadaConverter
+from translation_bridge.converters.kadence     import KadenceConverter
+from translation_bridge.converters.thrive      import ThriveConverter
+
+# Each converter has the same surface:
+converter = BricksConverter()
+output_json = converter.convert(parsed_data)       # serialized
+output_list = converter.convert_to_dict(parsed_data)  # python objects
+framework_name = converter.get_framework()          # "bricks"
+```
+
+Site-level conversions:
+
+```python
+from translation_bridge.parsers.elementor_site import ElementorSiteParser
+from translation_bridge.converters.styles      import StylesConverter
+from translation_bridge.converters.templates   import TemplateConverter
+
+site = ElementorSiteParser().parse_kit("./export-kit/")
+tokens = StylesConverter().extract_tokens(site.settings)
+template_parts = TemplateConverter().build(site.templates)
+```
+
+---
+
+## REST API
+
+After activating the WordPress theme/plugin, endpoints mount at
+`/wp-json/devtb/v2/*`.
+
+### Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/status` | Health check + version info |
+| GET | `/frameworks` | List supported frameworks |
+| POST | `/translate` | Translate a single payload |
+| POST | `/batch-translate` | Queue a batch translation job |
+| GET | `/job/{job_id}` | Poll a batch job's status |
+| POST | `/validate` | Validate a payload for a framework |
+| POST | `/save` | Persist a translation result |
+| GET, PUT, DELETE | `/translations/{id}` | CRUD on saved translations |
+| GET | `/translations/history` | List recent translations |
+| GET | `/translations/{id}/versions` | Version history for a translation |
+| GET, POST | `/api-keys` | List or create API keys |
+| DELETE | `/api-keys/{key}` | Revoke an API key |
+
+### Authentication
+
+API keys are encrypted at rest (AES-256-CBC) and required for every endpoint
+except `/status` and `/frameworks`. Pass via header:
+
+```http
+Authorization: Bearer <api-key>
+```
+
+Generate keys via the WordPress admin UI or `POST /wp-json/devtb/v2/api-keys`.
+
+### Quick examples
+
+```bash
+# Health check
+curl https://example.com/wp-json/devtb/v2/status
+
+# List frameworks
+curl https://example.com/wp-json/devtb/v2/frameworks
+
+# Translate
+curl -X POST https://example.com/wp-json/devtb/v2/translate \
+  -H "Authorization: Bearer $DEVTB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"source":"elementor","target":"bootstrap","content":"..."}'
+```
+
+Full endpoint reference: [`docs/api-v2.md`](docs/api-v2.md).
+
+---
+
+## Architecture
+
+Every framework plugs into the same hub-and-spoke pipeline: parse into a
+universal component tree, map, then convert out. Adding one framework adds
+13 × 2 new translation pairs — no per-pair code.
+
+```mermaid
+flowchart LR
+    A["Source content<br/>(Elementor JSON,<br/>DIVI shortcodes, ...)"] --> B["Parser<br/>(one per framework)"]
+    B --> C["Universal<br/>Component[]<br/>(typed tree)"]
+    C --> D["Mapping engine<br/>(styles, tokens,<br/>element maps)"]
+    D --> E["Converter<br/>(one per framework)"]
+    E --> F["Target content<br/>(any of 14<br/>frameworks)"]
+```
+
+Each framework provides a paired **parser** (input → universal components)
+and **converter** (universal components → output). Parsers and converters
+register independently with `DEVTB_Parser_Factory` and
+`DEVTB_Converter_Factory`, so a framework can be a source, a target, or both.
+
+### Project layout
+
+```
+translation-bridge/
+├── core/
+│   ├── interface-parser.php
+│   ├── interface-converter.php
+│   ├── class-parser-factory.php
+│   ├── class-converter-factory.php
+│   ├── class-mapping-engine.php
+│   └── class-translator.php
+├── parsers/        # one per framework (PHP)
+├── converters/     # one per framework (PHP)
+├── models/         # DEVTB_Component
+└── utils/          # CSS, JSON, HTML, shortcode helpers
+
+src/translation_bridge/
+├── parsers/        # Python parsers
+├── converters/     # Python converters
+├── transforms/     # Zone Theory engine (v4)
+└── cli.py          # Python CLI entry point
+
+includes/
+├── class-devtb-api-v2.php        # REST API
+├── class-devtb-auth.php          # API key + permission checks
+├── class-devtb-encryption.php    # AES-256-CBC for keys at rest
+├── class-devtb-rate-limiter.php
+├── class-devtb-job-queue.php     # async batch translations
+└── class-devtb-webhook.php
+```
+
+Detailed architecture notes live in [`docs/TRANSLATION_BRIDGE.md`](docs/TRANSLATION_BRIDGE.md).
+
+---
+
+## Testing
+
+PHP (via PHPUnit):
+
+```bash
+make test-php                  # full suite
+vendor/bin/phpunit --filter FrameworkConversionsTest  # 182-pair matrix
+```
+
+Python (via pytest):
+
+```bash
+python3 -m pytest tests/python -q
+```
+
+Full local release gate:
+
+```bash
+make verify
+```
+
+As of v5.1.0:
+- PHP: **344 tests / 5,691 assertions / 0 errors / 0 failures / 0 deprecations**,
+  including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
+  9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
+  8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`),
+  and 9 classic-Oxygen hardening tests (`tests/Unit/OxygenClassicHardeningTest.php`).
+- Python: 307 tests across converters, parsers (all 14 frameworks parse natively), transforms, responsive helpers, the bidirectional interchange, the translate-path deprecation surfaces, the 39-cell cross-source fidelity matrix, dual-engine conformance (including the exact-mirror gate), and project alignment checks.
+- End-to-end fidelity smoke gates (`make e2e-smoke`), each running through
+  both engines as CI gates on every push and PR: Elementor → Gutenberg
+  (`tests/smoke_gutenberg_e2e.py`), Elementor → Bricks
+  (`tests/smoke_bricks_e2e.py`, flat-format + content survival), and
+  DIVI → Gutenberg (`tests/smoke_divi_e2e.py`, content survival + block
+  integrity).
+
+The 41 pre-existing errors and 3 failures that v4.1 / v4.2 / v4.3.0 inherited
+(class-autoload mismatches and missing WP-function mocks) were all resolved in
+v4.3.1 via the shared autoloader + WP function stubs. The full suite is now
+green, including `composer audit`.
+
+### Continuous integration
+
+Every push and PR to `main` / `develop` runs four jobs
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
+
+| Job | What it runs |
+|---|---|
+| **PHP tests** | PHPUnit across PHP **8.1 – 8.5**, plus composer validate, syntax check, `composer audit`, PHPCS (WordPress standards), and Codecov coverage upload |
+| **Python tests + Gutenberg e2e smoke** | Full pytest suite, then three e2e fidelity gates through both engines: Elementor → Gutenberg, Elementor → Bricks, and DIVI → Gutenberg kitchen-sink fixtures |
+| **Admin build** | ESLint, `tsc --noEmit`, and a production Vite build on Node **20.19.0 / 22.13.0 / 24** |
+| **Release package smoke** | Builds and inspects the WordPress theme zip via `scripts/build-release-package.sh`, so packaging breakage is caught before tagging |
+
+Dependency freshness is automated with
+[Dependabot](.github/dependabot.yml): weekly update PRs for Composer, npm
+(`admin/`), and pip, and monthly for GitHub Actions and Docker Compose images.
+`composer audit` gates every CI run, and `make verify` additionally runs
+`npm audit --omit=dev` on the admin UI.
+
+---
+
+## Docker (development)
+
+A local stack is available for plugin development:
+
+```bash
+docker-compose up -d
+
+# WordPress:    http://localhost:8080
+# phpMyAdmin:   http://localhost:8081
+```
+
+The stack pins WordPress 7.0 (PHP 8.4 + Apache), MySQL 9.7, and phpMyAdmin
+5.2 — image versions are kept fresh by Dependabot's monthly
+`docker-compose` updates. Ports and database credentials are overridable via
+environment variables (`WORDPRESS_PORT`, `MYSQL_PORT`, `MYSQL_USER`, ...);
+see [`docker-compose.yml`](docker-compose.yml) for the full list and
+[`DOCKER_SETUP.md`](DOCKER_SETUP.md) for a walkthrough.
+
+The plugin is mounted from the working tree, so edits are reflected
+immediately.
+
+---
+
+## Documentation
+
+Topical guides under [`docs/`](docs):
+
+| File | Topic |
+|---|---|
+| [`getting-started.md`](docs/getting-started.md) | First-run setup walkthrough |
+| [`api-v2.md`](docs/api-v2.md) | Full REST API reference |
+| [`api-development.md`](docs/api-development.md) | Building against the API |
+| [`TRANSLATION_BRIDGE.md`](docs/TRANSLATION_BRIDGE.md) | Architecture deep-dive |
+| [`FRAMEWORK_MAPPINGS.md`](docs/FRAMEWORK_MAPPINGS.md) | Per-framework element maps |
+| [`CONVERSION_EXAMPLES.md`](docs/CONVERSION_EXAMPLES.md) | Real translation examples |
+| [`bootstrap-components.md`](docs/bootstrap-components.md) | Bootstrap output reference |
+| [`claude-integration.md`](docs/claude-integration.md) | AI-assisted editing workflows |
+| [`PLUGIN_CONVERSION.md`](docs/PLUGIN_CONVERSION.md) | Plugin migration cookbook |
+
+A consolidated version history lives in [`CHANGELOG.md`](CHANGELOG.md);
+detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
+[GitHub Releases](https://github.com/coryhubbell/Development-Translation-Bridge/releases).
+
+---
+
+## Current release: v5.1.0 (production-ready)
+
+**v5.1.0 closes the deprecation window and ships `transform-all`.** One
+command now fans a page out to every other framework with a per-target
+fidelity table; the legacy `translate`/`translate-all` commands are
+removed on schedule. Full notes:
+[v5.1.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.1.0)
+and [`RELEASE_NOTES_V5.1.0.md`](RELEASE_NOTES_V5.1.0.md).
+
+### What 5.1.0 added
+
+- **`devtb transform-all <source> <file>`** — one source → all 13 other
+  frameworks through the universal route, per-target fidelity table.
+- **Removed:** the `translate`/`translate-all` CLI commands (deprecated
+  since 4.14.0). The WordPress runtime engine is unaffected.
+- **Fixed:** `list-frameworks`/`validate` are supported utilities, not
+  deprecated; help corrected.
 
 ### What 5.0.0 changed (RFC 5.0 complete)
 
@@ -134,6 +560,9 @@ guide).
 - **Migration:** direct `DEVTB_Mapping_Engine` users move to
   `parse_to_universal()` / `translate_universal()`; stats `route` is
   always `universal`.
+
+<details>
+<summary><b>Release history highlights (v4.3.0 → v4.15.0)</b></summary>
 
 ### What 4.15.0 added (pre-5.0 converter hardening)
 
@@ -383,395 +812,7 @@ and [`RELEASE_NOTES_V4.3.4.md`](RELEASE_NOTES_V4.3.4.md).
 
 v4.3.1 → v4.3.3 notes: [v4.3.3 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.3.3) — see also [`CODEX_REVIEW.md`](CODEX_REVIEW.md) for file-by-file rationale.
 
----
-
-## Quick start
-
-### Requirements
-
-- PHP **8.1+** (for the WordPress runtime, theme install, and REST API)
-- Python **3.9+** (for the `transform` path and CLI); local verification is pinned to **3.11** via `.python-version`
-- Node **20.19.0**, **22.13.0+**, or **24+** + npm (only to rebuild the React admin UI from source)
-- Composer 2.0+ and pip (only if installing from source)
-
-### Install
-
-```bash
-git clone https://github.com/coryhubbell/Development-Translation-Bridge.git
-cd Development-Translation-Bridge
-
-# PHP dependencies
-make composer-install
-
-# Python package
-pip install -e .
-
-# Build the React admin UI (required for the Visual Interface in production).
-# admin/dist/ is gitignored, so this step is needed after every clone or pull
-# that touches admin/. In WP_DEBUG mode the Vite dev server is used instead;
-# see admin/README.md for the dev workflow.
-cd admin
-npm ci
-npm run build
-cd ..
-
-# Make the CLI executable
-chmod +x devtb
-```
-
-Release assets named `development-translation-bridge-*.zip` are packaged for
-WordPress theme installation. They are built reproducibly by
-[`scripts/build-release-package.sh`](scripts/build-release-package.sh), and
-pushing a `v*` tag publishes the release automatically (zip + generated
-changelog) via the release workflow. Clone the repository when you need the
-standalone CLI, Python package, tests, or development tooling.
-
-To run the full local release gate before opening or updating a PR:
-
-```bash
-make verify
-```
-
-### Translate a file
-
-```bash
-# JSON-native transform (recommended for JSON-based frameworks)
-./devtb transform elementor bootstrap input.json -o output.html
-
-# fan out to every framework at once (per-target fidelity table)
-./devtb transform-all divi input.html
-
-# Transform an entire site export
-./devtb transform-site elementor bootstrap ./export-kit/
-
-# Analyze content without converting
-./devtb analyze elementor input.json
-```
-
-### From Python
-
-```python
-from translation_bridge.converters.bootstrap import BootstrapConverter
-from translation_bridge.converters.elementor4 import Elementor4Converter
-
-# Parse Elementor JSON, emit Bootstrap HTML
-elementor_data = [...]  # parsed JSON
-html = BootstrapConverter().convert(elementor_data)
-
-# Build Atomic Editor JSON from any parsed universal data
-atomic_json = Elementor4Converter().convert(elementor_data)
-```
-
-### As a WordPress plugin
-
-```bash
-# Activate by copying or symlinking into wp-content/themes/
-ln -s "$PWD" /path/to/wp-content/themes/development-translation-bridge
-
-# Then activate "DevelopmentTranslation Bridge" in WordPress Admin → Themes.
-```
-
-The REST API mounts at `/wp-json/devtb/v2/*` after activation (see
-[REST API](#rest-api) below).
-
----
-
-## CLI
-
-The `devtb` CLI is a bash wrapper that routes commands to the Python (v4) or
-PHP (v3) engine depending on the command.
-
-```text
-COMMANDS (v4 Python — JSON-native, lossless):
-  transform <source> <target> <file>      Transform a file (100% metadata preserved)
-  transform-site <source> <target> <dir>  Transform every file in a directory
-  analyze <framework> <file>              Inspect parsed content without converting
-
-COMMANDS (v3 PHP — HTML intermediate):
-  translate <source> <target> <file>      Translate between frameworks
-  translate-all <source> <file>           Translate to every supported framework
-  list-frameworks                         List supported frameworks
-  validate <framework> <file>             Validate file format
-
-OPTIONS:
-  -h, --help                              Show this help message
-  -v, --version                           Show version information
-  -n, --dry-run                           Preview without writing files
-  -d, --debug                             Show debug information
-  -o, --output <file>                     Specify output file path
-```
-
-Run `./devtb --help` for the current up-to-date command list.
-
-### Common workflows
-
-```bash
-# Migrate Elementor → Bricks
-./devtb transform elementor bricks page.json -o page-bricks.json
-
-# Modernize legacy DIVI 4 → DIVI 5 block markup
-./devtb translate divi divi-5 page.html -o page-divi5.html
-
-# Detect format, then route to the right path
-./devtb analyze elementor mystery.json  # tells you elType, version, etc.
-
-# Generate every framework's version from one input
-./devtb translate-all bootstrap landing.html
-```
-
----
-
-## Python API
-
-Direct module imports for programmatic use:
-
-```python
-from translation_bridge.converters.bootstrap import BootstrapConverter
-from translation_bridge.converters.elementor   import ElementorConverter
-from translation_bridge.converters.elementor4  import Elementor4Converter
-from translation_bridge.converters.divi        import DiviConverter
-from translation_bridge.converters.divi5       import Divi5Converter
-from translation_bridge.converters.gutenberg   import GutenbergConverter
-from translation_bridge.converters.bricks      import BricksConverter
-from translation_bridge.converters.oxygen      import OxygenConverter
-from translation_bridge.converters.oxygen6    import Oxygen6Converter
-from translation_bridge.converters.wpbakery    import WPBakeryConverter
-from translation_bridge.converters.beaver      import BeaverConverter
-from translation_bridge.converters.avada       import AvadaConverter
-from translation_bridge.converters.kadence     import KadenceConverter
-from translation_bridge.converters.thrive      import ThriveConverter
-
-# Each converter has the same surface:
-converter = BricksConverter()
-output_json = converter.convert(parsed_data)       # serialized
-output_list = converter.convert_to_dict(parsed_data)  # python objects
-framework_name = converter.get_framework()          # "bricks"
-```
-
-Site-level conversions:
-
-```python
-from translation_bridge.parsers.elementor_site import ElementorSiteParser
-from translation_bridge.converters.styles      import StylesConverter
-from translation_bridge.converters.templates   import TemplateConverter
-
-site = ElementorSiteParser().parse_kit("./export-kit/")
-tokens = StylesConverter().extract_tokens(site.settings)
-template_parts = TemplateConverter().build(site.templates)
-```
-
----
-
-## REST API
-
-After activating the WordPress theme/plugin, endpoints mount at
-`/wp-json/devtb/v2/*`.
-
-### Endpoints
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/status` | Health check + version info |
-| GET | `/frameworks` | List supported frameworks |
-| POST | `/translate` | Translate a single payload |
-| POST | `/batch-translate` | Queue a batch translation job |
-| GET | `/job/{job_id}` | Poll a batch job's status |
-| POST | `/validate` | Validate a payload for a framework |
-| POST | `/save` | Persist a translation result |
-| GET, PUT, DELETE | `/translations/{id}` | CRUD on saved translations |
-| GET | `/translations/history` | List recent translations |
-| GET | `/translations/{id}/versions` | Version history for a translation |
-| GET, POST | `/api-keys` | List or create API keys |
-| DELETE | `/api-keys/{key}` | Revoke an API key |
-
-### Authentication
-
-API keys are encrypted at rest (AES-256-CBC) and required for every endpoint
-except `/status` and `/frameworks`. Pass via header:
-
-```http
-Authorization: Bearer <api-key>
-```
-
-Generate keys via the WordPress admin UI or `POST /wp-json/devtb/v2/api-keys`.
-
-### Quick examples
-
-```bash
-# Health check
-curl https://example.com/wp-json/devtb/v2/status
-
-# List frameworks
-curl https://example.com/wp-json/devtb/v2/frameworks
-
-# Translate
-curl -X POST https://example.com/wp-json/devtb/v2/translate \
-  -H "Authorization: Bearer $DEVTB_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"source":"elementor","target":"bootstrap","content":"..."}'
-```
-
-Full endpoint reference: [`docs/api-v2.md`](docs/api-v2.md).
-
----
-
-## Architecture
-
-Every framework plugs into the same hub-and-spoke pipeline: parse into a
-universal component tree, map, then convert out. Adding one framework adds
-13 × 2 new translation pairs — no per-pair code.
-
-```mermaid
-flowchart LR
-    A["Source content<br/>(Elementor JSON,<br/>DIVI shortcodes, ...)"] --> B["Parser<br/>(one per framework)"]
-    B --> C["Universal<br/>Component[]<br/>(typed tree)"]
-    C --> D["Mapping engine<br/>(styles, tokens,<br/>element maps)"]
-    D --> E["Converter<br/>(one per framework)"]
-    E --> F["Target content<br/>(any of 14<br/>frameworks)"]
-```
-
-Each framework provides a paired **parser** (input → universal components)
-and **converter** (universal components → output). Parsers and converters
-register independently with `DEVTB_Parser_Factory` and
-`DEVTB_Converter_Factory`, so a framework can be a source, a target, or both.
-
-### Project layout
-
-```
-translation-bridge/
-├── core/
-│   ├── interface-parser.php
-│   ├── interface-converter.php
-│   ├── class-parser-factory.php
-│   ├── class-converter-factory.php
-│   ├── class-mapping-engine.php
-│   └── class-translator.php
-├── parsers/        # one per framework (PHP)
-├── converters/     # one per framework (PHP)
-├── models/         # DEVTB_Component
-└── utils/          # CSS, JSON, HTML, shortcode helpers
-
-src/translation_bridge/
-├── parsers/        # Python parsers
-├── converters/     # Python converters
-├── transforms/     # Zone Theory engine (v4)
-└── cli.py          # Python CLI entry point
-
-includes/
-├── class-devtb-api-v2.php        # REST API
-├── class-devtb-auth.php          # API key + permission checks
-├── class-devtb-encryption.php    # AES-256-CBC for keys at rest
-├── class-devtb-rate-limiter.php
-├── class-devtb-job-queue.php     # async batch translations
-└── class-devtb-webhook.php
-```
-
-Detailed architecture notes live in [`docs/TRANSLATION_BRIDGE.md`](docs/TRANSLATION_BRIDGE.md).
-
----
-
-## Testing
-
-PHP (via PHPUnit):
-
-```bash
-make test-php                  # full suite
-vendor/bin/phpunit --filter FrameworkConversionsTest  # 182-pair matrix
-```
-
-Python (via pytest):
-
-```bash
-python3 -m pytest tests/python -q
-```
-
-Full local release gate:
-
-```bash
-make verify
-```
-
-As of v5.0.0:
-- PHP: **344 tests / 5,691 assertions / 0 errors / 0 failures / 0 deprecations**,
-  including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
-  9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
-  8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`),
-  and 9 classic-Oxygen hardening tests (`tests/Unit/OxygenClassicHardeningTest.php`).
-- Python: 306 tests across converters, parsers (all 14 frameworks parse natively), transforms, responsive helpers, the bidirectional interchange, the translate-path deprecation surfaces, the 39-cell cross-source fidelity matrix, dual-engine conformance (including the exact-mirror gate), and project alignment checks.
-- End-to-end fidelity smoke gates (`make e2e-smoke`), each running through
-  both engines as CI gates on every push and PR: Elementor → Gutenberg
-  (`tests/smoke_gutenberg_e2e.py`), Elementor → Bricks
-  (`tests/smoke_bricks_e2e.py`, flat-format + content survival), and
-  DIVI → Gutenberg (`tests/smoke_divi_e2e.py`, content survival + block
-  integrity).
-
-The 41 pre-existing errors and 3 failures that v4.1 / v4.2 / v4.3.0 inherited
-(class-autoload mismatches and missing WP-function mocks) were all resolved in
-v4.3.1 via the shared autoloader + WP function stubs. The full suite is now
-green, including `composer audit`.
-
-### Continuous integration
-
-Every push and PR to `main` / `develop` runs four jobs
-([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
-
-| Job | What it runs |
-|---|---|
-| **PHP tests** | PHPUnit across PHP **8.1 – 8.5**, plus composer validate, syntax check, `composer audit`, PHPCS (WordPress standards), and Codecov coverage upload |
-| **Python tests + Gutenberg e2e smoke** | Full pytest suite, then three e2e fidelity gates through both engines: Elementor → Gutenberg, Elementor → Bricks, and DIVI → Gutenberg kitchen-sink fixtures |
-| **Admin build** | ESLint, `tsc --noEmit`, and a production Vite build on Node **20.19.0 / 22.13.0 / 24** |
-| **Release package smoke** | Builds and inspects the WordPress theme zip via `scripts/build-release-package.sh`, so packaging breakage is caught before tagging |
-
-Dependency freshness is automated with
-[Dependabot](.github/dependabot.yml): weekly update PRs for Composer, npm
-(`admin/`), and pip, and monthly for GitHub Actions and Docker Compose images.
-`composer audit` gates every CI run, and `make verify` additionally runs
-`npm audit --omit=dev` on the admin UI.
-
----
-
-## Docker (development)
-
-A local stack is available for plugin development:
-
-```bash
-docker-compose up -d
-
-# WordPress:    http://localhost:8080
-# phpMyAdmin:   http://localhost:8081
-```
-
-The stack pins WordPress 7.0 (PHP 8.4 + Apache), MySQL 9.7, and phpMyAdmin
-5.2 — image versions are kept fresh by Dependabot's monthly
-`docker-compose` updates. Ports and database credentials are overridable via
-environment variables (`WORDPRESS_PORT`, `MYSQL_PORT`, `MYSQL_USER`, ...);
-see [`docker-compose.yml`](docker-compose.yml) for the full list and
-[`DOCKER_SETUP.md`](DOCKER_SETUP.md) for a walkthrough.
-
-The plugin is mounted from the working tree, so edits are reflected
-immediately.
-
----
-
-## Documentation
-
-Topical guides under [`docs/`](docs):
-
-| File | Topic |
-|---|---|
-| [`getting-started.md`](docs/getting-started.md) | First-run setup walkthrough |
-| [`api-v2.md`](docs/api-v2.md) | Full REST API reference |
-| [`api-development.md`](docs/api-development.md) | Building against the API |
-| [`TRANSLATION_BRIDGE.md`](docs/TRANSLATION_BRIDGE.md) | Architecture deep-dive |
-| [`FRAMEWORK_MAPPINGS.md`](docs/FRAMEWORK_MAPPINGS.md) | Per-framework element maps |
-| [`CONVERSION_EXAMPLES.md`](docs/CONVERSION_EXAMPLES.md) | Real translation examples |
-| [`bootstrap-components.md`](docs/bootstrap-components.md) | Bootstrap output reference |
-| [`claude-integration.md`](docs/claude-integration.md) | AI-assisted editing workflows |
-| [`PLUGIN_CONVERSION.md`](docs/PLUGIN_CONVERSION.md) | Plugin migration cookbook |
-
-A consolidated version history lives in [`CHANGELOG.md`](CHANGELOG.md);
-detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
-[GitHub Releases](https://github.com/coryhubbell/Development-Translation-Bridge/releases).
+</details>
 
 ---
 
@@ -779,7 +820,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v5.0.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0) **(latest)** | 2026-07-04 | RFC 5.0 complete — one schema, two conforming runtimes; v3 mapping engine removed (breaking); migration guide in release notes |
+| [v5.1.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.1.0) **(latest)** | 2026-07-04 | `transform-all` fan-out with per-target fidelity; translate/translate-all removed on schedule |
+| [v5.0.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v5.0.0) | 2026-07-04 | RFC 5.0 complete — one schema, two conforming runtimes; v3 mapping engine removed (breaking); migration guide in release notes |
 | [v4.15.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.15.0) | 2026-07-04 | Pre-5.0 converter hardening: Python cross-source parity, 39-cell fidelity matrix in CI, bidirectional interchange |
 | [v4.14.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.14.0) | 2026-07-04 | RFC 5.0 Phase 3 complete: universal route everywhere, fidelity metrics per conversion, `translate` deprecated, silent-exit CLI fix |
 | [v4.13.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.13.0) | 2026-07-03 | RFC 5.0 Phase 2 complete: shared component interchange in Python, exact-mirror conformance gate, round-trip vocabulary completed in both engines |
@@ -806,7 +848,7 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v5.0.0. Release verification is automated end to end — Dependabot
+as of v5.1.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
