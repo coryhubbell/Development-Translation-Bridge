@@ -9,7 +9,23 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **RFC 5.0 Phase 1 — engine-consolidation groundwork** (opens the 5.x
+  chapter):
+  - `docs/RFC-5.0-engine-consolidation.md` — the phased consolidation plan
+    (spec + conformance → PHP interchange adoption → translate-path
+    deprecation → 5.0).
+  - `schema/universal-element.schema.json` — the canonical universal
+    element document, normatively specified (element shape, widgetType
+    vocabulary, Elementor-style settings keys, the v4.5.0 responsive
+    model).
+  - `DEVTB_Component::to_universal()` — the PHP engine emits the canonical
+    shape (structural mapping, settings vocabulary translation, responsive
+    metadata carry-through).
+  - Dual-engine conformance suite (`tests/python/test_conformance.py`,
+    9 tests): the Elementor kitchen-sink, DIVI kitchen-sink, and real
+    Breakdance export fixtures are parsed by BOTH engines; outputs must be
+    schema-valid and content-equivalent. Runs in CI with the Python suite.
 
 ## [4.11.0] — 2026-07-03
 
