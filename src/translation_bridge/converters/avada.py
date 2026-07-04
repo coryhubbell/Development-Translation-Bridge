@@ -12,6 +12,41 @@ from html import escape
 # Upstream framework version this converter is calibrated against.
 TARGET_CMS_VERSION: str = "7.15.3"
 
+# Setting keys that carry user-visible content (mirrors the fidelity
+# convention in cli.py). Used by the last-resort fallback so unmapped
+# widgets never drop content.
+_CONTENT_KEY_PARTS = (
+    "text", "title", "content", "description", "heading", "editor",
+    "caption", "label", "alt", "html", "name", "job", "address", "url", "date",
+)
+
+
+def _is_content_key(key: str) -> bool:
+    key_lower = key.lower()
+    return any(part in key_lower for part in _CONTENT_KEY_PARTS)
+
+
+def _collect_content_values(settings: Dict[str, Any]) -> List[str]:
+    """Collect trimmed content-bearing strings from a settings dict."""
+    values: List[str] = []
+
+    def from_mapping(mapping: Dict[str, Any]) -> None:
+        for key, value in mapping.items():
+            if isinstance(value, str) and value.strip() and _is_content_key(key):
+                values.append(value.strip())
+
+    for key, value in settings.items():
+        if isinstance(value, str) and value.strip() and _is_content_key(key):
+            values.append(value.strip())
+        elif isinstance(value, dict):
+            from_mapping(value)
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    from_mapping(item)
+
+    return list(dict.fromkeys(values))
+
 
 class AvadaConverter:
     """
@@ -30,6 +65,7 @@ class AvadaConverter:
     ELEMENT_TYPE_MAP = {
         "heading": "fusion_title",
         "text": "fusion_text",
+        "text-editor": "fusion_text",
         "paragraph": "fusion_text",
         "image": "fusion_imageframe",
         "button": "fusion_button",
@@ -37,8 +73,10 @@ class AvadaConverter:
         "spacer": "fusion_separator",
         "icon": "fusion_fontawesome",
         "icon-box": "fusion_content_boxes",
+        "icon-list": "fusion_checklist",
         "video": "fusion_youtube",
         "gallery": "fusion_gallery",
+        "image-gallery": "fusion_gallery",
         "carousel": "fusion_images",
         "tabs": "fusion_tabs",
         "accordion": "fusion_accordion",
@@ -49,7 +87,9 @@ class AvadaConverter:
         "nav": "fusion_menu",
         "menu": "fusion_menu",
         "html": "fusion_code",
-        "cta": "fusion_content_boxes",
+        "cta": "fusion_tagline_box",
+        "call-to-action": "fusion_tagline_box",
+        "price-table": "fusion_pricing_table",
         "alert": "fusion_alert",
     }
 
@@ -72,7 +112,7 @@ class AvadaConverter:
         for element in elements:
             el_type = element.get("elType", "")
 
-            if el_type == "section" or el_type == "container":
+            if el_type in ("section", "container", "column"):
                 containers.append(self._convert_section(element))
             elif el_type == "widget":
                 containers.append(self._wrap_in_container(self._convert_widget(element)))
@@ -82,51 +122,106 @@ class AvadaConverter:
         return "\n\n".join(containers)
 
     def _convert_section(self, section: Dict[str, Any]) -> str:
-        """Convert section to fusion_builder_container."""
+        """Convert a structural element to fusion_builder_container."""
         settings = section.get("settings", {})
-        children = section.get("elements", [])
 
         container_attrs = self._build_container_attrs(settings)
         attrs_str = self._attrs_to_string(container_attrs)
 
-        rows = []
-        row_columns = []
-
-        for child in children:
-            if child.get("elType") == "column":
-                row_columns.append(self._convert_column(child))
-
-        if row_columns:
-            rows.append(f'[fusion_builder_row]\n{chr(10).join(row_columns)}\n[/fusion_builder_row]')
-        else:
-            rows.append('[fusion_builder_row][fusion_builder_column type="1_1"][/fusion_builder_column][/fusion_builder_row]')
+        rows = self._convert_rows(section)
+        if not rows:
+            rows = ['[fusion_builder_row][fusion_builder_column type="1_1"][/fusion_builder_column][/fusion_builder_row]']
 
         inner = "\n".join(rows)
         return f'[fusion_builder_container{attrs_str}]\n{inner}\n[/fusion_builder_container]'
 
-    def _convert_column(self, column: Dict[str, Any]) -> str:
-        """Convert column to fusion_builder_column."""
+    def _convert_rows(self, element: Dict[str, Any]) -> List[str]:
+        """Flatten a structural element into fusion_builder_row strings.
+
+        Nested containers (e.g. DIVI rows inside a section) each become
+        their own row inside the parent container.
+        """
+        rows = []
+        columns = []
+        loose = []
+
+        for child in element.get("elements", []):
+            child_type = child.get("elType", "")
+            if child_type == "column":
+                columns.append(self._convert_column(child))
+            elif child_type in ("section", "container"):
+                rows.extend(self._convert_rows(child))
+            elif child_type == "widget":
+                loose.append(self._convert_widget(child))
+            else:
+                loose.append(self._convert_component(child))
+
+        if loose:
+            # Widgets without a column wrapper get a default full-width column.
+            columns.append(f'[fusion_builder_column type="1_1"]\n{chr(10).join(loose)}\n[/fusion_builder_column]')
+
+        if columns:
+            rows.insert(0, f'[fusion_builder_row]\n{chr(10).join(columns)}\n[/fusion_builder_row]')
+
+        return rows
+
+    def _convert_column(self, column: Dict[str, Any], inner: bool = False) -> str:
+        """Convert column to fusion_builder_column (or the inner variant)."""
         settings = column.get("settings", {})
         children = column.get("elements", [])
 
         col_size = settings.get("_column_size", 100)
         col_type = self._size_to_fusion_type(col_size)
+        tag = "fusion_builder_column_inner" if inner else "fusion_builder_column"
 
         widgets = []
         for child in children:
-            if child.get("elType") == "widget":
+            child_type = child.get("elType", "")
+            if child_type == "widget":
                 widgets.append(self._convert_widget(child))
+            elif child_type in ("section", "container", "column"):
+                widgets.append(self._convert_inner_row(child))
             else:
                 widgets.append(self._convert_component(child))
 
-        inner = "\n".join(widgets)
-        return f'[fusion_builder_column type="{col_type}"]\n{inner}\n[/fusion_builder_column]'
+        content = "\n".join(widgets)
+        return f'[{tag} type="{col_type}"]\n{content}\n[/{tag}]'
+
+    def _convert_inner_row(self, element: Dict[str, Any]) -> str:
+        """Convert a structural element nested inside a column to an inner row."""
+        inner_cols = []
+        loose = []
+
+        children = [element] if element.get("elType") == "column" else element.get("elements", [])
+        for child in children:
+            child_type = child.get("elType", "")
+            if child_type == "column":
+                inner_cols.append(self._convert_column(child, inner=True))
+            elif child_type in ("section", "container"):
+                loose.append(self._convert_inner_row(child))
+            elif child_type == "widget":
+                loose.append(self._convert_widget(child))
+            else:
+                loose.append(self._convert_component(child))
+
+        if loose:
+            inner_cols.append(f'[fusion_builder_column_inner type="1_1"]\n{chr(10).join(loose)}\n[/fusion_builder_column_inner]')
+
+        inner = "\n".join(inner_cols) if inner_cols else '[fusion_builder_column_inner type="1_1"][/fusion_builder_column_inner]'
+        return f'[fusion_builder_row_inner]\n{inner}\n[/fusion_builder_row_inner]'
 
     def _convert_widget(self, widget: Dict[str, Any]) -> str:
         """Convert widget to Fusion Builder element."""
         widget_type = widget.get("widgetType", "text")
         settings = widget.get("settings", {})
-        return self._build_element(widget_type, settings)
+
+        parts = [self._build_element(widget_type, settings)]
+        # Composite widgets (e.g. social-icons) can carry nested child widgets.
+        for child in widget.get("elements", []) or []:
+            if isinstance(child, dict) and child.get("elType") == "widget":
+                parts.append(self._convert_widget(child))
+
+        return "\n".join(p for p in parts if p)
 
     def _convert_component(self, component: Dict[str, Any]) -> str:
         """Convert generic component to Fusion Builder element."""
@@ -137,7 +232,7 @@ class AvadaConverter:
 
     def _build_element(self, comp_type: str, settings: Dict[str, Any], content: str = "") -> str:
         """Build Fusion Builder element shortcode."""
-        element_name = self.ELEMENT_TYPE_MAP.get(comp_type, "fusion_text")
+        element_name = self.ELEMENT_TYPE_MAP.get(comp_type, "")
 
         if element_name == "fusion_title":
             return self._build_title(settings)
@@ -149,6 +244,8 @@ class AvadaConverter:
             return self._build_button(settings)
         elif element_name == "fusion_separator":
             return '[fusion_separator style_type="default" /]'
+        elif element_name == "fusion_fontawesome":
+            return self._build_icon(settings)
         elif element_name == "fusion_youtube":
             return self._build_video(settings)
         elif element_name == "fusion_gallery":
@@ -163,21 +260,28 @@ class AvadaConverter:
             return self._build_counter(settings)
         elif element_name == "fusion_progress":
             return self._build_progress(settings)
+        elif element_name == "fusion_content_boxes":
+            return self._build_icon_box(settings)
+        elif element_name == "fusion_checklist":
+            return self._build_icon_list(settings)
+        elif element_name == "fusion_pricing_table":
+            return self._build_price_table(settings)
+        elif element_name == "fusion_tagline_box":
+            return self._build_cta(settings)
         elif element_name == "fusion_code":
             html = content or settings.get("html", "")
             return f'[fusion_code]{html}[/fusion_code]'
         elif element_name == "fusion_alert":
             return self._build_alert(settings)
         else:
-            text = content or settings.get("editor", settings.get("title", ""))
-            return f'[fusion_text]{text}[/fusion_text]'
+            return self._build_fallback(settings, content)
 
     def _build_title(self, settings: Dict[str, Any]) -> str:
         """Build fusion_title shortcode."""
         title = settings.get("title", "Heading")
-        size = settings.get("header_size", "2")
+        size = str(settings.get("header_size", "2"))
         if size.startswith("h"):
-            size = size[1]
+            size = size[1:]
 
         attrs = {"size": size, "content_align": settings.get("align", "left")}
         return f'[fusion_title{self._attrs_to_string(attrs)}]{escape(title)}[/fusion_title]'
@@ -191,8 +295,9 @@ class AvadaConverter:
         """Build fusion_imageframe shortcode."""
         image = settings.get("image", {})
         url = image.get("url", "") if isinstance(image, dict) else ""
+        alt = image.get("alt", "") if isinstance(image, dict) else ""
 
-        attrs = {"image": url, "style_type": "none"}
+        attrs = {"image": url, "alt": alt, "style_type": "none"}
         return f'[fusion_imageframe{self._attrs_to_string(attrs)} /]'
 
     def _build_button(self, settings: Dict[str, Any]) -> str:
@@ -204,6 +309,12 @@ class AvadaConverter:
         attrs = {"link": url, "target": "_self"}
         return f'[fusion_button{self._attrs_to_string(attrs)}]{escape(text)}[/fusion_button]'
 
+    def _build_icon(self, settings: Dict[str, Any]) -> str:
+        """Build fusion_fontawesome shortcode."""
+        icon = settings.get("selected_icon", {})
+        value = icon.get("value", "") if isinstance(icon, dict) else str(icon or "")
+        return f'[fusion_fontawesome icon="{escape(value)}" /]'
+
     def _build_video(self, settings: Dict[str, Any]) -> str:
         """Build fusion_youtube shortcode."""
         url = settings.get("youtube_url", "")
@@ -213,14 +324,29 @@ class AvadaConverter:
         elif "youtu.be" in url:
             video_id = url.split("/")[-1]
 
-        return f'[fusion_youtube id="{video_id}" /]'
+        return f'[fusion_youtube id="{video_id or escape(url)}" /]'
 
     def _build_gallery(self, settings: Dict[str, Any]) -> str:
         """Build fusion_gallery shortcode."""
-        gallery = settings.get("gallery", [])
-        ids = [str(img.get("id", "")) for img in gallery if isinstance(img, dict) and img.get("id")]
+        gallery = settings.get("wp_gallery") or settings.get("gallery") or []
 
-        attrs = {"image_ids": ",".join(ids), "layout": "grid"}
+        ids = []
+        images = []
+        for img in gallery:
+            if not isinstance(img, dict):
+                continue
+            if img.get("id"):
+                ids.append(str(img["id"]))
+            if img.get("url"):
+                img_attrs = {"image": img.get("url", ""), "image_id": img.get("id", ""),
+                             "alt": img.get("alt", "")}
+                images.append(f'[fusion_gallery_image{self._attrs_to_string(img_attrs)} /]')
+
+        attrs = {"layout": "grid"}
+        if images:
+            return f'[fusion_gallery{self._attrs_to_string(attrs)}]\n{chr(10).join(images)}\n[/fusion_gallery]'
+
+        attrs["image_ids"] = ",".join(ids)
         return f'[fusion_gallery{self._attrs_to_string(attrs)} /]'
 
     def _build_tabs(self, settings: Dict[str, Any]) -> str:
@@ -269,6 +395,67 @@ class AvadaConverter:
 
         return f'[fusion_progress]\n[fusion_progress_bar name="{escape(title)}" percentage="{value}" /]\n[/fusion_progress]'
 
+    def _build_icon_box(self, settings: Dict[str, Any]) -> str:
+        """Build fusion_content_boxes shortcode."""
+        title = settings.get("title_text", settings.get("title", ""))
+        description = settings.get("description_text", settings.get("description", ""))
+        icon = settings.get("selected_icon", {})
+        icon_value = icon.get("value", "") if isinstance(icon, dict) else ""
+        image = settings.get("image", {})
+        img_url = image.get("url", "") if isinstance(image, dict) else ""
+        img_alt = image.get("alt", "") if isinstance(image, dict) else ""
+        link = settings.get("link", {})
+        url = link.get("url", "") if isinstance(link, dict) else ""
+        btn_text = settings.get("button_text", "")
+
+        attrs = {"title": title, "icon": icon_value, "image": img_url,
+                 "image_alt": img_alt, "link": url, "linktext": btn_text}
+        return (f'[fusion_content_boxes layout="icon-with-title" columns="1"]\n'
+                f'[fusion_content_box{self._attrs_to_string(attrs)}]\n{description}\n[/fusion_content_box]\n'
+                f'[/fusion_content_boxes]')
+
+    def _build_icon_list(self, settings: Dict[str, Any]) -> str:
+        """Build fusion_checklist shortcode."""
+        items = settings.get("icon_list", [])
+        lis = [f'[fusion_li_item]{item.get("text", "")}[/fusion_li_item]'
+               for item in items if isinstance(item, dict)]
+        return f'[fusion_checklist]\n{chr(10).join(lis)}\n[/fusion_checklist]'
+
+    def _build_price_table(self, settings: Dict[str, Any]) -> str:
+        """Build fusion_pricing_table shortcode."""
+        heading = settings.get("heading", "")
+        currency = settings.get("currency_symbol", "")
+        price = settings.get("price", "")
+        period = settings.get("period", "")
+        features = settings.get("features", [])
+        btn_text = settings.get("button_text", "")
+        btn_url = settings.get("button_url", "")
+
+        parts = []
+        if price:
+            parts.append(f'[fusion_pricing_price currency="{escape(str(currency))}" price="{escape(str(price))}" time="{escape(str(period))}" /]')
+        for item in features:
+            if isinstance(item, dict):
+                parts.append(f'[fusion_pricing_row]{item.get("item_text", "")}[/fusion_pricing_row]')
+        if btn_text or btn_url:
+            parts.append(f'[fusion_pricing_footer][fusion_button link="{escape(btn_url)}"]{escape(btn_text)}[/fusion_button][/fusion_pricing_footer]')
+
+        inner = "\n".join(parts)
+        return (f'[fusion_pricing_table type="1"]\n'
+                f'[fusion_pricing_column title="{escape(str(heading))}"]\n{inner}\n[/fusion_pricing_column]\n'
+                f'[/fusion_pricing_table]')
+
+    def _build_cta(self, settings: Dict[str, Any]) -> str:
+        """Build fusion_tagline_box shortcode."""
+        title = settings.get("title", "")
+        description = settings.get("description", "")
+        btn_text = settings.get("button_text") or settings.get("button", "")
+        link = settings.get("link", {})
+        url = link.get("url", "") if isinstance(link, dict) else ""
+
+        attrs = {"title": title, "button": btn_text, "link": url}
+        return f'[fusion_tagline_box{self._attrs_to_string(attrs)}]{description}[/fusion_tagline_box]'
+
     def _build_alert(self, settings: Dict[str, Any]) -> str:
         """Build fusion_alert shortcode."""
         title = settings.get("alert_title", "")
@@ -279,6 +466,14 @@ class AvadaConverter:
         fusion_type = type_map.get(alert_type, "general")
 
         return f'[fusion_alert type="{fusion_type}"]{title} {description}[/fusion_alert]'
+
+    def _build_fallback(self, settings: Dict[str, Any], content: str = "") -> str:
+        """Last-resort mapping: keep every content-bearing setting as text."""
+        parts = []
+        if content:
+            parts.append(content)
+        parts.extend(v for v in _collect_content_values(settings) if v not in parts)
+        return f'[fusion_text]{chr(10).join(parts)}[/fusion_text]'
 
     def _build_container_attrs(self, settings: Dict[str, Any]) -> Dict[str, str]:
         """Build container attributes from settings."""

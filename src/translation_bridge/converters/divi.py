@@ -48,6 +48,7 @@ class DiviConverter:
     MODULE_TYPE_MAP = {
         "heading": "et_pb_text",
         "text": "et_pb_text",
+        "text-editor": "et_pb_text",
         "paragraph": "et_pb_text",
         "image": "et_pb_image",
         "button": "et_pb_button",
@@ -59,18 +60,29 @@ class DiviConverter:
         "counter": "et_pb_number_counter",
         "progress": "et_pb_counters",
         "testimonial": "et_pb_testimonial",
+        "blockquote": "et_pb_testimonial",
+        "quote": "et_pb_testimonial",
         "tabs": "et_pb_tabs",
         "accordion": "et_pb_accordion",
         "alert": "et_pb_text",
         "video": "et_pb_video",
+        "audio": "et_pb_audio",
         "gallery": "et_pb_gallery",
+        "image-gallery": "et_pb_gallery",
         "carousel": "et_pb_gallery",
+        "icon-list": "et_pb_text",
+        "price-table": "et_pb_pricing_tables",
         "form": "et_pb_contact_form",
         "nav": "et_pb_menu",
         "menu": "et_pb_menu",
         "cta": "et_pb_cta",
+        "call-to-action": "et_pb_cta",
         "html": "et_pb_code",
         "slider": "et_pb_slider",
+        "slides": "et_pb_slider",
+        "countdown": "et_pb_countdown_timer",
+        "google_maps": "et_pb_map",
+        "social-icons": "et_pb_social_media_follow",
     }
 
     def __init__(self):
@@ -137,21 +149,55 @@ class DiviConverter:
         attrs = self._build_section_attrs(settings)
         attrs_str = self._attrs_to_string(attrs)
 
-        # Convert children (rows/columns)
+        # Convert children. Sections can hold columns directly (Elementor),
+        # nested containers acting as rows (DIVI/Oxygen sources), or bare
+        # widgets — each shape gets a valid row/column wrapper.
         rows_content = []
+        loose_modules: List[str] = []
         for child in children:
             el_type = child.get("elType", "")
             if el_type == "column":
-                # Single column, wrap in row
                 col = self._convert_column(child)
                 rows_content.append(f'[et_pb_row]{col}[/et_pb_row]')
+            elif el_type in ("section", "container"):
+                grand_children = child.get("elements", [])
+                if any(g.get("elType") == "column" for g in grand_children if isinstance(g, dict)):
+                    rows_content.append(self._convert_row_from_columns(grand_children))
+                else:
+                    inner_modules = "\n".join(
+                        self._convert_child_to_module(g)
+                        for g in grand_children
+                        if isinstance(g, dict)
+                    )
+                    rows_content.append(
+                        f'[et_pb_row]\n[et_pb_column type="4_4"]\n{inner_modules}\n[/et_pb_column]\n[/et_pb_row]'
+                    )
+            elif el_type == "widget":
+                loose_modules.append(self._convert_widget(child))
             else:
-                # Assume it's a row structure
-                rows_content.append(self._convert_row_from_columns(children))
-                break
+                loose_modules.append(self._convert_component(child))
+
+        if loose_modules:
+            inner_modules = "\n".join(loose_modules)
+            rows_content.append(
+                f'[et_pb_row]\n[et_pb_column type="4_4"]\n{inner_modules}\n[/et_pb_column]\n[/et_pb_row]'
+            )
 
         inner = "\n".join(rows_content)
         return f'[et_pb_section{attrs_str}]\n{inner}\n[/et_pb_section]'
+
+    def _convert_child_to_module(self, child: Dict[str, Any]) -> str:
+        """Convert any child element into module content (recursing structure)."""
+        el_type = child.get("elType", "")
+        if el_type == "widget":
+            return self._convert_widget(child)
+        if el_type in ("section", "container", "column"):
+            return "\n".join(
+                self._convert_child_to_module(g)
+                for g in child.get("elements", [])
+                if isinstance(g, dict)
+            )
+        return self._convert_component(child)
 
     def _convert_row_from_columns(self, columns: List[Dict[str, Any]]) -> str:
         """Convert columns to a DIVI row."""
@@ -172,15 +218,20 @@ class DiviConverter:
         col_size = settings.get("_column_size", 100)
         col_type = self._size_to_divi_column(col_size)
 
-        # Convert children (widgets)
+        # Convert children. Nested structural elements (columns inside
+        # columns, containers) flatten into this column so their leaf
+        # content always survives.
         modules = []
         for child in children:
-            if child.get("elType") == "widget":
+            el_type = child.get("elType", "")
+            if el_type == "widget":
                 modules.append(self._convert_widget(child))
+            elif el_type in ("section", "container", "column"):
+                modules.append(self._convert_child_to_module(child))
             else:
                 modules.append(self._convert_component(child))
 
-        inner = "\n".join(modules)
+        inner = "\n".join(m for m in modules if m)
         return f'[et_pb_column type="{col_type}"]\n{inner}\n[/et_pb_column]'
 
     def _convert_widget(self, widget: Dict[str, Any]) -> str:
@@ -200,8 +251,12 @@ class DiviConverter:
 
     def _build_module(self, comp_type: str, settings: Dict[str, Any], content: str = "") -> str:
         """Build a DIVI module shortcode."""
-        module_type = self.MODULE_TYPE_MAP.get(comp_type, "et_pb_text")
+        module_type = self.MODULE_TYPE_MAP.get(comp_type, "")
 
+        if comp_type == "icon-list":
+            return self._build_list_module(settings)
+        if comp_type == "alert":
+            return self._build_alert_module(settings)
         if module_type == "et_pb_text":
             return self._build_text_module(settings, content)
         elif module_type == "et_pb_image":
@@ -228,9 +283,20 @@ class DiviConverter:
             return self._build_code_module(settings, content)
         elif module_type == "et_pb_divider":
             return self._build_divider_module(settings)
+        elif module_type == "et_pb_audio":
+            return self._build_audio_module(settings)
+        elif module_type == "et_pb_pricing_tables":
+            return self._build_pricing_module(settings)
+        elif module_type == "et_pb_countdown_timer":
+            return self._build_countdown_module(settings)
+        elif module_type == "et_pb_map":
+            return self._build_map_module(settings)
+        elif module_type == "et_pb_social_media_follow":
+            return self._build_social_module(settings)
         else:
-            # Default to text module
-            return self._build_text_module(settings, content)
+            # No native module — preserve every content-bearing setting in a
+            # text module rather than dropping it.
+            return self._build_fallback_module(settings, content)
 
     def _build_text_module(self, settings: Dict[str, Any], content: str = "") -> str:
         """Build et_pb_text module."""
@@ -298,6 +364,22 @@ class DiviConverter:
             "font_icon": divi_icon,
         }
 
+        image = settings.get("image", {})
+        image_url = image.get("url", "") if isinstance(image, dict) else ""
+        if image_url:
+            attrs["image"] = image_url
+            attrs["use_icon"] = "off"
+            if image.get("alt"):
+                attrs["alt"] = image["alt"]
+
+        link = settings.get("link", {})
+        link_url = link.get("url", "") if isinstance(link, dict) else ""
+        if link_url:
+            attrs["url"] = link_url
+        link_text = settings.get("link_text", settings.get("button_text", ""))
+        if link_text and link_url:
+            content = f'{content}\n<a href="{escape(link_url)}">{escape(link_text)}</a>'
+
         attrs_str = self._attrs_to_string(attrs)
         return f'[et_pb_blurb{attrs_str}]\n{content}\n[/et_pb_blurb]'
 
@@ -316,8 +398,8 @@ class DiviConverter:
 
     def _build_testimonial_module(self, settings: Dict[str, Any]) -> str:
         """Build et_pb_testimonial module."""
-        content = settings.get("testimonial_content", "")
-        author = settings.get("testimonial_name", "")
+        content = settings.get("testimonial_content") or settings.get("blockquote_content") or settings.get("content", "")
+        author = settings.get("testimonial_name") or settings.get("author") or settings.get("cite", "")
         job = settings.get("testimonial_job", "")
         image = settings.get("testimonial_image", {})
         portrait_url = image.get("url", "") if isinstance(image, dict) else ""
@@ -384,6 +466,17 @@ class DiviConverter:
         columns = settings.get("columns", 3)
         attrs["posts_number"] = str(columns)
 
+        # Media-library ids only resolve on the source site; when the images
+        # carry URLs, preserve them as markup so the gallery survives the
+        # migration (ids alone render nothing on the target).
+        figures = "\n".join(
+            f'<img src="{escape(str(img.get("url", "")))}" alt="{escape(str(img.get("alt", "")))}" />'
+            for img in gallery
+            if isinstance(img, dict) and img.get("url")
+        )
+        if figures:
+            return f'[et_pb_code]\n{figures}\n[/et_pb_code]'
+
         attrs_str = self._attrs_to_string(attrs)
         return f'[et_pb_gallery{attrs_str} /]'
 
@@ -391,7 +484,7 @@ class DiviConverter:
         """Build et_pb_cta module."""
         title = settings.get("title", "")
         content = settings.get("description", "")
-        button_text = settings.get("button", "Click Here")
+        button_text = settings.get("button_text", settings.get("button", "Click Here"))
         link = settings.get("link", {})
         url = link.get("url", "#") if isinstance(link, dict) else "#"
 
@@ -408,6 +501,107 @@ class DiviConverter:
         """Build et_pb_code module for raw HTML."""
         html = content or settings.get("html", "")
         return f'[et_pb_code]\n{html}\n[/et_pb_code]'
+
+    def _build_list_module(self, settings: Dict[str, Any]) -> str:
+        """Build an icon-list as a text module (DIVI has no list module)."""
+        items = settings.get("icon_list", settings.get("items", []))
+        lis = "\n".join(
+            f"<li>{escape(str(item.get('text', '')))}</li>"
+            for item in items
+            if isinstance(item, dict) and item.get("text")
+        )
+        return f'[et_pb_text]\n<ul>\n{lis}\n</ul>\n[/et_pb_text]'
+
+    def _build_alert_module(self, settings: Dict[str, Any]) -> str:
+        """Build an alert as a text module (title + description)."""
+        title = settings.get("alert_title", "")
+        body = settings.get("alert_description", "")
+        parts = []
+        if title:
+            parts.append(f"<strong>{escape(str(title))}</strong>")
+        if body:
+            parts.append(f"<p>{escape(str(body))}</p>")
+        return f'[et_pb_text]\n{"".join(parts)}\n[/et_pb_text]'
+
+    def _build_audio_module(self, settings: Dict[str, Any]) -> str:
+        """Build et_pb_audio module."""
+        link = settings.get("link", settings.get("audio_url", ""))
+        url = link.get("url", "") if isinstance(link, dict) else (link or "")
+        attrs_str = self._attrs_to_string({"audio": url, "title": settings.get("title", "")})
+        return f'[et_pb_audio{attrs_str} /]'
+
+    def _build_pricing_module(self, settings: Dict[str, Any]) -> str:
+        """Build et_pb_pricing_tables module."""
+        title = settings.get("heading", settings.get("title", ""))
+        price = settings.get("price", "")
+        currency = settings.get("currency_symbol", "")
+        features = settings.get("features", settings.get("items", []))
+        lis = "\n".join(
+            f"<li>{escape(str(f.get('item_text', f.get('text', ''))))}</li>"
+            for f in features
+            if isinstance(f, dict)
+        )
+        button_text = settings.get("button_text", "")
+        button_url = settings.get("button_url", "")
+        link = settings.get("link", {})
+        if not button_url and isinstance(link, dict):
+            button_url = link.get("url", "")
+        attrs = {"title": title, "sum": f"{currency}{price}"}
+        if button_text:
+            attrs["button_text"] = button_text
+        if button_url:
+            attrs["button_url"] = button_url
+        attrs_str = self._attrs_to_string(attrs)
+        return (
+            f'[et_pb_pricing_tables]\n[et_pb_pricing_table{attrs_str}]\n'
+            f'{lis}\n[/et_pb_pricing_table]\n[/et_pb_pricing_tables]'
+        )
+
+    def _build_countdown_module(self, settings: Dict[str, Any]) -> str:
+        """Build et_pb_countdown_timer module."""
+        attrs = {
+            "title": settings.get("title", ""),
+            "date_time": settings.get("due_date", settings.get("date", "")),
+        }
+        attrs_str = self._attrs_to_string(attrs)
+        return f'[et_pb_countdown_timer{attrs_str} /]'
+
+    def _build_map_module(self, settings: Dict[str, Any]) -> str:
+        """Build et_pb_map module."""
+        address = settings.get("address", "")
+        pin = f'[et_pb_map_pin title="{escape(str(address))}" /]' if address else ""
+        return f'[et_pb_map address="{escape(str(address))}"]\n{pin}\n[/et_pb_map]'
+
+    def _build_social_module(self, settings: Dict[str, Any]) -> str:
+        """Build et_pb_social_media_follow module."""
+        items = settings.get("social_icon_list", settings.get("icons", []))
+        networks = []
+        for item in items if isinstance(items, list) else []:
+            if not isinstance(item, dict):
+                continue
+            link = item.get("link", {})
+            url = link.get("url", "") if isinstance(link, dict) else (link or "")
+            service = item.get("social", item.get("service", "link"))
+            networks.append(
+                f'[et_pb_social_media_follow_network social_network="{escape(str(service))}" '
+                f'url="{escape(str(url))}"]{escape(str(service))}[/et_pb_social_media_follow_network]'
+            )
+        return f'[et_pb_social_media_follow]\n{chr(10).join(networks)}\n[/et_pb_social_media_follow]'
+
+    def _build_fallback_module(self, settings: Dict[str, Any], content: str = "") -> str:
+        """Content-preserving fallback: no setting with visible text is dropped."""
+        parts: List[str] = []
+        title = settings.get("title", settings.get("title_text", settings.get("heading", "")))
+        if title:
+            parts.append(f"<strong>{escape(str(title))}</strong>")
+        for key in ("editor", "text", "description", "description_text", "html"):
+            value = settings.get(key)
+            if isinstance(value, str) and value.strip():
+                parts.append(value if key in ("editor", "html") else f"<p>{escape(value)}</p>")
+        if content and content not in "".join(parts):
+            parts.append(content)
+        body = "\n".join(parts)
+        return f'[et_pb_text]\n{body}\n[/et_pb_text]'
 
     def _build_divider_module(self, settings: Dict[str, Any]) -> str:
         """Build et_pb_divider module."""

@@ -101,6 +101,15 @@ is_external}`, `image{url, alt}`, `testimonial_*`, `tabs[]`, `icon_list[]`,
 - Fidelity metrics (content strings preserved / total, route used) are
   reported per conversion in translator stats and both CLIs.
 
+### Pre-5.0 hardening — Python cross-source parity *(shipped)*
+
+- The cross-source fidelity matrix (`tests/python/test_universal_matrix.py`)
+  holds every Python converter to ≥90% content survival from every source
+  parser — the Python analog of the PHP 182-pair matrix. All 14 converters
+  handle nested structural shapes, the full canonical widget vocabulary,
+  and fall back content-preservingly; `translation_bridge.interchange` is
+  now fully bidirectional (element ⇄ component, both PHP mirrors).
+
 ### Phase 4 — 5.0 release
 
 - Remove the HTML-intermediate pipeline and the `DEVTB_Component`-shaped

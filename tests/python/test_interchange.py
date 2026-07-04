@@ -10,6 +10,8 @@ asserted on real fixtures in test_conformance.py.
 from translation_bridge.interchange import (
     component_to_element,
     components_to_document,
+    document_to_components,
+    element_to_component,
 )
 from translation_bridge.converters.gutenberg import GutenbergConverter
 
@@ -182,6 +184,102 @@ class TestDocumentWrapper:
 
     def test_non_dict_entries_are_skipped(self):
         assert components_to_document(["junk", None])["elements"] == []
+
+
+class TestReverseInterchange:
+    """element→component mirrors DEVTB_Universal::element_to_component —
+    the same semantics UniversalInterchangeTest pins on the PHP side."""
+
+    def universal_document(self):
+        return {
+            "elements": [
+                {
+                    "id": "s1",
+                    "elType": "section",
+                    "settings": {},
+                    "elements": [
+                        {
+                            "id": "w1",
+                            "elType": "widget",
+                            "widgetType": "heading",
+                            "settings": {"title": "Universal Title", "header_size": "h2"},
+                            "elements": [],
+                            "isInner": True,
+                        },
+                        {
+                            "id": "w2",
+                            "elType": "widget",
+                            "widgetType": "button",
+                            "settings": {
+                                "text": "Press me",
+                                "link": {"url": "https://example.com", "is_external": "on"},
+                            },
+                            "elements": [],
+                            "isInner": True,
+                        },
+                        {
+                            "id": "w3",
+                            "elType": "widget",
+                            "widgetType": "testimonial",
+                            "settings": {
+                                "testimonial_content": "It just works.",
+                                "testimonial_name": "Ada Lovelace",
+                            },
+                            "elements": [],
+                            "isInner": True,
+                        },
+                    ],
+                },
+            ],
+            "version": "",
+            "title": "",
+            "meta": {},
+        }
+
+    def test_document_to_components_builds_the_component_tree(self):
+        components = document_to_components(self.universal_document())
+
+        assert len(components) == 1
+        section = components[0]
+        assert section["type"] == "container"
+        assert len(section["children"]) == 3
+
+        heading, button, testimonial = section["children"]
+        assert heading["type"] == "heading"
+        assert heading["content"] == "Universal Title"
+        assert heading["attributes"]["level"] == 2
+
+        assert button["content"] == "Press me"
+        assert button["attributes"]["url"] == "https://example.com"
+        assert button["attributes"]["target"] == "_blank"
+
+        assert testimonial["content"] == "It just works."
+        assert testimonial["attributes"]["author"] == "Ada Lovelace"
+
+    def test_round_trip_is_stable(self):
+        document = self.universal_document()
+        once = components_to_document(document_to_components(document))
+        twice = components_to_document(document_to_components(once))
+        assert once["elements"] == twice["elements"]
+
+    def test_collection_settings_survive_the_round_trip(self):
+        element = {
+            "id": "w1",
+            "elType": "widget",
+            "widgetType": "icon-list",
+            "settings": {"icon_list": [{"text": "First"}, {"text": "Second"}]},
+            "elements": [],
+        }
+        component = element_to_component(element)
+        again = component_to_element(component)
+        assert again["settings"]["icon_list"] == [{"text": "First"}, {"text": "Second"}]
+
+    def test_non_element_dict_returns_none(self):
+        assert element_to_component({"foo": "bar"}) is None
+
+    def test_bare_element_list_is_accepted(self):
+        elements = self.universal_document()["elements"]
+        assert len(document_to_components(elements)) == 1
 
 
 class TestGutenbergComponentPath:

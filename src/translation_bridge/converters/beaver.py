@@ -53,7 +53,31 @@ class BeaverConverter:
         "menu": "menu",
         "html": "html",
         "cta": "cta",
+        "call-to-action": "cta",
+        "price-table": "pricing-table",
+        "alert": "rich-text",
+        "icon-list": "rich-text",
+        "blockquote": "rich-text",
+        "image-gallery": "gallery",
+        "audio": "audio",
+        "countdown": "countdown",
+        "google_maps": "map",
+        "slides": "slideshow",
+        "social-icons": "social-buttons",
+        "text-editor": "rich-text",
     }
+
+    # Content-bearing setting keys funneled into the fallback so unmapped
+    # widgets never emit an empty module (mirrors cli.collect_content_strings).
+    _FALLBACK_CONTENT_PARTS = (
+        "text", "title", "content", "description", "heading", "editor",
+        "caption", "label", "alt", "html", "name", "job", "address", "url", "date",
+    )
+    _FALLBACK_SKIP_PARTS = (
+        "color", "size", "typography", "weight", "align", "style", "position",
+        "gap", "width", "height", "radius", "spacing", "margin", "padding",
+        "font", "shadow", "border", "opacity", "hover",
+    )
 
     def __init__(self):
         self._position_counter = 0
@@ -118,9 +142,13 @@ class BeaverConverter:
                 nodes.update(self._convert_element(child, col_id))
 
         elif el_type == "widget" or widget_type:
-            # Create module
+            # Create module; some sources (e.g. DIVI social follows) nest
+            # content widgets inside other widgets, so recurse into children.
             module_id = self._generate_id()
             nodes[module_id] = self._create_module(module_id, parent, widget_type, settings)
+
+            for child in children:
+                nodes.update(self._convert_element(child, module_id))
 
         else:
             # Generic module
@@ -222,6 +250,8 @@ class BeaverConverter:
             if isinstance(image, dict):
                 bb_settings["photo_src"] = image.get("url", "")
                 bb_settings["photo_source"] = "url"
+                if image.get("alt"):
+                    bb_settings["photo_alt"] = image["alt"]
 
         elif widget_type == "button":
             bb_settings["text"] = settings.get("text", "Click Here")
@@ -255,11 +285,144 @@ class BeaverConverter:
             bb_settings["number"] = settings.get("ending_number", "100")
             bb_settings["before"] = settings.get("prefix", "")
             bb_settings["after"] = settings.get("suffix", "")
+            if settings.get("title"):
+                bb_settings["text"] = settings["title"]
 
         elif widget_type == "html":
             bb_settings["html"] = settings.get("html", "")
 
+        elif widget_type == "icon-box":
+            bb_settings["title"] = settings.get("title_text", "")
+            bb_settings["text"] = settings.get("description_text", "")
+            if settings.get("button_text"):
+                bb_settings["btn_text"] = settings["button_text"]
+            link = settings.get("link", {})
+            if isinstance(link, dict) and link.get("url"):
+                bb_settings["link"] = link["url"]
+            image = settings.get("image", {})
+            if isinstance(image, dict) and image.get("url"):
+                bb_settings["photo_src"] = image["url"]
+                if image.get("alt"):
+                    bb_settings["photo_alt"] = image["alt"]
+
+        elif widget_type in ["call-to-action", "cta"]:
+            bb_settings["title"] = settings.get("title", "")
+            bb_settings["text"] = settings.get("description", "")
+            if settings.get("button_text"):
+                bb_settings["btn_text"] = settings["button_text"]
+            link = settings.get("link", {})
+            if isinstance(link, dict) and link.get("url"):
+                bb_settings["btn_link"] = link["url"]
+
+        elif widget_type == "price-table":
+            column = {
+                "title": settings.get("heading", ""),
+                "price": settings.get("price", ""),
+                "duration": settings.get("period", ""),
+                "features": [
+                    item.get("item_text", "")
+                    for item in settings.get("features", [])
+                    if isinstance(item, dict)
+                ],
+                "btn_text": settings.get("button_text", ""),
+                "btn_link": settings.get("button_url", ""),
+            }
+            if settings.get("currency_symbol"):
+                column["currency"] = settings["currency_symbol"]
+            bb_settings["pricing_columns"] = [column]
+
+        elif widget_type == "alert":
+            title = settings.get("alert_title", "")
+            description = settings.get("alert_description", "")
+            bb_settings["text"] = f"<strong>{title}</strong> {description}".strip()
+
+        elif widget_type == "icon-list":
+            items = "".join(
+                f"<li>{item.get('text', '')}</li>"
+                for item in settings.get("icon_list", [])
+                if isinstance(item, dict)
+            )
+            bb_settings["text"] = f"<ul>{items}</ul>" if items else ""
+
+        elif widget_type == "blockquote":
+            content = settings.get("blockquote_content", "")
+            author = settings.get("author", "")
+            cite = f"<cite>{author}</cite>" if author else ""
+            bb_settings["text"] = f"<blockquote>{content}{cite}</blockquote>"
+
+        elif widget_type == "image-gallery":
+            bb_settings["photos"] = [
+                {"url": img.get("url", ""), "alt": img.get("alt", ""), "id": img.get("id", "")}
+                for img in settings.get("wp_gallery", [])
+                if isinstance(img, dict)
+            ]
+
+        elif widget_type == "audio":
+            link = settings.get("link", {})
+            bb_settings["audio"] = link.get("url", "") if isinstance(link, dict) else ""
+
+        elif widget_type == "countdown":
+            if settings.get("title"):
+                bb_settings["text"] = settings["title"]
+            if settings.get("due_date"):
+                bb_settings["date"] = settings["due_date"]
+
+        elif widget_type == "google_maps":
+            bb_settings["address"] = settings.get("address", "")
+
+        elif widget_type == "progress":
+            percent = settings.get("percent", {})
+            bb_settings["number"] = percent.get("size", 0) if isinstance(percent, dict) else percent
+            if settings.get("title"):
+                bb_settings["text"] = settings["title"]
+
+        elif widget_type == "form":
+            if settings.get("title"):
+                bb_settings["title"] = settings["title"]
+            if settings.get("form_name"):
+                bb_settings["form_name"] = settings["form_name"]
+            fields = settings.get("form_fields", [])
+            if fields:
+                bb_settings["fields"] = [
+                    {"type": field.get("field_type", "text"), "label": field.get("field_label", "")}
+                    for field in fields
+                    if isinstance(field, dict)
+                ]
+
+        else:
+            # Content-preserving fallback: unmapped widgets become rich-text
+            # carrying every content-bearing setting instead of an empty module.
+            fallback = self._fallback_content(settings)
+            if fallback:
+                bb_settings["text"] = fallback
+
         return bb_settings
+
+    def _fallback_content(self, settings: Dict[str, Any]) -> str:
+        """Join content-bearing settings values (incl. nested dict/list items)."""
+        parts: List[str] = []
+
+        def is_content(key: str) -> bool:
+            key_lower = key.lower()
+            if any(part in key_lower for part in self._FALLBACK_SKIP_PARTS):
+                return False
+            return any(part in key_lower for part in self._FALLBACK_CONTENT_PARTS)
+
+        def add(key: str, value: Any) -> None:
+            if isinstance(value, str) and value.strip() and is_content(key):
+                parts.append(value.strip())
+
+        for key, value in settings.items():
+            add(key, value)
+            if isinstance(value, dict):
+                for sub_key, sub in value.items():
+                    add(sub_key, sub)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        for sub_key, sub in item.items():
+                            add(sub_key, sub)
+        return "\n".join(parts)
 
     def _generate_id(self) -> str:
         """Generate unique Beaver Builder node ID."""

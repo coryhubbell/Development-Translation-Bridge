@@ -67,7 +67,23 @@ class BricksConverter:
         "image-gallery": "image-gallery",
         "social-icons": "social-icons",
         "text-editor": "text-basic",
+        "audio": "audio",
+        "countdown": "countdown",
+        "google_maps": "map",
+        "slides": "slider",
     }
+
+    # Content-bearing setting keys funneled into the fallback so unmapped
+    # widgets never emit an empty element (mirrors cli.collect_content_strings).
+    _FALLBACK_CONTENT_PARTS = (
+        "text", "title", "content", "description", "heading", "editor",
+        "caption", "label", "alt", "html", "name", "job", "address", "url", "date",
+    )
+    _FALLBACK_SKIP_PARTS = (
+        "color", "size", "typography", "weight", "align", "style", "position",
+        "gap", "width", "height", "radius", "spacing", "margin", "padding",
+        "font", "shadow", "border", "opacity", "hover",
+    )
 
     def __init__(self):
         self._id_counter = 0
@@ -134,10 +150,9 @@ class BricksConverter:
         elif el_type == "column":
             parent_el = self._create_container(element, parent)
         elif el_type == "widget" or widget_type:
+            # Widgets fall through to the common child recursion below: some
+            # sources (e.g. DIVI social follows) nest content widgets inside them.
             parent_el = self._create_widget(element, parent)
-            self._apply_responsive(element, parent_el)
-            elements.append(parent_el)
-            return elements
         else:
             parent_el = self._create_generic(element, parent)
 
@@ -263,6 +278,8 @@ class BricksConverter:
                     "url": image.get("url", ""),
                     "id": image.get("id", ""),
                 }
+                if image.get("alt"):
+                    bricks_settings["image"]["alt"] = image["alt"]
 
         elif widget_type == "button":
             bricks_settings["text"] = settings.get("text", "Click Here")
@@ -274,8 +291,16 @@ class BricksConverter:
                 }
 
         elif widget_type == "video":
+            youtube_url = settings.get("youtube_url", "")
             bricks_settings["videoType"] = "youtube"
-            bricks_settings["youtubeId"] = self._extract_youtube_id(settings.get("youtube_url", ""))
+            bricks_settings["youtubeId"] = self._extract_youtube_id(youtube_url)
+            if youtube_url:
+                bricks_settings["youtubeUrl"] = youtube_url
+
+        elif widget_type == "audio":
+            link = settings.get("link", {})
+            bricks_settings["source"] = "external"
+            bricks_settings["external"] = link.get("url", "") if isinstance(link, dict) else ""
 
         elif widget_type == "icon":
             icon = settings.get("selected_icon", {})
@@ -320,12 +345,24 @@ class BricksConverter:
             bricks_settings["text"] = settings.get("description", "")
             if settings.get("button_text"):
                 bricks_settings["buttonText"] = settings["button_text"]
+            link = settings.get("link", {})
+            if isinstance(link, dict) and link.get("url"):
+                bricks_settings["link"] = {"url": link["url"], "type": "external"}
 
         elif widget_type == "icon-box":
             bricks_settings["heading"] = settings.get("title_text", "")
             bricks_settings["text"] = settings.get("description_text", "")
             if settings.get("button_text"):
                 bricks_settings["buttonText"] = settings["button_text"]
+            link = settings.get("link", {})
+            if isinstance(link, dict) and link.get("url"):
+                bricks_settings["link"] = {"url": link["url"], "type": "external"}
+            image = settings.get("image", {})
+            if isinstance(image, dict) and image.get("url"):
+                bricks_settings["image"] = {
+                    "url": image["url"],
+                    "alt": image.get("alt", ""),
+                }
 
         elif widget_type == "price-table":
             bricks_settings["heading"] = settings.get("heading", "")
@@ -341,6 +378,12 @@ class BricksConverter:
             ]
             if settings.get("button_text"):
                 bricks_settings["buttonText"] = settings["button_text"]
+            link = settings.get("link", {})
+            button_url = settings.get("button_url", "") or (
+                link.get("url", "") if isinstance(link, dict) else ""
+            )
+            if button_url:
+                bricks_settings["buttonLink"] = {"url": button_url, "type": "external"}
 
         elif widget_type == "alert":
             bricks_settings["heading"] = settings.get("alert_title", "")
@@ -362,7 +405,7 @@ class BricksConverter:
 
         elif widget_type == "image-gallery":
             bricks_settings["images"] = [
-                {"url": img.get("url", ""), "id": img.get("id", "")}
+                {"url": img.get("url", ""), "id": img.get("id", ""), "alt": img.get("alt", "")}
                 for img in settings.get("wp_gallery", [])
                 if isinstance(img, dict)
             ]
@@ -379,11 +422,76 @@ class BricksConverter:
                 if isinstance(item, dict)
             ]
 
+        elif widget_type == "html":
+            bricks_settings["code"] = settings.get("html", "")
+
+        elif widget_type == "countdown":
+            if settings.get("title"):
+                bricks_settings["title"] = settings["title"]
+            if settings.get("due_date"):
+                bricks_settings["date"] = settings["due_date"]
+
+        elif widget_type == "google_maps":
+            bricks_settings["address"] = settings.get("address", "")
+
+        elif widget_type == "progress":
+            percent = settings.get("percent", {})
+            if isinstance(percent, dict) and percent.get("size") is not None:
+                bricks_settings["percentage"] = percent["size"]
+            if settings.get("title"):
+                bricks_settings["title"] = settings["title"]
+
+        elif widget_type == "form":
+            if settings.get("title"):
+                bricks_settings["title"] = settings["title"]
+            if settings.get("form_name"):
+                bricks_settings["formName"] = settings["form_name"]
+            fields = settings.get("form_fields", [])
+            if fields:
+                bricks_settings["fields"] = [
+                    {"type": field.get("field_type", "text"), "label": field.get("field_label", "")}
+                    for field in fields
+                    if isinstance(field, dict)
+                ]
+
+        else:
+            # Content-preserving fallback: unmapped widgets become text-basic
+            # carrying every content-bearing setting instead of an empty element.
+            fallback = self._fallback_content(settings)
+            if fallback:
+                bricks_settings["text"] = fallback
+
         # Common styling
         if settings.get("align"):
             bricks_settings["_textAlign"] = settings["align"]
 
         return bricks_settings
+
+    def _fallback_content(self, settings: Dict[str, Any]) -> str:
+        """Join content-bearing settings values (incl. nested dict/list items)."""
+        parts: List[str] = []
+
+        def is_content(key: str) -> bool:
+            key_lower = key.lower()
+            if any(part in key_lower for part in self._FALLBACK_SKIP_PARTS):
+                return False
+            return any(part in key_lower for part in self._FALLBACK_CONTENT_PARTS)
+
+        def add(key: str, value: Any) -> None:
+            if isinstance(value, str) and value.strip() and is_content(key):
+                parts.append(value.strip())
+
+        for key, value in settings.items():
+            add(key, value)
+            if isinstance(value, dict):
+                for sub_key, sub in value.items():
+                    add(sub_key, sub)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        for sub_key, sub in item.items():
+                            add(sub_key, sub)
+        return "\n".join(parts)
 
     def _extract_youtube_id(self, url: str) -> str:
         """Extract YouTube video ID from URL."""

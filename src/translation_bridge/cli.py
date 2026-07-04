@@ -168,15 +168,23 @@ def get_converter_for_framework(framework: str) -> Optional[Any]:
 
 
 # Setting keys that carry user-visible content (matches the convention in
-# transforms/core.py). Style/layout enums are excluded from fidelity.
+# transforms/core.py). Style/layout enums are excluded from fidelity, and
+# the exclusion list wins so keys like title_color never count as content.
 _CONTENT_KEY_PARTS = (
     "text", "title", "content", "description", "heading", "editor",
     "caption", "label", "alt", "html", "name", "job", "address", "url", "date",
+)
+_NON_CONTENT_KEY_PARTS = (
+    "color", "size", "typography", "weight", "align", "style", "position",
+    "gap", "width", "height", "radius", "spacing", "margin", "padding",
+    "font", "shadow", "border", "opacity", "hover",
 )
 
 
 def _is_content_key(key: str) -> bool:
     key_lower = key.lower()
+    if any(part in key_lower for part in _NON_CONTENT_KEY_PARTS):
+        return False
     return any(part in key_lower for part in _CONTENT_KEY_PARTS)
 
 
@@ -201,11 +209,25 @@ def collect_content_strings(element: Any, out: list) -> None:
         collect_content_strings(child, out)
 
 
+def _string_scalars(value: Any, out: list) -> None:
+    """Flatten every string scalar in a nested structure (JSON-safe haystack)."""
+    if isinstance(value, str):
+        out.append(value)
+    elif isinstance(value, dict):
+        for item in value.values():
+            _string_scalars(item, out)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _string_scalars(item, out)
+
+
 def measure_fidelity(document: Any, output: Any) -> dict:
     """Measure content fidelity of a conversion (RFC 5.0 Phase 3).
 
     Advisory per-conversion metric: how many of the parsed document's
-    content strings appear in the converted output.
+    content strings appear in the converted output. Structured outputs
+    compare against their string scalars directly so JSON escaping never
+    reads as content loss.
     """
     needles: list = []
     if isinstance(document, dict):
@@ -215,7 +237,24 @@ def measure_fidelity(document: Any, output: Any) -> dict:
     if total == 0:
         return {"content_total": 0, "content_preserved": 0, "ratio": 1.0}
 
-    raw = output if isinstance(output, str) else json.dumps(output, ensure_ascii=False)
+    if isinstance(output, str):
+        raw = output
+        # JSON-shaped string outputs (Elementor, Bricks, ...) compare via
+        # their decoded string scalars so JSON escaping never reads as loss.
+        stripped = output.lstrip()
+        if stripped.startswith(("{", "[")):
+            try:
+                decoded = json.loads(output)
+            except (ValueError, TypeError):
+                decoded = None
+            if isinstance(decoded, (dict, list)):
+                parts: list = []
+                _string_scalars(decoded, parts)
+                raw = "\n".join(parts)
+    else:
+        parts = []
+        _string_scalars(output, parts)
+        raw = "\n".join(parts)
     haystack = re.sub(r"<[^>]+>", " ", raw)
 
     preserved = sum(1 for needle in needles if needle in raw or needle in haystack)
