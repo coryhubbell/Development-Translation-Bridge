@@ -7,8 +7,8 @@ Kadence, Thrive, Bootstrap, plus native support for the ground-up rewrites
 (DIVI 5, Elementor 4 Atomic Editor, Oxygen 6).
 
 [![CI](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/coryhubbell/Development-Translation-Bridge/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-4.12.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.12.0)
-[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.12.0)
+[![Version](https://img.shields.io/badge/version-4.13.0-blue.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.13.0)
+[![Status](https://img.shields.io/badge/status-production--ready-success.svg)](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.13.0)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4.svg)](#requirements)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg)](#requirements)
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
@@ -116,15 +116,31 @@ parsing the real export end-to-end.
 
 ---
 
-## Current release: v4.12.0 (production-ready)
+## Current release: v4.13.0 (production-ready)
 
-**v4.12.0 opens the 5.x chapter.** The canonical universal-element schema
-is now normatively specified, both engines are held to it by a dual-engine
-conformance suite in CI, and the PHP engine gained full universal
-interchange — including `universal` as a REST source/target. A document
-parsed by either engine converts correctly in the other. Full notes:
-[v4.12.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.12.0)
-and [`RELEASE_NOTES_V4.12.0.md`](RELEASE_NOTES_V4.12.0.md).
+**v4.13.0 completes RFC 5.0 Phase 2.** The legacy component vocabulary now
+translates through one shared, spec-aligned module per engine —
+`translation_bridge.interchange` is the exact Python mirror of
+`DEVTB_Component::to_universal()`, and the conformance suite asserts both
+engines translate the component shape identically on real fixtures. Full
+notes:
+[v4.13.0 release](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.13.0)
+and [`RELEASE_NOTES_V4.13.0.md`](RELEASE_NOTES_V4.13.0.md).
+
+### What 4.13.0 added (RFC 5.0 Phase 2 complete)
+
+- **Shared interchange module:** `src/translation_bridge/interchange.py` —
+  component-shaped dicts translate to canonical universal elements with
+  PHP-identical semantics; the Gutenberg converter's ad-hoc adapter is
+  replaced by delegation to it.
+- **Exact-mirror conformance gate:**
+  `component_to_element(to_array()) == to_universal()` for every component
+  of all three real fixtures, on every CI run.
+- **Round-trip vocabulary completed in both engines:** `icon_list`,
+  `wp_gallery`, `selected_icon`, `alert_*`, and CTA links survive
+  universal ⇄ component conversion.
+- **Better legacy output:** `row`/`column` components become real
+  `core/columns` blocks; the schema-canonical `nav` widgetType is accepted.
 
 ### What 4.12.0 added (RFC 5.0 Phases 1–2)
 
@@ -642,13 +658,13 @@ Full local release gate:
 make verify
 ```
 
-As of v4.12.0:
-- PHP: **338 tests / 5,668 assertions / 0 errors / 0 failures / 0 deprecations**,
+As of v4.13.0:
+- PHP: **339 tests / 5,673 assertions / 0 errors / 0 failures / 0 deprecations**,
   including 18 widget-coverage tests (`tests/Unit/GutenbergWidgetCoverageTest.php`),
   9 real-format schema-verification tests (`tests/Unit/ProxySchemaVerificationTest.php`),
   8 responsive round-trip tests (`tests/Unit/ResponsiveRoundTripTest.php`),
   and 9 classic-Oxygen hardening tests (`tests/Unit/OxygenClassicHardeningTest.php`).
-- Python: 196 tests across converters, parsers (all 14 frameworks parse natively), transforms, responsive helpers, dual-engine conformance, and project alignment checks.
+- Python: 237 tests across converters, parsers (all 14 frameworks parse natively), transforms, responsive helpers, the shared component interchange, dual-engine conformance (including the exact-mirror gate), and project alignment checks.
 - End-to-end fidelity smoke gates (`make e2e-smoke`), each running through
   both engines as CI gates on every push and PR: Elementor → Gutenberg
   (`tests/smoke_gutenberg_e2e.py`), Elementor → Bricks
@@ -730,7 +746,8 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 
 | Version | Date | Highlights |
 |---|---|---|
-| [v4.12.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.12.0) **(latest)** | 2026-07-03 | RFC 5.0 Phases 1–2: canonical schema, dual-engine conformance in CI, universal interchange in the PHP engine + REST |
+| [v4.13.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.13.0) **(latest)** | 2026-07-03 | RFC 5.0 Phase 2 complete: shared component interchange in Python, exact-mirror conformance gate, round-trip vocabulary completed in both engines |
+| [v4.12.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.12.0) | 2026-07-03 | RFC 5.0 Phases 1–2: canonical schema, dual-engine conformance in CI, universal interchange in the PHP engine + REST |
 | [v4.11.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.11.0) | 2026-07-03 | Python parsers final tranche: all 14 frameworks parse natively — the 4.7+ roadmap is complete |
 | [v4.10.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.10.0) | 2026-07-03 | Python parsers tranche 2: Oxygen 6, DIVI 5, and Gutenberg sources — all JSON/block-markup formats parse natively in Python |
 | [v4.9.0](https://github.com/coryhubbell/Development-Translation-Bridge/releases/tag/v4.9.0) | 2026-07-03 | Responsive canonicalization completed: Elementor v3 suffixes + Bricks breakpoint keys join the canonical model; cross-framework transfer in every direction |
@@ -753,7 +770,7 @@ detailed notes for major releases live at [`RELEASE_NOTES_V*.md`](.) and in
 ## Roadmap
 
 The 4.x line is feature-complete on framework coverage and production-ready
-as of v4.12.0. Release verification is automated end to end — Dependabot
+as of v4.13.0. Release verification is automated end to end — Dependabot
 keeps dependencies fresh, `make verify` mirrors the release gate locally, and
 the four-job CI pipeline (including release-package smoke) runs on every push
 and PR. The v4.3.0 proxy schemas were verified against real formats in v4.4.0
