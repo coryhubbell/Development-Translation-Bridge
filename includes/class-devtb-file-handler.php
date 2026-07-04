@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    4.14.0
+ * @version    4.15.0
  */
 
 class DEVTB_File_Handler {

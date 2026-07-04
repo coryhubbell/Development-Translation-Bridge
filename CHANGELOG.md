@@ -9,6 +9,14 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [4.15.0] — 2026-07-04
+
+Pre-5.0 converter hardening: the Python engine reaches cross-source parity
+with the PHP engine — any source, any target, content preserved. Full
+notes: [`RELEASE_NOTES_V4.15.0.md`](RELEASE_NOTES_V4.15.0.md).
+
 ### Added
 
 - **Pre-5.0 converter hardening** — every Python converter now consumes a
@@ -502,7 +510,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.14.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.15.0...HEAD
+[4.15.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.14.0...v4.15.0
 [4.14.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.13.0...v4.14.0
 [4.13.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.12.0...v4.13.0
 [4.12.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.11.0...v4.12.0

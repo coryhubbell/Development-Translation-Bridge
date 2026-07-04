@@ -4,7 +4,7 @@ Theme URI: https://github.com/coryhubbell/development-translation-bridge
 Author: Cory Hubbell
 Author URI: https://github.com/coryhubbell
 Description: DevelopmentTranslation Bridge - Universal WordPress page builder translation across 14 frameworks. Converts content between Bootstrap, DIVI, DIVI 5, Elementor, Elementor 4 Atomic, Avada Fusion, Bricks, WPBakery, Beaver Builder, Gutenberg, Oxygen, Oxygen 6, Kadence, and Thrive Architect. Includes the Translation Bridge architecture, AI-Ready annotations (--ai-ready flag), and a REST API + CLI for programmatic use.
-Version: 4.14.0
+Version: 4.15.0
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 8.1
@@ -54,7 +54,7 @@ This theme is optimized for developers who work with multiple page builders and 
 /*
 ╔════════════════════════════════════════════════════════════════════════════╗
 ║               DEVELOPMENTTRANSLATION BRIDGE THEME STYLES                    ║
-║                    Translation Bridge System v4.14.0                         ║
+║                    Translation Bridge System v4.15.0                         ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
 This theme is primarily a framework translation system. The visual styles are
