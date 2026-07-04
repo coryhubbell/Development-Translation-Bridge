@@ -14,7 +14,7 @@ if (!defined('DEVTB_ROOT'))                    { define('DEVTB_ROOT', dirname(__
 if (!defined('DEVTB_INCLUDES'))                { define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes'); }
 if (!defined('DEVTB_TRANSLATION_BRIDGE'))      { define('DEVTB_TRANSLATION_BRIDGE', DEVTB_ROOT . '/translation-bridge'); }
 if (!defined('DEVTB_TRANSLATION_BRIDGE_DIR'))  { define('DEVTB_TRANSLATION_BRIDGE_DIR', DEVTB_TRANSLATION_BRIDGE); }
-if (!defined('DEVTB_VERSION'))                 { define('DEVTB_VERSION', '4.14.0'); }
+if (!defined('DEVTB_VERSION'))                 { define('DEVTB_VERSION', '4.15.0'); }
 
 // Load Composer autoloader
 $autoloader = DEVTB_ROOT . '/vendor/autoload.php';
