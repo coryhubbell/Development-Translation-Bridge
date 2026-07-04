@@ -27,13 +27,6 @@ use DEVTB\TranslationBridge\Models\DEVTB_Component;
 class DEVTB_Translator {
 
 	/**
-	 * Mapping engine instance
-	 *
-	 * @var DEVTB_Mapping_Engine
-	 */
-	private DEVTB_Mapping_Engine $mapping_engine;
-
-	/**
 	 * Translation cache
 	 *
 	 * @var array<string, mixed>
@@ -93,7 +86,6 @@ class DEVTB_Translator {
 	 * Constructor
 	 */
 	public function __construct() {
-		$this->mapping_engine = new DEVTB_Mapping_Engine();
 	}
 
 	/**
@@ -180,7 +172,7 @@ class DEVTB_Translator {
 				return false;
 			}
 
-			// RFC 5.0 Phase 3: the canonical route normalizes every pair
+			// RFC 5.0: one conversion semantics — every pair normalizes
 			// through the universal document (parse → universal → convert).
 			$route             = 'universal';
 			$mapped_components = DEVTB_Universal::document_to_components(
@@ -189,16 +181,9 @@ class DEVTB_Translator {
 			$this->stats['avg_confidence'] = 1.0;
 
 			if ( ! $this->content_survives( $components, $mapped_components ) ) {
-				// The v3 mapping engine remains only as the HTML
-				// content-extraction fallback (e.g. text carried on
-				// structural nodes the universal schema has no slot for).
-				$route = 'mapping-fallback';
-				$this->log_warning( 'Universal route lost content; using v3 mapping fallback' );
-				$mapped_components = $this->map_components(
-					$components,
-					$source_framework,
-					$target_framework
-				);
+				// Advisory only since 5.0 (the v3 mapping engine is gone);
+				// the per-conversion fidelity stat quantifies any loss.
+				$this->log_warning( 'Universal route may lose content carried on structural nodes' );
 			}
 
 			// Validate mapped components
@@ -324,64 +309,6 @@ class DEVTB_Translator {
 			] );
 			throw $e;
 		}
-	}
-
-	/**
-	 * Map components using AI-like mapping engine
-	 *
-	 * @param DEVTB_Component[] $components Components to map.
-	 * @param string           $source_framework Source framework.
-	 * @param string           $target_framework Target framework.
-	 * @return DEVTB_Component[] Mapped components.
-	 */
-	private function map_components(
-		array $components,
-		string $source_framework,
-		string $target_framework
-	): array {
-		$mapped = [];
-		$confidence_scores = [];
-
-		foreach ( $components as $component ) {
-			try {
-				// Use mapping engine for intelligent transformation
-				$mapped_component = $this->mapping_engine->map(
-					$component,
-					$source_framework,
-					$target_framework
-				);
-
-				$mapped[] = $mapped_component;
-
-				// Track confidence
-				$confidence = $mapped_component->get_metadata( 'transformation_confidence' ) ?? 0.5;
-				$confidence_scores[] = $confidence;
-
-				// Warn on low confidence
-				if ( $confidence < 0.7 ) {
-					$this->log_warning( sprintf(
-						'Low confidence transformation: %s (%.2f)',
-						$component->type,
-						$confidence
-					) );
-				}
-
-			} catch ( \Exception $e ) {
-				$this->log_error( 'Component mapping failed', [
-					'component' => $component->type,
-					'error'     => $e->getMessage(),
-				] );
-
-				$this->stats['failed']++;
-			}
-		}
-
-		// Calculate average confidence
-		if ( ! empty( $confidence_scores ) ) {
-			$this->stats['avg_confidence'] = array_sum( $confidence_scores ) / count( $confidence_scores );
-		}
-
-		return $mapped;
 	}
 
 	/**

@@ -286,7 +286,7 @@ def cmd_transform(args: argparse.Namespace) -> int:
     input_file = Path(args.file)
 
     if getattr(args, "command", "") == "translate":
-        print_warning("'translate' is deprecated and will be removed in 5.0 — use 'devtb transform'.")
+        print_warning("'translate' is deprecated and will be removed in 5.1 — use 'devtb transform'.")
         print_info("Routing through the lossless universal path (RFC 5.0 Phase 3).")
 
     if not input_file.exists():

@@ -9,7 +9,26 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Removed (BREAKING — RFC 5.0 Phase 4)
+
+- **The v3 mapping engine** (`translation-bridge/core/class-mapping-engine.php`)
+  and the translator's mapping-fallback branch. Every conversion rides
+  parse → universal → convert; the content-survival check is now an
+  advisory warning quantified by the fidelity stat. All 182 pairs pass on
+  the universal route alone.
+- The `DEVTB_Component` shape is no longer an interchange format on any
+  public surface (the mapping engine was its last pipeline consumer). It
+  remains the PHP engine's internal model; Python converters still accept
+  legacy component dicts as deprecated back-compat (5.1 review).
+
+### Migration notes
+
+- `DEVTB_Translator::translate()` signature, CLI commands, and REST
+  endpoints are unchanged. Code that referenced `DEVTB_Mapping_Engine`
+  directly must move to `parse_to_universal()` / `translate_universal()`.
+- Stats: `route` is always `universal`; `avg_confidence` is always 1.0.
+- The `translate` alias survives 5.0 and is removed in 5.1 (deprecation
+  notices updated accordingly).
 
 ## [4.15.0] — 2026-07-04
 

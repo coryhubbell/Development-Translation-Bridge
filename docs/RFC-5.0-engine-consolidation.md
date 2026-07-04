@@ -1,6 +1,6 @@
 # RFC 5.0 — Engine Consolidation
 
-**Status:** Phases 1–3 shipped; Phase 4 (5.0 release) next
+**Status:** COMPLETE — all phases shipped; 5.0.0 released
 **Created:** 2026-07-03
 
 ## Summary
@@ -110,10 +110,19 @@ is_external}`, `image{url, alt}`, `testimonial_*`, `tabs[]`, `icon_list[]`,
   and fall back content-preservingly; `translation_bridge.interchange` is
   now fully bidirectional (element ⇄ component, both PHP mirrors).
 
-### Phase 4 — 5.0 release
+### Phase 4 — 5.0 release *(shipped)*
 
-- Remove the HTML-intermediate pipeline and the `DEVTB_Component`-shaped
-  public interchange (breaking); `translate` alias retained for one minor.
+- The HTML-intermediate pipeline is gone: `class-mapping-engine.php`
+  deleted (the v3 similarity-scoring mapper), the translator's
+  mapping-fallback branch removed — the content-survival check is now an
+  advisory warning quantified by the per-conversion fidelity stat. All
+  182 matrix pairs pass on the universal route alone.
+- The `DEVTB_Component` shape is no longer an interchange format anywhere:
+  no public surface accepts or emits it (REST never did; the mapping
+  engine was its last pipeline consumer). It survives only as the PHP
+  engine's internal model and as deprecated back-compat input to Python
+  converters (slated for 5.1 review).
+- `translate` alias retained for one minor (removed in 5.1).
 - Single documented engine story: “one schema, two conforming runtimes.”
 
 ## Compatibility

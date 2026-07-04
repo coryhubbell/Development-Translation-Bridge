@@ -147,7 +147,6 @@ function devtb_init_translation_bridge() {
 
     // Load Translation Bridge core classes
     if (file_exists(DEVTB_TRANSLATION_BRIDGE_DIR . '/core/class-translator.php')) {
-        require_once DEVTB_TRANSLATION_BRIDGE_DIR . '/core/class-mapping-engine.php';
         require_once DEVTB_TRANSLATION_BRIDGE_DIR . '/core/class-translator.php';
         require_once DEVTB_TRANSLATION_BRIDGE_DIR . '/core/class-parser-factory.php';
         require_once DEVTB_TRANSLATION_BRIDGE_DIR . '/core/class-converter-factory.php';
