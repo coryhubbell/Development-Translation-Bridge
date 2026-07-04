@@ -9,7 +9,24 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **`devtb transform-all <source> <file>`** (Python engine) — fan one
+  source out to every other framework through the universal route, with a
+  per-target fidelity table. Replaces `translate-all`.
+
+### Removed
+
+- The **`translate` and `translate-all` CLI commands** (deprecated since
+  4.14.0; window closed per the one-minor policy). Both now exit with a
+  pointer to `transform` / `transform-all`. The engine method
+  `DEVTB_Translator::translate()` is unaffected (WordPress runtime).
+
+### Fixed
+
+- `devtb` help no longer lists `list-frameworks` and `validate` as
+  deprecated — they were never deprecated and remain supported PHP-engine
+  utilities.
 
 ## [5.0.0] — 2026-07-04
 

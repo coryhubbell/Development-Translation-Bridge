@@ -3,8 +3,8 @@
 # DEVTB - DevelopmentTranslation Bridge CLI
 # =============================================================================
 # Unified CLI wrapper that routes commands to the appropriate backend:
-#   - transform, transform-site, analyze → Python (v4 JSON-native engine)
-#   - translate, translate-all, etc. → PHP (v3 HTML intermediate)
+#   - transform, transform-all, transform-site, analyze → Python engine
+#   - list-frameworks, validate → PHP engine (WordPress runtime utilities)
 #
 # Version: 5.0.0
 # =============================================================================
@@ -28,8 +28,8 @@ VERSION="5.0.0"
 show_version() {
     echo "DevelopmentTranslation Bridge v${VERSION}"
     echo "  One schema, two conforming runtimes (parse -> universal -> convert)"
-    echo "  Python engine: transform commands + translate alias"
-    echo "  PHP engine: WordPress runtime (translate, deprecated)"
+    echo "  Python engine: transform commands"
+    echo "  PHP engine: WordPress runtime utilities"
 }
 
 # Show help
@@ -43,14 +43,13 @@ show_help() {
     echo "USAGE:"
     echo "  devtb <command> [options]"
     echo ""
-    echo "COMMANDS (v4 Python - JSON-native, lossless):"
+    echo "COMMANDS (Python engine - JSON-native, lossless):"
     echo "  transform <source> <target> <file>    Transform a file (100% metadata preserved)"
+    echo "  transform-all <source> <file>         Transform to every other framework"
     echo "  transform-site <source> <target> <dir> Transform all files in directory"
     echo "  analyze <framework> <file>            Analyze page builder content"
     echo ""
-    echo "COMMANDS (deprecated — removed in 5.1):"
-    echo "  translate <source> <target> <file>    Same lossless path as transform (PHP engine)"
-    echo "  translate-all <source> <file>         Translate to all frameworks (PHP)"
+    echo "COMMANDS (PHP engine utilities):"
     echo "  list-frameworks                       List supported frameworks"
     echo "  validate <framework> <file>           Validate file format"
     echo ""
@@ -66,13 +65,13 @@ show_help() {
     echo "  devtb transform elementor bootstrap page.json"
     echo "  devtb analyze elementor page.json"
     echo ""
-    echo "  # translate is a deprecated alias of transform (same lossless path)"
-    echo "  devtb translate bootstrap divi page.html"
-    echo "  devtb translate-all bootstrap page.html"
+    echo "  # fan out to every framework at once"
+    echo "  devtb transform-all bootstrap page.html"
     echo ""
     echo "NOTE:"
-    echo "  As of RFC 5.0 Phase 3, every conversion rides the lossless"
-    echo "  parse → universal → convert path; fidelity is reported per conversion."
+    echo "  Every conversion rides the lossless parse → universal → convert"
+    echo "  path; fidelity is reported per conversion. 'translate' was"
+    echo "  removed in 5.1 — use 'transform'."
     echo ""
     echo "For more info: https://github.com/coryhubbell/development-translation-bridge"
     echo ""
@@ -131,15 +130,19 @@ main() {
     shift
 
     case "$cmd" in
-        # v4 Python commands (JSON-native)
-        transform|transform-site|analyze)
+        # Python engine (JSON-native)
+        transform|transform-all|transform-site|analyze)
             run_python "$cmd" "$@"
             ;;
 
-        # Deprecated (RFC 5.0 Phase 3): translate now rides the same
-        # parse → universal → convert path as transform (inside the PHP
-        # engine, which serves all 182 pairs) and is removed in 5.1.
-        translate|translate-all|list-frameworks|validate)
+        # Removed in 5.1 (deprecated since 4.14.0)
+        translate|translate-all)
+            echo -e "${RED}'$cmd' was removed in 5.1 — use 'devtb transform' / 'devtb transform-all'.${NC}"
+            exit 1
+            ;;
+
+        # PHP engine utilities (WordPress runtime)
+        list-frameworks|validate)
             run_php "$cmd" "$@"
             ;;
 
