@@ -9,6 +9,15 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [4.14.0] — 2026-07-04
+
+RFC 5.0 Phase 3: one conversion semantics — every pair rides
+parse → universal → convert, fidelity is reported per conversion, and
+`translate` is deprecated for removal in 5.0. Full notes:
+[`RELEASE_NOTES_V4.14.0.md`](RELEASE_NOTES_V4.14.0.md).
+
 ### Added
 
 - **RFC 5.0 Phase 3 (complete)** — the `translate` path is deprecated and
@@ -464,7 +473,8 @@ Kadence + Thrive converters and CMS re-association. Full notes:
   DIVI, Elementor, Avada Fusion, and Bricks (20 translation pairs).
   Full notes: [RELEASE_NOTES_V3.0.0.md](RELEASE_NOTES_V3.0.0.md).
 
-[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.13.0...HEAD
+[Unreleased]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.14.0...HEAD
+[4.14.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.13.0...v4.14.0
 [4.13.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.12.0...v4.13.0
 [4.12.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.11.0...v4.12.0
 [4.11.0]: https://github.com/coryhubbell/Development-Translation-Bridge/compare/v4.10.0...v4.11.0

@@ -6,7 +6,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    4.13.0
+ * @version    4.14.0
  */
 
 class DEVTB_CLI {

@@ -8,7 +8,7 @@
  *
  * @package    DevelopmentTranslation_Bridge
  * @subpackage CLI
- * @version    4.13.0
+ * @version    4.14.0
  * @author     DevelopmentTranslation Bridge
  * @license    GPL-2.0+
  */
@@ -20,7 +20,7 @@ if (php_sapi_name() !== 'cli') {
 
 // Define constants
 if (!defined('DEVTB_CLI'))                 { define('DEVTB_CLI', true); }
-if (!defined('DEVTB_VERSION'))             { define('DEVTB_VERSION', '4.13.0'); }
+if (!defined('DEVTB_VERSION'))             { define('DEVTB_VERSION', '4.14.0'); }
 if (!defined('DEVTB_ROOT'))                { define('DEVTB_ROOT', __DIR__); }
 if (!defined('DEVTB_INCLUDES'))            { define('DEVTB_INCLUDES', DEVTB_ROOT . '/includes'); }
 if (!defined('DEVTB_TRANSLATION_BRIDGE'))  { define('DEVTB_TRANSLATION_BRIDGE', DEVTB_ROOT . '/translation-bridge'); }

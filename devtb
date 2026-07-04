@@ -6,7 +6,7 @@
 #   - transform, transform-site, analyze → Python (v4 JSON-native engine)
 #   - translate, translate-all, etc. → PHP (v3 HTML intermediate)
 #
-# Version: 4.13.0
+# Version: 4.14.0
 # =============================================================================
 
 set -e
@@ -22,7 +22,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Version
-VERSION="4.13.0"
+VERSION="4.14.0"
 
 # Show version
 show_version() {
