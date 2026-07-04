@@ -487,3 +487,159 @@ class TestTranche2Wiring:
         assert isinstance(get_parser_for_framework("oxygen-6"), Oxygen6Parser)
         assert isinstance(get_parser_for_framework("divi-5"), Divi5Parser)
         assert isinstance(get_parser_for_framework("gutenberg"), GutenbergParser)
+
+
+# ---------------------------------------------------------------------------
+# Final tranche — shortcode/HTML source parsers
+# ---------------------------------------------------------------------------
+
+
+class TestDiviSourceParser:
+    def test_kitchen_sink_fixture_parses_and_transforms(self):
+        from translation_bridge.parsers.divi import DiviParser
+
+        with open("tests/fixtures/divi/kitchen-sink.txt") as handle:
+            doc = DiviParser().parse(handle.read())
+        out = TransformRegistry.get_transform("divi", "gutenberg")(doc.to_dict())
+        for needle in (
+            "DIVI Kitchen Sink", "Start migration", "Maya Chen",
+            "Ship the migration", "wp post list",
+        ):
+            assert needle in out, f"content dropped: {needle}"
+
+    def test_divi5_markup_rejected(self):
+        from translation_bridge.parsers.divi import DiviParser
+
+        doc = DiviParser().parse('<!-- wp:divi/section {} --><!-- /wp:divi/section -->')
+        assert doc.elements == []
+
+
+class TestWPBakerySourceParser:
+    def test_parses_and_transforms(self):
+        from translation_bridge.parsers.wpbakery import WPBakeryParser
+
+        markup = (
+            '[vc_row][vc_column width="1/2"]'
+            '[vc_custom_heading text="VC Title" font_container="tag:h3|font_size:32"]'
+            "[vc_column_text]Body copy here.[/vc_column_text]"
+            '[vc_btn title="Press" link="url:https%3A%2F%2Fx.co|target:_blank"]'
+            "[/vc_column][/vc_row]"
+        )
+        doc = WPBakeryParser().parse(markup)
+        column = doc.elements[0].elements[0]
+        heading, text, button = column.elements
+        assert heading.settings == {"title": "VC Title", "header_size": "h3"}
+        assert text.settings["editor"] == "Body copy here."
+        assert button.settings["link"] == {"url": "https://x.co", "is_external": "on"}
+
+        out = TransformRegistry.get_transform("wpbakery", "gutenberg")(doc.to_dict())
+        assert "VC Title" in out and "Press" in out
+
+
+class TestAvadaSourceParser:
+    def test_parses_and_transforms(self):
+        from translation_bridge.parsers.avada import AvadaParser
+
+        markup = (
+            "[fusion_builder_container][fusion_builder_row]"
+            '[fusion_builder_column type="1_2"]'
+            '[fusion_title size="2"]Fusion Title[/fusion_title]'
+            "[fusion_text]Fusion body.[/fusion_text]"
+            '[fusion_button link="https://x.co"]Go now[/fusion_button]'
+            "[/fusion_builder_column][/fusion_builder_row][/fusion_builder_container]"
+        )
+        doc = AvadaParser().parse(markup)
+        # Avada nests three levels: container → row → column.
+        column = doc.elements[0].elements[0].elements[0]
+        assert column.elements[0].settings["title"] == "Fusion Title"
+        assert column.elements[2].settings["text"] == "Go now"
+
+        out = TransformRegistry.get_transform("avada", "gutenberg")(doc.to_dict())
+        assert "Fusion Title" in out and "Go now" in out
+
+
+class TestKadenceSourceParser:
+    def test_kadence_blocks_with_core_fallthrough(self):
+        from translation_bridge.parsers.kadence import KadenceParser
+
+        markup = (
+            '<!-- wp:kadence/rowlayout {"uniqueID":"r1"} -->'
+            '<!-- wp:kadence/column {"uniqueID":"c1"} -->'
+            '<!-- wp:kadence/advancedheading {"level":3,"uniqueID":"h1"} -->'
+            "<h3>Kadence Title</h3><!-- /wp:kadence/advancedheading -->"
+            "<!-- wp:paragraph --><p>Core body.</p><!-- /wp:paragraph -->"
+            "<!-- /wp:kadence/column --><!-- /wp:kadence/rowlayout -->"
+        )
+        doc = KadenceParser().parse(markup)
+        column = doc.elements[0].elements[0]
+        assert column.elements[0].settings == {"title": "Kadence Title", "header_size": "h3"}
+        assert column.elements[1].settings["editor"] == "Core body."
+
+        out = TransformRegistry.get_transform("kadence", "gutenberg")(doc.to_dict())
+        assert "Kadence Title" in out
+
+
+class TestBeaverSourceParser:
+    def test_flat_registry_parses_and_transforms(self):
+        from translation_bridge.parsers.beaver import BeaverParser
+
+        registry = {
+            "r1": {"node": "r1", "type": "row", "parent": None, "position": 0, "settings": {}},
+            "g1": {"node": "g1", "type": "column-group", "parent": "r1", "position": 0, "settings": {}},
+            "c1": {"node": "c1", "type": "column", "parent": "g1", "position": 0, "settings": {"size": 100}},
+            "m2": {"node": "m2", "type": "module", "parent": "c1", "position": 1,
+                   "settings": {"type": "button", "text": "Click", "link": "https://x.co"}},
+            "m1": {"node": "m1", "type": "module", "parent": "c1", "position": 0,
+                   "settings": {"type": "heading", "heading": "BB Title", "tag": "h2"}},
+        }
+        doc = BeaverParser().parse(registry)
+        column = doc.elements[0].elements[0].elements[0]
+        # Position ordering: heading (0) before button (1) despite dict order.
+        assert column.elements[0].settings["title"] == "BB Title"
+        assert column.elements[1].settings["text"] == "Click"
+
+        out = TransformRegistry.get_transform("beaver-builder", "gutenberg")(doc.to_dict())
+        assert "BB Title" in out
+
+
+class TestThriveSourceParser:
+    def test_tcb_html_parses_and_transforms(self):
+        from translation_bridge.parsers.thrive import ThriveParser
+
+        markup = (
+            '<div class="tcb-flex-row"><div class="tcb-flex-col">'
+            '<h2 class="tve_h2">Thrive Title</h2><p class="tve_p">Thrive body.</p>'
+            '<div class="tcb-button-block"><a href="https://x.co" class="tcb-button-link">Act now</a></div>'
+            "</div></div>"
+        )
+        doc = ThriveParser().parse(markup)
+        out = TransformRegistry.get_transform("thrive", "gutenberg")(doc.to_dict())
+        assert "Thrive Title" in out and "Thrive body." in out and "Act now" in out
+
+
+class TestBootstrapSourceParser:
+    def test_hero_example_parses_and_transforms(self):
+        from translation_bridge.parsers.bootstrap import BootstrapParser
+
+        with open("examples/hero-bootstrap.html") as handle:
+            doc = BootstrapParser().parse(handle.read())
+        out = TransformRegistry.get_transform("bootstrap", "gutenberg")(doc.to_dict())
+        assert "Welcome to Our Platform" in out
+        assert "Get Started" in out
+
+
+class TestFinalTrancheWiring:
+    def test_all_fourteen_frameworks_have_parsers(self):
+        frameworks = [
+            "elementor", "elementor4", "bricks", "oxygen", "oxygen6",
+            "divi5", "gutenberg", "divi", "wpbakery", "avada", "kadence",
+            "beaver-builder", "thrive", "bootstrap",
+        ]
+        for framework in frameworks:
+            assert ParserRegistry.get_parser(framework) is not None, f"no parser: {framework}"
+
+    def test_cli_resolves_final_tranche(self):
+        from translation_bridge.cli import get_parser_for_framework
+
+        for framework in ("divi", "wpbakery", "avada", "kadence", "beaver-builder", "thrive", "bootstrap"):
+            assert get_parser_for_framework(framework) is not None, f"CLI can't resolve {framework}"

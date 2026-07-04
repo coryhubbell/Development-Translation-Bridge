@@ -11,6 +11,13 @@ from .oxygen import OxygenParser
 from .oxygen6 import Oxygen6Parser
 from .divi5 import Divi5Parser
 from .gutenberg import GutenbergParser
+from .divi import DiviParser
+from .wpbakery import WPBakeryParser
+from .avada import AvadaParser
+from .kadence import KadenceParser
+from .beaver import BeaverParser
+from .thrive import ThriveParser
+from .bootstrap import BootstrapParser
 
 __all__ = [
     "ElementorParser",
@@ -20,4 +27,11 @@ __all__ = [
     "Oxygen6Parser",
     "Divi5Parser",
     "GutenbergParser",
+    "DiviParser",
+    "WPBakeryParser",
+    "AvadaParser",
+    "KadenceParser",
+    "BeaverParser",
+    "ThriveParser",
+    "BootstrapParser",
 ]
