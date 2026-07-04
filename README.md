@@ -47,8 +47,10 @@ Typical situations it solves:
 - **No silent data loss.** Elements without a native equivalent in the target
   framework are preserved and visibly annotated rather than dropped.
 
-One conversion semantics — every pair rides the lossless universal path
-(RFC 5.0 Phase 3):
+**One schema, two conforming runtimes.** Every conversion rides the same
+lossless pipeline — parse → **universal document** → convert — whether it
+runs in the Python engine or the PHP (WordPress) runtime. The legacy
+mapping engine is gone as of 5.0:
 
 ```mermaid
 flowchart TD
@@ -59,11 +61,8 @@ flowchart TD
 
 | Command | Engine | Status | Notes |
 |---|---|---|---|
-| `transform` | Python (v4) | **Recommended** | JSON-native, 100% metadata, ~0.5s/page |
-| `translate` | PHP (v3 runtime) | **Deprecated — removed in 5.0** | Same parse → universal → convert path as of RFC 5.0 Phase 3; fidelity reported per conversion |
-
-The v3 mapping engine survives only as an HTML content-extraction fallback
-when a conversion would otherwise lose content.
+| `transform` | Python | **Recommended** | JSON-native, 100% metadata, ~0.5s/page |
+| `translate` | PHP (WordPress runtime) | **Deprecated — removed in 5.1** | Identical universal pipeline; fidelity reported per conversion |
 
 ---
 
@@ -429,7 +428,7 @@ make verify
 # JSON-native transform (recommended for JSON-based frameworks)
 ./devtb transform elementor bootstrap input.json -o output.html
 
-# translate is deprecated (removed in 5.0) — same lossless path, PHP engine
+# translate is deprecated (removed in 5.1) — same lossless path, PHP engine
 ./devtb translate divi avada input.html -o output.html
 
 # Transform an entire site export

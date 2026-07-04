@@ -300,7 +300,7 @@ class DEVTB_CLI {
         $ai_ready = $this->has_option('ai-ready', 'a');
 
         try {
-            $this->warning("'translate' is deprecated and will be removed in 5.0 — use 'devtb transform'.");
+            $this->warning("'translate' is deprecated and will be removed in 5.1 — use 'devtb transform'.");
             $this->info("Conversions now ride the lossless universal path (RFC 5.0 Phase 3).");
             echo PHP_EOL;
             $this->info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

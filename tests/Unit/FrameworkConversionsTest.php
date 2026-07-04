@@ -89,7 +89,6 @@ class FrameworkConversionsTest extends TestCase {
         require_once $bridge_path . '/core/interface-converter.php';
         require_once $bridge_path . '/core/class-parser-factory.php';
         require_once $bridge_path . '/core/class-converter-factory.php';
-        require_once $bridge_path . '/core/class-mapping-engine.php';
         require_once $bridge_path . '/core/class-translator.php';
 
         // Load parsers

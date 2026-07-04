@@ -27,8 +27,9 @@ VERSION="4.15.0"
 # Show version
 show_version() {
     echo "DevelopmentTranslation Bridge v${VERSION}"
-    echo "  Python engine: v4.x (transform commands + translate alias)"
-    echo "  PHP engine: v3.x (WordPress runtime, universal-routed)"
+    echo "  One schema, two conforming runtimes (parse -> universal -> convert)"
+    echo "  Python engine: transform commands + translate alias"
+    echo "  PHP engine: WordPress runtime (translate, deprecated)"
 }
 
 # Show help
@@ -47,7 +48,7 @@ show_help() {
     echo "  transform-site <source> <target> <dir> Transform all files in directory"
     echo "  analyze <framework> <file>            Analyze page builder content"
     echo ""
-    echo "COMMANDS (deprecated — removed in 5.0):"
+    echo "COMMANDS (deprecated — removed in 5.1):"
     echo "  translate <source> <target> <file>    Same lossless path as transform (PHP engine)"
     echo "  translate-all <source> <file>         Translate to all frameworks (PHP)"
     echo "  list-frameworks                       List supported frameworks"
@@ -137,7 +138,7 @@ main() {
 
         # Deprecated (RFC 5.0 Phase 3): translate now rides the same
         # parse → universal → convert path as transform (inside the PHP
-        # engine, which serves all 182 pairs) and is removed in 5.0.
+        # engine, which serves all 182 pairs) and is removed in 5.1.
         translate|translate-all|list-frameworks|validate)
             run_php "$cmd" "$@"
             ;;
