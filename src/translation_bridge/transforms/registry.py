@@ -455,3 +455,172 @@ def gutenberg_to_bricks(data: Any) -> str:
     """Transform parsed Gutenberg content to Bricks JSON."""
     from ..converters.bricks import BricksConverter
     return BricksConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="wpbakery_to_gutenberg",
+    source_framework="wpbakery",
+    target_framework="gutenberg",
+    description="Transform parsed wpbakery content to gutenberg",
+    version="4.11.0",
+)
+def wpbakery_to_gutenberg(data: Any) -> str:
+    """Transform parsed wpbakery content to gutenberg."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="wpbakery_to_bootstrap",
+    source_framework="wpbakery",
+    target_framework="bootstrap",
+    description="Transform parsed wpbakery content to bootstrap",
+    version="4.11.0",
+)
+def wpbakery_to_bootstrap(data: Any) -> str:
+    """Transform parsed wpbakery content to bootstrap."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="avada_to_gutenberg",
+    source_framework="avada",
+    target_framework="gutenberg",
+    description="Transform parsed avada content to gutenberg",
+    version="4.11.0",
+)
+def avada_to_gutenberg(data: Any) -> str:
+    """Transform parsed avada content to gutenberg."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="avada_to_bootstrap",
+    source_framework="avada",
+    target_framework="bootstrap",
+    description="Transform parsed avada content to bootstrap",
+    version="4.11.0",
+)
+def avada_to_bootstrap(data: Any) -> str:
+    """Transform parsed avada content to bootstrap."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="kadence_to_gutenberg",
+    source_framework="kadence",
+    target_framework="gutenberg",
+    description="Transform parsed kadence content to gutenberg",
+    version="4.11.0",
+)
+def kadence_to_gutenberg(data: Any) -> str:
+    """Transform parsed kadence content to gutenberg."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="kadence_to_bootstrap",
+    source_framework="kadence",
+    target_framework="bootstrap",
+    description="Transform parsed kadence content to bootstrap",
+    version="4.11.0",
+)
+def kadence_to_bootstrap(data: Any) -> str:
+    """Transform parsed kadence content to bootstrap."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="beaver_builder_to_gutenberg",
+    source_framework="beaver-builder",
+    target_framework="gutenberg",
+    description="Transform parsed beaver-builder content to gutenberg",
+    version="4.11.0",
+)
+def beaver_builder_to_gutenberg(data: Any) -> str:
+    """Transform parsed beaver-builder content to gutenberg."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="beaver_builder_to_bootstrap",
+    source_framework="beaver-builder",
+    target_framework="bootstrap",
+    description="Transform parsed beaver-builder content to bootstrap",
+    version="4.11.0",
+)
+def beaver_builder_to_bootstrap(data: Any) -> str:
+    """Transform parsed beaver-builder content to bootstrap."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="thrive_to_gutenberg",
+    source_framework="thrive",
+    target_framework="gutenberg",
+    description="Transform parsed thrive content to gutenberg",
+    version="4.11.0",
+)
+def thrive_to_gutenberg(data: Any) -> str:
+    """Transform parsed thrive content to gutenberg."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="thrive_to_bootstrap",
+    source_framework="thrive",
+    target_framework="bootstrap",
+    description="Transform parsed thrive content to bootstrap",
+    version="4.11.0",
+)
+def thrive_to_bootstrap(data: Any) -> str:
+    """Transform parsed thrive content to bootstrap."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="bootstrap_to_gutenberg",
+    source_framework="bootstrap",
+    target_framework="gutenberg",
+    description="Transform parsed bootstrap content to gutenberg",
+    version="4.11.0",
+)
+def bootstrap_to_gutenberg(data: Any) -> str:
+    """Transform parsed bootstrap content to gutenberg."""
+    from ..converters.gutenberg import GutenbergConverter
+    return GutenbergConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="bootstrap_to_elementor",
+    source_framework="bootstrap",
+    target_framework="elementor",
+    description="Transform parsed bootstrap content to elementor",
+    version="4.11.0",
+)
+def bootstrap_to_elementor(data: Any) -> str:
+    """Transform parsed bootstrap content to elementor."""
+    from ..converters.elementor import ElementorConverter
+    return ElementorConverter().convert(data)
+
+
+@TransformRegistry.register(
+    name="divi_to_bootstrap",
+    source_framework="divi",
+    target_framework="bootstrap",
+    description="Transform parsed divi content to bootstrap",
+    version="4.11.0",
+)
+def divi_to_bootstrap(data: Any) -> str:
+    """Transform parsed divi content to bootstrap."""
+    from ..converters.bootstrap import BootstrapConverter
+    return BootstrapConverter().convert(data)

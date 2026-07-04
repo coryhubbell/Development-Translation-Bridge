@@ -97,6 +97,34 @@ def get_parser_for_framework(framework: str) -> Optional[Any]:
         from .parsers.gutenberg import GutenbergParser
 
         return GutenbergParser()
+    if framework_lower == "divi":
+        from .parsers.divi import DiviParser
+
+        return DiviParser()
+    if framework_lower == "wpbakery":
+        from .parsers.wpbakery import WPBakeryParser
+
+        return WPBakeryParser()
+    if framework_lower == "avada":
+        from .parsers.avada import AvadaParser
+
+        return AvadaParser()
+    if framework_lower == "kadence":
+        from .parsers.kadence import KadenceParser
+
+        return KadenceParser()
+    if framework_lower in ("beaver-builder", "beaver"):
+        from .parsers.beaver import BeaverParser
+
+        return BeaverParser()
+    if framework_lower == "thrive":
+        from .parsers.thrive import ThriveParser
+
+        return ThriveParser()
+    if framework_lower == "bootstrap":
+        from .parsers.bootstrap import BootstrapParser
+
+        return BootstrapParser()
     return None
 
 

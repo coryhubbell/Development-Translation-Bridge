@@ -9,7 +9,28 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **Python source parsers, final tranche: DIVI 4, WPBakery, Avada, Kadence,
+  Beaver Builder, Thrive, and Bootstrap** — closing roadmap 4.7+ item 4.
+  **All 14 frameworks now parse natively in Python**, completing the parser
+  half of the eventual 5.x engine consolidation.
+  - Shared `parsers/shortcodes.py` tokenizer (nested shortcodes, attr
+    parsing, closer look-ahead for self-closing leaves) powers the
+    `DiviParser` ([et_pb_*]), `WPBakeryParser` ([vc_*] incl. the
+    `url:...|target:...` link format and base64 `vc_raw_html`), and
+    `AvadaParser` ([fusion_*]).
+  - Shared `parsers/htmlbase.py` (stdlib HTMLParser → universal walker)
+    powers the `BootstrapParser` (Bootstrap output re-enters the lossless
+    path) and `ThriveParser` (TCB class-driven detection).
+  - `KadenceParser` extends the Gutenberg parser: kadence/* blocks
+    (rowlayout, advancedheading, advancedbtn, infobox, ...) with core/*
+    fallthrough.
+  - `BeaverParser` reads the flat node registry (parent ids, position
+    ordering).
+  - 13 new transform pairs and CLI resolution for all seven; the DIVI
+    kitchen-sink fixture and the real Bootstrap hero example parse and
+    transform end to end.
+  - 10 new tests (`test_source_parsers.py`, now 40; Python suite 185).
 
 ## [4.10.0] — 2026-07-03
 

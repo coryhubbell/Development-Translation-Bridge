@@ -52,7 +52,7 @@ Two transformation paths — pick by your source format:
 ```mermaid
 flowchart TD
     IN(["Your content"]) --> Q{"Source format?"}
-    Q -->|"JSON / block markup<br/>(Elementor 3+4, Bricks, Oxygen 4+6,<br/>DIVI 5, Gutenberg)"| T["<b>transform</b> — Python v4 engine<br/>100% metadata preserved · ~0.5s/page"]
+    Q -->|"Any of the 14 frameworks<br/>(JSON, block markup,<br/>shortcodes, HTML)"| T["<b>transform</b> — Python v4 engine<br/>100% metadata preserved · ~0.5s/page"]
     Q -->|"Shortcodes / HTML<br/>(DIVI 4, WPBakery, Avada, ...)"| L["<b>translate</b> — PHP v3 engine<br/>HTML intermediate · ~30s/page"]
     T --> OUT(["Any of the 14 target frameworks"])
     L --> OUT
@@ -60,7 +60,7 @@ flowchart TD
 
 | Path | Engine | Approach | Metadata | Speed | Best for |
 |---|---|---|---|---|---|
-| `transform` | Python (v4) | JSON-native | **100%** | ~0.5s/page | Sources: Elementor, Elementor 4 Atomic, Bricks, classic Oxygen, Oxygen 6, DIVI 5, Gutenberg |
+| `transform` | Python (v4) | JSON-native | **100%** | ~0.5s/page | **All 14 frameworks parse as sources** (JSON, block markup, shortcodes, and HTML) |
 | `translate` | PHP (v3) | HTML intermediate | ~42% | ~30s/page | Any framework, including shortcode-based (WPBakery, DIVI 4, Avada) |
 
 The `transform` path is the recommended default; `translate` is retained for
@@ -762,11 +762,10 @@ Candidate work for upcoming 4.x releases, roughly in priority order:
    and re-emit on convert, so responsive data survives round trips and
    transfers across frameworks (e.g. Elementor tablet overrides become
    Bricks `:tablet_portrait` keys).
-4. **Python parsers for the remaining frameworks** *(in progress)*. Seven
-   frameworks now parse natively in Python (Elementor 3/4, Bricks, classic
-   Oxygen, Oxygen 6, DIVI 5, Gutenberg — the JSON/block-markup formats);
-   remaining are the shortcode/HTML formats: DIVI 4, WPBakery, Avada,
-   Kadence, Thrive, Beaver Builder, Bootstrap.
+4. ~~**Python parsers for the remaining frameworks.**~~ **Done (unreleased):**
+   all 14 frameworks now parse natively in Python — JSON, block markup,
+   shortcodes, and HTML — completing the parser half of the 5.x engine
+   consolidation.
 
 ### 5.x (speculative)
 
