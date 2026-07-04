@@ -9,7 +9,26 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **Python source parsers, tranche 2: Oxygen 6, DIVI 5, and Gutenberg**
+  (roadmap 4.7+ item 4, in progress) — seven frameworks now parse natively
+  in Python, covering every JSON/block-markup format:
+  - `Oxygen6Parser` — the verified Breakdance node shape (`data`-nested
+    type/properties, `tree.root` envelope, element-copy envelope, legacy
+    proxy fallback); design `breakpoint_*` leaves canonicalize into the
+    responsive model. Parses the committed real Breakdance fixture
+    end to end.
+  - `Divi5Parser` — `wp:divi/*` block markup per the verified format
+    (top-level `content` group, unicode-escaped HTML, `module.content`
+    legacy fallback); responsive wrappers (tablet/phone/hover)
+    canonicalize.
+  - `GutenbergParser` — WordPress core block markup as a lossless SOURCE;
+    unknown blocks preserve verbatim as `html` widgets.
+  - Shared `parsers/blocks.py` block-comment tokenizer (stack-based
+    nesting, mirrors WP `parse_blocks()`).
+  - Seven new transform pairs (`oxygen6`/`divi5` → gutenberg/bootstrap;
+    `gutenberg` → bootstrap/elementor/bricks) and CLI resolution.
+  - 14 new tests (`test_source_parsers.py`, now 30).
 
 ## [4.9.0] — 2026-07-03
 

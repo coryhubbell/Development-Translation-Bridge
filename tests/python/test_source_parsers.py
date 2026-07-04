@@ -272,3 +272,218 @@ class TestSourceParserWiring:
         assert isinstance(get_parser_for_framework("oxygen"), OxygenParser)
         assert isinstance(get_parser_for_framework("elementor-4"), Elementor4Parser)
         assert isinstance(get_parser_for_framework("elementor4"), Elementor4Parser)
+
+
+# ---------------------------------------------------------------------------
+# Oxygen 6 (tranche 2 — real Breakdance fixture)
+# ---------------------------------------------------------------------------
+
+
+class TestOxygen6SourceParser:
+    def test_parses_real_breakdance_fixture(self):
+        from translation_bridge.parsers.oxygen6 import Oxygen6Parser
+
+        with open("tests/fixtures/oxygen6/breakdance-element-export.json") as handle:
+            doc = Oxygen6Parser().parse(json.load(handle))
+
+        assert doc.elements, "real export must produce elements"
+        content = Oxygen6Parser().extract_content(doc)
+        assert any("Genre:" in text for texts in content.values() for text in texts)
+
+    def test_parses_tree_root_envelope(self):
+        from translation_bridge.parsers.oxygen6 import Oxygen6Parser
+
+        payload = {
+            "tree": {
+                "root": {
+                    "id": 1,
+                    "data": {"type": "root", "properties": []},
+                    "children": [
+                        {
+                            "id": 100,
+                            "data": {
+                                "type": "EssentialElements\\Heading",
+                                "properties": {"content": {"content": {"text": "O6", "tags": "h3"}}},
+                            },
+                            "children": [],
+                            "_parentId": 1,
+                        }
+                    ],
+                }
+            },
+            "_nextNodeId": 101,
+        }
+        doc = Oxygen6Parser().parse(payload)
+        assert doc.elements[0].settings == {"title": "O6", "header_size": "h3"}
+
+    def test_design_breakpoints_canonicalize(self):
+        from translation_bridge.parsers.oxygen6 import Oxygen6Parser
+
+        node = {
+            "id": 2,
+            "data": {
+                "type": "EssentialElements\\Heading",
+                "properties": {
+                    "content": {"content": {"text": "Hi", "tags": "h2"}},
+                    "design": {
+                        "layout": {"gap": {"breakpoint_base": "40px", "breakpoint_tablet_portrait": "24px"}}
+                    },
+                },
+            },
+            "children": [],
+        }
+        doc = Oxygen6Parser().parse([node])
+        styles = doc.elements[0].responsive["styles"]
+        assert styles["desktop"]["default"]["layout.gap"] == "40px"
+        assert styles["tablet"]["default"]["layout.gap"] == "24px"
+
+    def test_transforms_to_gutenberg(self):
+        from translation_bridge.parsers.oxygen6 import Oxygen6Parser
+
+        with open("tests/fixtures/oxygen6/breakdance-element-export.json") as handle:
+            doc = Oxygen6Parser().parse(json.load(handle))
+        out = TransformRegistry.get_transform("oxygen6", "gutenberg")(doc.to_dict())
+        assert "Genre:" in out
+
+
+# ---------------------------------------------------------------------------
+# DIVI 5 (tranche 2)
+# ---------------------------------------------------------------------------
+
+
+DIVI5_MARKUP = (
+    '<!-- wp:divi/section {"builderVersion":"5.0.0"} -->'
+    '<!-- wp:divi/heading {"content":{"text":{"desktop":{"value":"D5 Title","hover":"Hover Title"},'
+    '"tablet":{"value":"Tablet Title"}},"level":{"desktop":{"value":"h3"}}},"builderVersion":"5.0.0"} /-->'
+    '<!-- wp:divi/text {"content":{"innerContent":{"desktop":{"value":"\\u003cp\\u003eBody\\u003c/p\\u003e"}}},"builderVersion":"5.0.0"} /-->'
+    '<!-- wp:divi/button {"content":{"text":{"desktop":{"value":"Go"}},"url":{"desktop":{"value":"https://x.co"}},"urlNewWindow":true},"builderVersion":"5.0.0"} /-->'
+    "<!-- /wp:divi/section -->"
+)
+
+
+class TestDivi5SourceParser:
+    def test_parses_verified_markup(self):
+        from translation_bridge.parsers.divi5 import Divi5Parser
+
+        doc = Divi5Parser().parse(DIVI5_MARKUP)
+        section = doc.elements[0]
+        assert section.el_type == "section"
+        heading, text, button = section.elements
+        assert heading.settings["title"] == "D5 Title"
+        assert heading.settings["header_size"] == "h3"
+        assert "Body" in text.settings["editor"]
+        assert button.settings["link"]["url"] == "https://x.co"
+
+    def test_responsive_wrappers_canonicalize(self):
+        from translation_bridge.parsers.divi5 import Divi5Parser
+
+        doc = Divi5Parser().parse(DIVI5_MARKUP)
+        fields = doc.elements[0].elements[0].responsive["fields"]
+        assert fields["text"]["tablet"]["default"] == "Tablet Title"
+        assert fields["text"]["desktop"]["hover"] == "Hover Title"
+
+    def test_legacy_module_content_fallback(self):
+        from translation_bridge.parsers.divi5 import Divi5Parser
+
+        legacy = '<!-- wp:divi/heading {"module":{"content":{"text":{"desktop":{"value":"Legacy"}}}},"builderVersion":"5.0.0"} /-->'
+        doc = Divi5Parser().parse(legacy)
+        assert doc.elements[0].settings["title"] == "Legacy"
+
+    def test_transforms_to_gutenberg(self):
+        from translation_bridge.parsers.divi5 import Divi5Parser
+
+        doc = Divi5Parser().parse(DIVI5_MARKUP)
+        out = TransformRegistry.get_transform("divi5", "gutenberg")(doc.to_dict())
+        assert "D5 Title" in out
+
+
+# ---------------------------------------------------------------------------
+# Gutenberg (tranche 2)
+# ---------------------------------------------------------------------------
+
+
+GUTENBERG_MARKUP = (
+    '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">GB Title</h2><!-- /wp:heading -->'
+    "<!-- wp:paragraph --><p>Body text.</p><!-- /wp:paragraph -->"
+    '<!-- wp:buttons --><div class="wp-block-buttons">'
+    '<!-- wp:button {"url":"https://x.co"} --><div class="wp-block-button">'
+    '<a class="wp-block-button__link wp-element-button" href="https://x.co">Press</a></div><!-- /wp:button -->'
+    "</div><!-- /wp:buttons -->"
+    "<!-- wp:quote --><blockquote class=\"wp-block-quote\"><p>Wisdom.</p><cite>Someone</cite></blockquote><!-- /wp:quote -->"
+    "<!-- wp:list --><ul><li>One</li><li>Two</li></ul><!-- /wp:list -->"
+)
+
+
+class TestGutenbergSourceParser:
+    def test_parses_core_blocks(self):
+        from translation_bridge.parsers.gutenberg import GutenbergParser
+
+        doc = GutenbergParser().parse(GUTENBERG_MARKUP)
+        types = [(el.el_type, el.widget_type) for el in doc.elements]
+        assert types[0] == ("widget", "heading")
+        assert doc.elements[0].settings == {"title": "GB Title", "header_size": "h2"}
+        assert doc.elements[1].settings["editor"] == "Body text."
+
+        buttons_wrap = doc.elements[2]
+        assert buttons_wrap.el_type == "container"
+        button = buttons_wrap.elements[0]
+        assert button.settings["text"] == "Press"
+        assert button.settings["link"]["url"] == "https://x.co"
+
+        quote = doc.elements[3]
+        assert quote.settings["testimonial_content"] == "Wisdom."
+        assert quote.settings["testimonial_name"] == "Someone"
+
+        assert doc.elements[4].settings["icon_list"] == [{"text": "One"}, {"text": "Two"}]
+
+    def test_unknown_blocks_preserved(self):
+        from translation_bridge.parsers.gutenberg import GutenbergParser
+
+        markup = '<!-- wp:some/custom-block --><div data-x="1">Custom</div><!-- /wp:some/custom-block -->'
+        doc = GutenbergParser().parse(markup)
+        assert doc.elements[0].widget_type == "html"
+        assert "Custom" in doc.elements[0].settings["html"]
+
+    def test_transforms_to_bricks_and_elementor(self):
+        from translation_bridge.parsers.gutenberg import GutenbergParser
+
+        doc = GutenbergParser().parse(GUTENBERG_MARKUP)
+        bricks = TransformRegistry.get_transform("gutenberg", "bricks")(doc.to_dict())
+        assert "GB Title" in bricks
+        elementor = TransformRegistry.get_transform("gutenberg", "elementor")(doc.to_dict())
+        text = elementor if isinstance(elementor, str) else json.dumps(elementor)
+        assert "GB Title" in text
+
+
+class TestTranche2Wiring:
+    def test_parsers_registered(self):
+        from translation_bridge.parsers.oxygen6 import Oxygen6Parser
+        from translation_bridge.parsers.divi5 import Divi5Parser
+        from translation_bridge.parsers.gutenberg import GutenbergParser
+
+        assert ParserRegistry.get_parser("oxygen6") is Oxygen6Parser
+        assert ParserRegistry.get_parser("divi5") is Divi5Parser
+        assert ParserRegistry.get_parser("gutenberg") is GutenbergParser
+
+    def test_transform_pairs_registered(self):
+        pairs = TransformRegistry.get_supported_pairs()
+        for pair in [
+            ("oxygen6", "gutenberg"),
+            ("oxygen6", "bootstrap"),
+            ("divi5", "gutenberg"),
+            ("divi5", "bootstrap"),
+            ("gutenberg", "bootstrap"),
+            ("gutenberg", "elementor"),
+            ("gutenberg", "bricks"),
+        ]:
+            assert pair in pairs, f"missing transform pair: {pair}"
+
+    def test_cli_resolves_tranche2_parsers(self):
+        from translation_bridge.cli import get_parser_for_framework
+        from translation_bridge.parsers.oxygen6 import Oxygen6Parser
+        from translation_bridge.parsers.divi5 import Divi5Parser
+        from translation_bridge.parsers.gutenberg import GutenbergParser
+
+        assert isinstance(get_parser_for_framework("oxygen-6"), Oxygen6Parser)
+        assert isinstance(get_parser_for_framework("divi-5"), Divi5Parser)
+        assert isinstance(get_parser_for_framework("gutenberg"), GutenbergParser)
