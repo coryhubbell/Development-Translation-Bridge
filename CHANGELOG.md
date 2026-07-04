@@ -10,6 +10,19 @@ Detailed notes for major releases live in `RELEASE_NOTES_V*.md` and on
 ## [Unreleased]
 
 ### Added
+- **RFC 5.0 Phase 2 (core) — universal interchange in the PHP engine**:
+  - `DEVTB_Universal` (core): `components_to_document()` /
+    `document_to_components()` — the bidirectional bridge between
+    `DEVTB_Component` trees and the canonical universal document.
+  - Translator entry points `parse_to_universal()` and
+    `translate_universal()`.
+  - REST `/translate` accepts `universal` as source (send a universal
+    document, get target output) or target (get the parsed universal
+    document).
+  - Cross-engine interchange conformance-tested both directions: a
+    Python-parsed document converts in the PHP engine, and a PHP-parsed
+    document converts in the Python engine (`test_conformance.py`, now 11
+    tests; new `UniversalInterchangeTest`, 6 PHP tests).
 - **RFC 5.0 Phase 1 — engine-consolidation groundwork** (opens the 5.x
   chapter):
   - `docs/RFC-5.0-engine-consolidation.md` — the phased consolidation plan
