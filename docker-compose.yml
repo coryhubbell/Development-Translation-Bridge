@@ -37,7 +37,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    image: wordpress:7.0.0-php8.4-apache
+    image: wordpress:7.1.1-php8.4-apache
     container_name: devtb-wordpress
     restart: always
     ports:
